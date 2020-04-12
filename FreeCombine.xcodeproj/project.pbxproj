@@ -10,6 +10,8 @@
 		FBC21A88243BD4EA00EFD588 /* FreeCombine.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FBC21A7E243BD4EA00EFD588 /* FreeCombine.framework */; };
 		FBC21A8D243BD4EA00EFD588 /* FreeCombineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBC21A8C243BD4EA00EFD588 /* FreeCombineTests.swift */; };
 		FBC21A8F243BD4EA00EFD588 /* FreeCombine.h in Headers */ = {isa = PBXBuildFile; fileRef = FBC21A81243BD4EA00EFD588 /* FreeCombine.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		FBC21A99243BD52300EFD588 /* FreeCombine.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBC21A98243BD52300EFD588 /* FreeCombine.swift */; };
+		FBCE1B4324420763001872C0 /* FunctionalProgramming.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBCE1B4224420763001872C0 /* FunctionalProgramming.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -29,6 +31,8 @@
 		FBC21A87243BD4EA00EFD588 /* FreeCombineTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FreeCombineTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		FBC21A8C243BD4EA00EFD588 /* FreeCombineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FreeCombineTests.swift; sourceTree = "<group>"; };
 		FBC21A8E243BD4EA00EFD588 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		FBC21A98243BD52300EFD588 /* FreeCombine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FreeCombine.swift; sourceTree = "<group>"; };
+		FBCE1B4224420763001872C0 /* FunctionalProgramming.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FunctionalProgramming.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -73,6 +77,8 @@
 			children = (
 				FBC21A81243BD4EA00EFD588 /* FreeCombine.h */,
 				FBC21A82243BD4EA00EFD588 /* Info.plist */,
+				FBC21A98243BD52300EFD588 /* FreeCombine.swift */,
+				FBCE1B4224420763001872C0 /* FunctionalProgramming.swift */,
 			);
 			path = FreeCombine;
 			sourceTree = "<group>";
@@ -148,6 +154,7 @@
 				TargetAttributes = {
 					FBC21A7D243BD4EA00EFD588 = {
 						CreatedOnToolsVersion = 11.4;
+						LastSwiftMigration = 1140;
 					};
 					FBC21A86243BD4EA00EFD588 = {
 						CreatedOnToolsVersion = 11.4;
@@ -195,6 +202,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				FBCE1B4324420763001872C0 /* FunctionalProgramming.swift in Sources */,
+				FBC21A99243BD52300EFD588 /* FreeCombine.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -340,6 +349,7 @@
 		FBC21A93243BD4EA00EFD588 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				DEFINES_MODULE = YES;
 				DEVELOPMENT_TEAM = 49D8NY9JB9;
@@ -356,6 +366,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = computecycles.com.FreeCombine;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SKIP_INSTALL = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -364,6 +375,7 @@
 		FBC21A94243BD4EA00EFD588 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				DEFINES_MODULE = YES;
 				DEVELOPMENT_TEAM = 49D8NY9JB9;
@@ -388,6 +400,7 @@
 		FBC21A96243BD4EA00EFD588 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 49D8NY9JB9;
 				INFOPLIST_FILE = FreeCombineTests/Info.plist;
@@ -406,6 +419,7 @@
 		FBC21A97243BD4EA00EFD588 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 49D8NY9JB9;
 				INFOPLIST_FILE = FreeCombineTests/Info.plist;

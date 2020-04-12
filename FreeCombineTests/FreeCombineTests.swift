@@ -19,16 +19,36 @@ class FreeCombineTests: XCTestCase {
         // Put teardown code here. This method is called after the invocation of each test method in the class.
     }
 
-    func testExample() throws {
-        // This is an example of a functional test case.
-        // Use XCTAssert and related functions to verify your tests produce the correct results.
+    func testEmptyPublisher() throws {
+        OriginatingPublisher<Int, Never>().sink(
+            receiveCompletion: { completion in print("finished") },
+            receiveValue: { _ in XCTFail("Should never receive value") }
+        )
     }
 
-    func testPerformanceExample() throws {
-        // This is an example of a performance test case.
-        self.measure {
-            // Put the code you want to measure the time of here.
-        }
+    func testJustPublisher() throws {
+        var count = 0
+        OriginatingPublisher<Int, Never>(14).sink(
+            receiveCompletion: { completion in print("finished") },
+            receiveValue: { value in
+                guard value == 14 else { XCTFail("Received incorrect value"); return }
+                guard count == 0 else { XCTFail("Received more than one value"); return }
+                count += 1
+            }
+        )
     }
 
+    func testSequencePublisher() throws {
+        var count = 0
+        var total = 0
+        OriginatingPublisher<Int, Never>([1, 2, 3, 4]).sink(
+            receiveCompletion: { completion in print("finished") },
+            receiveValue: { value in
+                guard count < 4 else { XCTFail("Received incorrect number of calls"); return }
+                guard total <= 10 else { XCTFail("Received wrong value"); return }
+                count += 1
+                total += value
+            }
+        )
+    }
 }
