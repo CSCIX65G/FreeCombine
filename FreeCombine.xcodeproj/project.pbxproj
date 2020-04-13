@@ -8,13 +8,15 @@
 
 /* Begin PBXBuildFile section */
 		FBC21A88243BD4EA00EFD588 /* FreeCombine.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FBC21A7E243BD4EA00EFD588 /* FreeCombine.framework */; };
-		FBC21A8D243BD4EA00EFD588 /* FreeCombineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBC21A8C243BD4EA00EFD588 /* FreeCombineTests.swift */; };
+		FBC21A8D243BD4EA00EFD588 /* PublisherTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBC21A8C243BD4EA00EFD588 /* PublisherTests.swift */; };
 		FBC21A8F243BD4EA00EFD588 /* FreeCombine.h in Headers */ = {isa = PBXBuildFile; fileRef = FBC21A81243BD4EA00EFD588 /* FreeCombine.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		FBC21A99243BD52300EFD588 /* FreeCombine.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBC21A98243BD52300EFD588 /* FreeCombine.swift */; };
 		FBCE1B4324420763001872C0 /* FunctionalProgramming.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBCE1B4224420763001872C0 /* FunctionalProgramming.swift */; };
 		FBCE1B452443EBA0001872C0 /* Publisher+Inits.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBCE1B442443EBA0001872C0 /* Publisher+Inits.swift */; };
-		FBCE1B472443EDA6001872C0 /* Subscriber.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBCE1B462443EDA6001872C0 /* Subscriber.swift */; };
-		FBCE1B492443EDDA001872C0 /* Producer.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBCE1B482443EDDA001872C0 /* Producer.swift */; };
+		FBCE1B472443EDA6001872C0 /* Subscriber+Utils.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBCE1B462443EDA6001872C0 /* Subscriber+Utils.swift */; };
+		FBCE1B492443EDDA001872C0 /* Producer+Utils.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBCE1B482443EDDA001872C0 /* Producer+Utils.swift */; };
+		FBCE1B4B2444D7EC001872C0 /* Composition.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBCE1B4A2444D7EC001872C0 /* Composition.swift */; };
+		FBCE1B4D2444DF9B001872C0 /* MapTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBCE1B4C2444DF9B001872C0 /* MapTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -32,13 +34,15 @@
 		FBC21A81243BD4EA00EFD588 /* FreeCombine.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = FreeCombine.h; sourceTree = "<group>"; };
 		FBC21A82243BD4EA00EFD588 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		FBC21A87243BD4EA00EFD588 /* FreeCombineTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FreeCombineTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		FBC21A8C243BD4EA00EFD588 /* FreeCombineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FreeCombineTests.swift; sourceTree = "<group>"; };
+		FBC21A8C243BD4EA00EFD588 /* PublisherTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PublisherTests.swift; sourceTree = "<group>"; };
 		FBC21A8E243BD4EA00EFD588 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		FBC21A98243BD52300EFD588 /* FreeCombine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FreeCombine.swift; sourceTree = "<group>"; };
 		FBCE1B4224420763001872C0 /* FunctionalProgramming.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FunctionalProgramming.swift; sourceTree = "<group>"; };
 		FBCE1B442443EBA0001872C0 /* Publisher+Inits.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Publisher+Inits.swift"; sourceTree = "<group>"; };
-		FBCE1B462443EDA6001872C0 /* Subscriber.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Subscriber.swift; sourceTree = "<group>"; };
-		FBCE1B482443EDDA001872C0 /* Producer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Producer.swift; sourceTree = "<group>"; };
+		FBCE1B462443EDA6001872C0 /* Subscriber+Utils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Subscriber+Utils.swift"; sourceTree = "<group>"; };
+		FBCE1B482443EDDA001872C0 /* Producer+Utils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Producer+Utils.swift"; sourceTree = "<group>"; };
+		FBCE1B4A2444D7EC001872C0 /* Composition.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Composition.swift; sourceTree = "<group>"; };
+		FBCE1B4C2444DF9B001872C0 /* MapTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -84,9 +88,10 @@
 				FBC21A81243BD4EA00EFD588 /* FreeCombine.h */,
 				FBC21A82243BD4EA00EFD588 /* Info.plist */,
 				FBC21A98243BD52300EFD588 /* FreeCombine.swift */,
-				FBCE1B482443EDDA001872C0 /* Producer.swift */,
 				FBCE1B442443EBA0001872C0 /* Publisher+Inits.swift */,
-				FBCE1B462443EDA6001872C0 /* Subscriber.swift */,
+				FBCE1B4A2444D7EC001872C0 /* Composition.swift */,
+				FBCE1B482443EDDA001872C0 /* Producer+Utils.swift */,
+				FBCE1B462443EDA6001872C0 /* Subscriber+Utils.swift */,
 				FBCE1B4224420763001872C0 /* FunctionalProgramming.swift */,
 			);
 			path = FreeCombine;
@@ -95,7 +100,8 @@
 		FBC21A8B243BD4EA00EFD588 /* FreeCombineTests */ = {
 			isa = PBXGroup;
 			children = (
-				FBC21A8C243BD4EA00EFD588 /* FreeCombineTests.swift */,
+				FBC21A8C243BD4EA00EFD588 /* PublisherTests.swift */,
+				FBCE1B4C2444DF9B001872C0 /* MapTests.swift */,
 				FBC21A8E243BD4EA00EFD588 /* Info.plist */,
 			);
 			path = FreeCombineTests;
@@ -211,11 +217,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				FBCE1B4B2444D7EC001872C0 /* Composition.swift in Sources */,
 				FBCE1B452443EBA0001872C0 /* Publisher+Inits.swift in Sources */,
 				FBCE1B4324420763001872C0 /* FunctionalProgramming.swift in Sources */,
-				FBCE1B492443EDDA001872C0 /* Producer.swift in Sources */,
+				FBCE1B492443EDDA001872C0 /* Producer+Utils.swift in Sources */,
 				FBC21A99243BD52300EFD588 /* FreeCombine.swift in Sources */,
-				FBCE1B472443EDA6001872C0 /* Subscriber.swift in Sources */,
+				FBCE1B472443EDA6001872C0 /* Subscriber+Utils.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -223,7 +230,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				FBC21A8D243BD4EA00EFD588 /* FreeCombineTests.swift in Sources */,
+				FBCE1B4D2444DF9B001872C0 /* MapTests.swift in Sources */,
+				FBC21A8D243BD4EA00EFD588 /* PublisherTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -20,4 +20,18 @@ extension Composer {
         subscription.request(.unlimited)
         return subscription
     }
+
+    func assign<Root>(
+        to keyPath: ReferenceWritableKeyPath<Root, Output>,
+        on object: Root
+    ) -> Subscription<OutputControl> {
+        let subscription = receive(
+            subscriber: Subscriber<Output, OutputFailure, OutputControl>(
+                input: { input in object[keyPath: keyPath] = input; return .unlimited },
+                completion: { _ in }
+            )
+        )
+        subscription.request(.unlimited)
+        return subscription
+    }
 }

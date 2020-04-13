@@ -10,7 +10,6 @@ import XCTest
 @testable import FreeCombine
 
 class FreeCombineTests: XCTestCase {
-
     override func setUpWithError() throws {
         // Put setup code here. This method is called before the invocation of each test method in the class.
     }
@@ -21,7 +20,7 @@ class FreeCombineTests: XCTestCase {
 
     func testEmptyPublisher() throws {
         _ = Empty(Int.self).sink(
-            receiveCompletion: { completion in print("finished") },
+            receiveCompletion: { completion in print("Completed") },
             receiveValue: { _ in XCTFail("Should never receive value") }
         )
     }
@@ -29,7 +28,7 @@ class FreeCombineTests: XCTestCase {
     func testJustPublisher() throws {
         var count = 0
         _ = Just(14).sink(
-            receiveCompletion: { completion in print("finished") },
+            receiveCompletion: { completion in print("Completed") },
             receiveValue: { value in
                 guard value == 14 else { XCTFail("Received incorrect value"); return }
                 guard count == 0 else { XCTFail("Received more than one value"); return }
@@ -39,10 +38,9 @@ class FreeCombineTests: XCTestCase {
     }
 
     func testSequencePublisher() throws {
-        var count = 0
-        var total = 0
+        var count = 0, total = 0
         _ = PublishedSequence([1, 2, 3, 4]).sink(
-            receiveCompletion: { completion in print("finished") },
+            receiveCompletion: { completion in print("Completed") },
             receiveValue: { value in
                 guard count < 4 else { XCTFail("Received incorrect number of calls"); return }
                 guard total <= 10 else { XCTFail("Received wrong value"); return }
@@ -53,8 +51,7 @@ class FreeCombineTests: XCTestCase {
     }
     
     func testSubscribing() throws {
-        var count = 0
-        var total = 0
+        var count = 0, total = 0
         let subscriber = Subscriber<Int, Never, Never>(
             input: { print($0); count += 1; total += $0; return .none },
             completion: { _ in print("Completed") }
@@ -80,8 +77,10 @@ class FreeCombineTests: XCTestCase {
         subscription.request(.max(1))
         subscription.cancel()
         subscription.request(.max(1))
+        subscription.request(.max(1))
+        subscription.request(.max(1))
+        subscription.request(.max(1))
         XCTAssertEqual(count, 1, "Received incorrect number of calls")
         XCTAssertEqual(total, 1, "Received wrong value")
     }
-
 }

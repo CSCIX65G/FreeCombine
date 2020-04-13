@@ -23,7 +23,6 @@ enum Demand {
 enum Supply<Value, Failure> {
     case none
     case some(Value)
-    case failure(Failure)
     case done
 }
 
@@ -75,8 +74,6 @@ struct Composer<Input, InputControl, InputFailure: Error, Output, OutputControl,
     
     func receive(subscriber: DownstreamSubscriber) -> DownstreamSubscription {
         subscriber |>
-            liftSubscriber
-            >>> (subscriber |> curry(subscribe))
-            >>> (subscriber |> curry(lowerSubscription))
+            liftSubscriber >>> (subscriber |> curry(subscribe)) >>> (subscriber |> curry(lowerSubscription))
     }
 }
