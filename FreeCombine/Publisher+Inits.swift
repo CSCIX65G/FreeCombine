@@ -7,19 +7,19 @@
 //
 
 typealias Publisher<Output, OutputFailure: Error> =
-    PubSub<Never, Never, Never, Output, Never, OutputFailure>
+    Composer<Never, Never, Never, Output, Never, OutputFailure>
 
-let neverSubscribing = Subscribing<Never, Never, Never>(input: { _ in .none }, completion: void)
+let neverSubscribing = Subscriber<Never, Never, Never>(input: { _ in .none }, completion: void)
 let voidSubscription = Subscription<Never>(request: void, control: void)
 
 extension Publisher {
-    init(_ produce: @escaping (Demand) -> Supply<Output, OutputFailure>) {
+    init(_ producer: Producer<Output, OutputFailure>) {
         self.liftSubscriber = {_ in recast(neverSubscribing) }
         self.subscribe = {_, _ in recast(voidSubscription) }
         self.lowerSubscription = { subscriber, _ in
             Subscription<OutputControl> (
-                request: curry(Self.output)(recast(subscriber))(produce),
-                control: curry(Self.finished)(subscriber)
+                request: curry(Self.output)(recast(subscriber))(producer),
+                control: curry(Self.finished)(subscriber)(producer)
             )
         }
     }
@@ -27,17 +27,22 @@ extension Publisher {
 
 // Empty
 func Empty<T>(_ t: T.Type) -> Publisher<T, Never> {
-    Publisher<T, Never> { _ in .done }
+    Publisher<T, Never>( Producer(produce: { _ in .done }, finish: { }))
 }
 
 func PublishedSequence<S>(_ values: S) -> Publisher<S.Element, Never> where S: Sequence {
     var slice = ArraySlice(values)
-    return Publisher<S.Element, Never> { demand in
-        guard demand.intValue > 0 else { return .none }
-        guard let value = slice.first else { return .done }
-        slice = slice.dropFirst()
-        return .some(value)
-    }
+    return Publisher<S.Element, Never>(
+        Producer(
+            produce: { demand in
+                guard demand.intValue > 0 else { return .none }
+                guard let value = slice.first else { return .done }
+                slice = slice.dropFirst()
+                return .some(value)
+            },
+            finish: { slice = ArraySlice() }
+        )
+    )
 }
 
 // Just

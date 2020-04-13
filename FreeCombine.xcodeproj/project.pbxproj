@@ -14,7 +14,7 @@
 		FBCE1B4324420763001872C0 /* FunctionalProgramming.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBCE1B4224420763001872C0 /* FunctionalProgramming.swift */; };
 		FBCE1B452443EBA0001872C0 /* Publisher+Inits.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBCE1B442443EBA0001872C0 /* Publisher+Inits.swift */; };
 		FBCE1B472443EDA6001872C0 /* Subscriber.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBCE1B462443EDA6001872C0 /* Subscriber.swift */; };
-		FBCE1B492443EDDA001872C0 /* Statics.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBCE1B482443EDDA001872C0 /* Statics.swift */; };
+		FBCE1B492443EDDA001872C0 /* Producer.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBCE1B482443EDDA001872C0 /* Producer.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -38,7 +38,7 @@
 		FBCE1B4224420763001872C0 /* FunctionalProgramming.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FunctionalProgramming.swift; sourceTree = "<group>"; };
 		FBCE1B442443EBA0001872C0 /* Publisher+Inits.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Publisher+Inits.swift"; sourceTree = "<group>"; };
 		FBCE1B462443EDA6001872C0 /* Subscriber.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Subscriber.swift; sourceTree = "<group>"; };
-		FBCE1B482443EDDA001872C0 /* Statics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Statics.swift; sourceTree = "<group>"; };
+		FBCE1B482443EDDA001872C0 /* Producer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Producer.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -84,7 +84,7 @@
 				FBC21A81243BD4EA00EFD588 /* FreeCombine.h */,
 				FBC21A82243BD4EA00EFD588 /* Info.plist */,
 				FBC21A98243BD52300EFD588 /* FreeCombine.swift */,
-				FBCE1B482443EDDA001872C0 /* Statics.swift */,
+				FBCE1B482443EDDA001872C0 /* Producer.swift */,
 				FBCE1B442443EBA0001872C0 /* Publisher+Inits.swift */,
 				FBCE1B462443EDA6001872C0 /* Subscriber.swift */,
 				FBCE1B4224420763001872C0 /* FunctionalProgramming.swift */,
@@ -213,7 +213,7 @@
 			files = (
 				FBCE1B452443EBA0001872C0 /* Publisher+Inits.swift in Sources */,
 				FBCE1B4324420763001872C0 /* FunctionalProgramming.swift in Sources */,
-				FBCE1B492443EDDA001872C0 /* Statics.swift in Sources */,
+				FBCE1B492443EDDA001872C0 /* Producer.swift in Sources */,
 				FBC21A99243BD52300EFD588 /* FreeCombine.swift in Sources */,
 				FBCE1B472443EDA6001872C0 /* Subscriber.swift in Sources */,
 			);

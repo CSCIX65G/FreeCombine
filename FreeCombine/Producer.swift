@@ -6,16 +6,16 @@
 //  Copyright © 2020 ComputeCycles, LLC. All rights reserved.
 //
 
-extension PubSub {
-    static func output<Output, OutputFailure: Error>(
-        _ subscriber: Subscribing<Output, OutputFailure, Never>,
-        _ next: @escaping (Demand) -> Supply<Output, OutputFailure>,
+extension Composer {
+    static func output(
+        _ subscriber: Subscriber<Output, OutputFailure, Never>,
+        _ producer: Producer<Output, OutputFailure>,
         _ demand: Demand
     ) -> Void {
         guard demand.intValue > 0 else { return }
         var newDemand = demand
         while newDemand.intValue > 0 {
-            let supply = next(newDemand)
+            let supply = producer.produce(newDemand)
             switch supply {
             case .none: return
             case .some(let value): newDemand = subscriber.input(value)
@@ -26,9 +26,11 @@ extension PubSub {
     }
     
     static func finished(
-        _ subscriber: Subscribing<Output, OutputFailure, OutputControl>,
+        _ subscriber: Subscriber<Output, OutputFailure, OutputControl>,
+        _ producer: Producer<Output, OutputFailure>,
         _ control: Control<OutputControl>
     ) -> Void {
+        producer.finish()
         subscriber.completion(Completion<OutputFailure>.finished)
     }
 }

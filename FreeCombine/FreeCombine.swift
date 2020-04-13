@@ -27,6 +27,11 @@ enum Supply<Value, Failure> {
     case done
 }
 
+struct Producer<Value, Failure> {
+    var produce: (Demand) -> Supply<Value, Failure>
+    var finish: () -> Void
+}
+
 enum Completion<Failure: Error> {
     case finished
     case error(Failure)
@@ -52,16 +57,17 @@ class Subscription<Value> {
     func cancel() { control(.finish) }
 }
 
-struct Subscribing<Input, Failure: Error, ControlValue> {
+struct Subscriber<Input, Failure: Error, ControlValue> {
     let input: (Input) -> Demand
     let completion: (Completion<Failure>) -> Void
 }
 
-struct PubSub<Input, InputControl, InputFailure: Error, Output, OutputControl, OutputFailure: Error> {
-    typealias DownstreamSubscriber = Subscribing<Output, OutputFailure, OutputControl>
-    typealias UpstreamSubscriber = Subscribing<Input, InputFailure, InputControl>
-    typealias UpstreamSubscription = Subscription<InputControl>
+struct Composer<Input, InputControl, InputFailure: Error, Output, OutputControl, OutputFailure: Error> {
+    typealias DownstreamSubscriber = Subscriber<Output, OutputFailure, OutputControl>
+    typealias UpstreamSubscriber = Subscriber<Input, InputFailure, InputControl>
+
     typealias DownstreamSubscription = Subscription<OutputControl>
+    typealias UpstreamSubscription = Subscription<InputControl>
 
     let liftSubscriber:  (DownstreamSubscriber) -> UpstreamSubscriber
     let subscribe: (DownstreamSubscriber, UpstreamSubscriber) -> UpstreamSubscription
@@ -69,6 +75,8 @@ struct PubSub<Input, InputControl, InputFailure: Error, Output, OutputControl, O
     
     func receive(subscriber: DownstreamSubscriber) -> DownstreamSubscription {
         subscriber |>
-            liftSubscriber >>> (subscriber |> curry(subscribe)) >>> (subscriber |> curry(lowerSubscription))
+            liftSubscriber
+            >>> (subscriber |> curry(subscribe))
+            >>> (subscriber |> curry(lowerSubscription))
     }
 }

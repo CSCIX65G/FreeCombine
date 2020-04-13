@@ -55,7 +55,7 @@ class FreeCombineTests: XCTestCase {
     func testSubscribing() throws {
         var count = 0
         var total = 0
-        let subscriber = Subscribing<Int, Never, Never>(
+        let subscriber = Subscriber<Int, Never, Never>(
             input: { print($0); count += 1; total += $0; return .none },
             completion: { _ in print("Completed") }
         )
@@ -72,7 +72,7 @@ class FreeCombineTests: XCTestCase {
     func testEarlyHalt() throws {
         var count = 0
         var total = 0
-        let subscriber = Subscribing<Int, Never, Never>(
+        let subscriber = Subscriber<Int, Never, Never>(
             input: { print($0); count += 1; total += $0; return .none },
             completion: { _ in print("Completed") }
         )
