@@ -11,7 +11,7 @@ enum Demand {
     case max(Int)
     case unlimited
     
-    var intValue: Int {
+    var quantity: Int {
         switch self {
         case .none: return 0
         case .max(let val): return val
@@ -36,23 +36,23 @@ enum Completion<Failure: Error> {
     case error(Failure)
 }
 
+struct Subscriber<Input, Failure: Error> {
+    let input: (Input) -> Demand
+    let completion: (Completion<Failure>) -> Void
+}
+
 enum Control<Value> {
     case finish
     case control(Value)
 }
 
-struct Subscriber<Input, Failure: Error, ControlValue> {
-    let input: (Input) -> Demand
-    let completion: (Completion<Failure>) -> Void
-}
-
-class Subscription<Value> {
+class Subscription<ControlValue> {
     let request: (Demand) -> Void
-    let control: (Control<Value>) -> Void
+    let control: (Control<ControlValue>) -> Void
     
     init(
         request: @escaping (Demand) -> Void,
-        control: @escaping (Control<Value>) -> Void
+        control: @escaping (Control<ControlValue>) -> Void
     ) {
         self.request = request
         self.control = control
@@ -62,24 +62,23 @@ class Subscription<Value> {
 }
 
 struct Composer<Input, InputControl, InputFailure: Error, Output, OutputControl, OutputFailure: Error> {
-    typealias DownstreamSubscriber = Subscriber<Output, OutputFailure, OutputControl>
-    typealias UpstreamSubscriber = Subscriber<Input, InputFailure, InputControl>
+    typealias DownstreamSubscriber = Subscriber<Output, OutputFailure>
+    typealias UpstreamSubscriber = Subscriber<Input, InputFailure>
 
     typealias DownstreamSubscription = Subscription<OutputControl>
     typealias UpstreamSubscription = Subscription<InputControl>
     
     enum Composition {
         case publisherSubscriber(
-            liftSubscriber: (DownstreamSubscriber) -> UpstreamSubscriber,
-            subscribe: (UpstreamSubscriber) -> UpstreamSubscription,
-            lowerSubscription: (UpstreamSubscription) -> DownstreamSubscription
+            (DownstreamSubscriber) -> UpstreamSubscriber,    // hoistSubscriber
+            (UpstreamSubscriber) -> UpstreamSubscription,    // subscribe
+            (UpstreamSubscription) -> DownstreamSubscription // lowerSubscription
         )
         case publisher(
-            subscribe: (DownstreamSubscriber) -> DownstreamSubscription
+            (DownstreamSubscriber) -> DownstreamSubscription // subscribe
         )
     }
     
-    var downstreamDemand: Demand = .none
     let composition: Composition
 }
 

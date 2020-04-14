@@ -12,11 +12,11 @@ extension Composer {
     ) -> Composer<Output, OutputControl, OutputFailure, T, OutputControl, OutputFailure> {
         .init(
             composition: .publisherSubscriber(
-                liftSubscriber: { (sub) in
+               { (sub) in
                     Subscriber(input: transform >>> sub.input, completion: sub.completion)
                 },
-                subscribe: receive,
-                lowerSubscription: identity
+                receive,
+                identity
             )
         )
     }

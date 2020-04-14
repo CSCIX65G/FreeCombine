@@ -12,7 +12,7 @@ extension Composer {
         receiveValue: @escaping ((Output) -> Void)
     ) -> Subscription<OutputControl> {
         let subscription = receive(
-            subscriber: Subscriber<Output, OutputFailure, OutputControl>(
+            subscriber: Subscriber<Output, OutputFailure>(
                 input: { input in receiveValue(input); return .unlimited },
                 completion: receiveCompletion
             )
@@ -26,7 +26,7 @@ extension Composer {
         on object: Root
     ) -> Subscription<OutputControl> {
         let subscription = receive(
-            subscriber: Subscriber<Output, OutputFailure, OutputControl>(
+            subscriber: Subscriber<Output, OutputFailure>(
                 input: { input in object[keyPath: keyPath] = input; return .unlimited },
                 completion: { _ in }
             )

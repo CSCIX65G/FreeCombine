@@ -8,14 +8,14 @@
 
 extension Composer {
     static func output(
-        _ subscriber: Subscriber<Output, OutputFailure, OutputControl>,
+        _ subscriber: Subscriber<Output, OutputFailure>,
         _ producer: Producer<Output, OutputFailure>
     ) -> (Demand) -> Void {
         var hasCompleted = false
         return { demand in
-            guard demand.intValue > 0 && !hasCompleted else { return }
+            guard demand.quantity > 0 && !hasCompleted else { return }
             var newDemand = demand
-            while newDemand.intValue > 0 {
+            while newDemand.quantity > 0 {
                 let supply = producer.produce(newDemand)
                 switch supply {
                 case .none: return
@@ -27,7 +27,7 @@ extension Composer {
     }
     
     static func finished(
-        _ subscriber: Subscriber<Output, OutputFailure, OutputControl>,
+        _ subscriber: Subscriber<Output, OutputFailure>,
         _ producer: Producer<Output, OutputFailure>,
         _ control: Control<OutputControl>
     ) -> Void {

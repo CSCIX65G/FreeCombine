@@ -12,7 +12,7 @@ typealias Publisher<Output, OutputFailure: Error> =
 extension Publisher {
     init(_ producer: Producer<Output, OutputFailure>) {
         composition = .publisher(
-            subscribe: { subscriber in
+            { subscriber in
                 Subscription<OutputControl> (
                     request: curry(Self.output)(recast(subscriber))(producer),
                     control: curry(Self.finished)(subscriber)(producer)
@@ -33,7 +33,7 @@ func PublishedSequence<S>(_ values: S) -> Publisher<S.Element, Never> where S: S
     return Publisher<S.Element, Never>(
         Producer(
             produce: { demand in
-                guard demand.intValue > 0 else { return .none }
+                guard demand.quantity > 0 else { return .none }
                 guard let value = slice.first else { return .done }
                 slice = slice.dropFirst()
                 return .some(value)
