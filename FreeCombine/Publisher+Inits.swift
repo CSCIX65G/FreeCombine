@@ -9,6 +9,19 @@
 typealias Publisher<Output, OutputFailure: Error> =
     Composer<Never, Never, Never, Output, Never, OutputFailure>
 
+extension Subscriber {
+    static func subscription<ControlValue>(
+        for producer: Producer<Input, Failure>
+    ) -> (Self) -> Subscription<ControlValue> {
+        { subscriber in
+            Subscription<ControlValue> (
+                request: Publisher<Input, Failure>.output(subscriber, producer),
+                control: recast(Publisher<Input, Failure>.finished(subscriber, recast(producer)))
+            )
+        }
+    }
+}
+
 extension Publisher {
     init(_ producer: Producer<Output, OutputFailure>) {
         composition = .publisher(
