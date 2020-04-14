@@ -83,6 +83,10 @@ struct Composer<Input, InputControl, InputFailure: Error, Output, OutputControl,
 }
 
 extension Composer {
+    init(_ composition: Composition) { self.composition = composition }
+}
+
+extension Composer {
     func receive(subscriber: DownstreamSubscriber) -> DownstreamSubscription {
         switch composition {
         case let .publisherSubscriber(liftSubscriber, subscribe, lowerSubscription):
