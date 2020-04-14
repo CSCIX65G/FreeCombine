@@ -71,7 +71,7 @@ struct Composer<Input, InputControl, InputFailure: Error, Output, OutputControl,
     enum Composition {
         case publisherSubscriber(
             (DownstreamSubscriber) -> UpstreamSubscriber,    // hoistSubscriber
-            (UpstreamSubscriber) -> UpstreamSubscription,    // subscribe
+            (UpstreamSubscriber)   -> UpstreamSubscription,  // subscribe
             (UpstreamSubscription) -> DownstreamSubscription // lowerSubscription
         )
         case publisher(
@@ -89,8 +89,8 @@ extension Composer {
 extension Composer {
     func receive(subscriber: DownstreamSubscriber) -> DownstreamSubscription {
         switch composition {
-        case let .publisherSubscriber(liftSubscriber, subscribe, lowerSubscription):
-            return subscriber |> liftSubscriber >>> subscribe >>> lowerSubscription
+        case let .publisherSubscriber(hoist, subscribe, lower):
+            return subscriber |> hoist >>> subscribe >>> lower
         case let .publisher(subscribe):
             return subscriber |> subscribe
         }

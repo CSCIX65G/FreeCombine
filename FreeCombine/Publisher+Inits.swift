@@ -12,12 +12,7 @@ typealias Publisher<Output, OutputFailure: Error> =
 extension Publisher {
     init(_ producer: Producer<Output, OutputFailure>) {
         composition = .publisher(
-            { subscriber in
-                Subscription<OutputControl> (
-                    request: curry(Self.output)(recast(subscriber))(producer),
-                    control: curry(Self.finished)(subscriber)(producer)
-                )
-            }
+            Subscriber<Output, OutputFailure>.subscription(for: producer)
         )
     }
 }

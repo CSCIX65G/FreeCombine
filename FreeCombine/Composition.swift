@@ -6,61 +6,29 @@
 //  Copyright © 2020 ComputeCycles, LLC. All rights reserved.
 //
 
-extension Subscription {
-    typealias RequestTransform =
-        ((Demand) -> Void) -> (Demand) -> Void
-    typealias ControlTransform<New> =
-        ((Control<ControlValue>) -> Void) -> (Control<New>) -> Void
-    
-    static func map<UpstreamControlValue>(
-        _ requestTransform: @escaping RequestTransform,
-        _ controlTransform: @escaping ControlTransform<UpstreamControlValue>
-    ) -> (Subscription<ControlValue>) -> Subscription<UpstreamControlValue> {
-        { subscription in
-            Subscription<UpstreamControlValue>(
-                request: subscription.request |> requestTransform,
-                control: subscription.control |> controlTransform
-            )
-        }
-    }
-}
-
-extension Subscriber {
-    static func map<UpstreamInput>(
-        _ transform: @escaping (Input) -> UpstreamInput,
-        _ demand: @escaping (Demand) -> Demand
-    ) -> (Self) -> Subscriber<UpstreamInput, Failure> {
-        { subscriber in
-            recast(Subscriber(
-                input: transform >>> recast(subscriber.input) >>> demand,
-                completion: subscriber.completion
-            ))
-        }
-    }
-
-//    static func mapError<UpstreamFailure>(
-//        _ transform: @escaping (Failure) -> UpstreamFailure
-//    ) -> (Self) -> Subscriber<Input, UpstreamFailure> {
-//        { subscriber in
-//            Subscriber(
-//                input: subscriber.input,
-//                completion: 
-//            )
-//        }
-//    }
-}
-
 extension Composer {
     func map<T>(
         _ transform: @escaping (Output) -> T
     ) -> Composer<Output, OutputControl, OutputFailure, T, OutputControl, OutputFailure> {
-        typealias C = Composer<Output, OutputControl, OutputFailure, T, OutputControl, OutputFailure>
-        return C.init(
-            composition: recast(C.Composition.publisherSubscriber(
+        .init(
+            composition: .publisherSubscriber(
                 recast(Subscriber<Output, OutputFailure>.map(transform, identity)),
                 receive,
                 recast >>> identity
-            ))
+            )
+        )
+    }
+
+    func mapError<T: Error>(
+        _ transform: @escaping (OutputFailure) -> T
+    ) -> Composer<Output, OutputControl, OutputFailure, Output, OutputControl, T> {
+        typealias C = Composer<Output, OutputControl, OutputFailure, Output, OutputControl, T>
+        return C(
+            composition: C.Composition.publisherSubscriber(
+                recast(Subscriber<Output, OutputFailure>.mapError(transform)),
+                receive,
+                recast >>> identity
+            )
         )
     }
 }

@@ -28,10 +28,11 @@ extension Composer {
     
     static func finished(
         _ subscriber: Subscriber<Output, OutputFailure>,
-        _ producer: Producer<Output, OutputFailure>,
-        _ control: Control<OutputControl>
-    ) -> Void {
-        producer.finish()
-        subscriber.completion(Completion<OutputFailure>.finished)
+        _ producer: Producer<Output, OutputFailure>
+    ) -> (Control<OutputControl>) -> Void {
+        { control in
+            producer.finish()
+            subscriber.completion(Completion<OutputFailure>.finished)
+        }
     }
 }
