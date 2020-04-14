@@ -37,6 +37,17 @@ extension Subscriber {
             ))
         }
     }
+
+//    static func mapError<UpstreamFailure>(
+//        _ transform: @escaping (Failure) -> UpstreamFailure
+//    ) -> (Self) -> Subscriber<Input, UpstreamFailure> {
+//        { subscriber in
+//            Subscriber(
+//                input: subscriber.input,
+//                completion: 
+//            )
+//        }
+//    }
 }
 
 extension Composer {
