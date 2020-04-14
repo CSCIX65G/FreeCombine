@@ -8,13 +8,15 @@
 
 // Production
 extension Subscriber {
-    func subscription<ControlValue>(
+    static func subscription<ControlValue>(
         for producer: Producer<Input, Failure>
-    ) -> Subscription<ControlValue> {
-        Subscription<ControlValue> (
-            request: Publisher<Input, Failure>.output(self, producer),
-            control: recast(Publisher<Input, Failure>.finished(self, producer))
-        )
+    ) -> (Self) -> Subscription<ControlValue> {
+        { subscriber in
+            Subscription<ControlValue> (
+                request: Publisher<Input, Failure>.output(subscriber, producer),
+                control: recast(Publisher<Input, Failure>.finished(subscriber, recast(producer)))
+            )
+        }
     }
 }
 
