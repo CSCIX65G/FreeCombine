@@ -10,10 +10,14 @@ extension Composer {
     func map<T>(
         _ transform: @escaping (Output) -> T
     ) -> Composer<Output, OutputControl, OutputFailure, T, OutputControl, OutputFailure> {
-        Composer<Output, OutputControl, OutputFailure, T, OutputControl, OutputFailure>(
-            liftSubscriber: { (sub) in Subscriber(input: transform >>> sub.input, completion: sub.completion) },
-            subscribe: { (_, sub) -> Subscription<OutputControl> in self.receive(subscriber: sub) },
-            lowerSubscription: { (_, subscription) in recast(subscription) }
+        .init(
+            composition: .publisherSubscriber(
+                liftSubscriber: { (sub) in
+                    Subscriber(input: transform >>> sub.input, completion: sub.completion)
+                },
+                subscribe: receive,
+                lowerSubscription: identity
+            )
         )
     }
 }
@@ -22,15 +26,17 @@ extension Composer {
 //    func flatMap<T>(
 //        _ transform: @escaping (Output) -> Publisher<T, OutputFailure>
 //    ) -> Composer<Output, OutputControl, OutputFailure, T, OutputControl, OutputFailure> {
-//        Composer<Output, OutputControl, OutputFailure, T, OutputControl, OutputFailure>(
-//            liftSubscriber: { (sub) in
-//                Subscriber(
-//                    input: transform >>> sub.input,
-//                    completion: sub.completion
-//                )
-//            },
-//            subscribe: { (_, sub) -> Subscription<OutputControl> in self.receive(subscriber: sub) },
-//            lowerSubscription: { (_, subscription) in recast(subscription) }
+//        .init(
+//            composition: .publisherSubscriber(
+//                liftSubscriber: { (sub) in
+//                    Subscriber(
+//                        input: transform >>> sub.input,
+//                        completion: sub.completion
+//                    )
+//                },
+//                subscribe: receive,
+//                lowerSubscription: identity
+//            )
 //        )
 //    }
 //}

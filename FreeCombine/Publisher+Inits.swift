@@ -9,30 +9,22 @@
 typealias Publisher<Output, OutputFailure: Error> =
     Composer<Never, Never, Never, Output, Never, OutputFailure>
 
-let neverSubscriber = Subscriber<Never, Never, Never>(input: { _ in .none }, completion: void)
-let voidSubscription = Subscription<Never>(request: void, control: void)
-
 extension Publisher {
     init(_ producer: Producer<Output, OutputFailure>) {
-        self.liftSubscriber = {_ in recast(neverSubscriber) }
-        self.subscribe = {_, _ in recast(voidSubscription) }
-        self.lowerSubscription = { subscriber, _ in
-            Subscription<OutputControl> (
-                request: curry(Self.output)(recast(subscriber))(producer),
-                control: curry(Self.finished)(subscriber)(producer)
-            )
-        }
+        composition = .publisher(
+            subscribe: { subscriber in
+                Subscription<OutputControl> (
+                    request: curry(Self.output)(recast(subscriber))(producer),
+                    control: curry(Self.finished)(subscriber)(producer)
+                )
+            }
+        )
     }
 }
 
 // Empty
 func Empty<T>(_ t: T.Type) -> Publisher<T, Never> {
-    Publisher<T, Never>(
-        Producer(
-            produce: { _ in .done },
-            finish: { }
-        )
-    )
+    Publisher<T, Never>(Producer(produce: { _ in .done }, finish: { }))
 }
 
 // PublishedSequence

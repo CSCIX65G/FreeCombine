@@ -41,6 +41,11 @@ enum Control<Value> {
     case control(Value)
 }
 
+struct Subscriber<Input, Failure: Error, ControlValue> {
+    let input: (Input) -> Demand
+    let completion: (Completion<Failure>) -> Void
+}
+
 class Subscription<Value> {
     let request: (Demand) -> Void
     let control: (Control<Value>) -> Void
@@ -56,24 +61,35 @@ class Subscription<Value> {
     func cancel() { control(.finish) }
 }
 
-struct Subscriber<Input, Failure: Error, ControlValue> {
-    let input: (Input) -> Demand
-    let completion: (Completion<Failure>) -> Void
-}
-
 struct Composer<Input, InputControl, InputFailure: Error, Output, OutputControl, OutputFailure: Error> {
     typealias DownstreamSubscriber = Subscriber<Output, OutputFailure, OutputControl>
     typealias UpstreamSubscriber = Subscriber<Input, InputFailure, InputControl>
 
     typealias DownstreamSubscription = Subscription<OutputControl>
     typealias UpstreamSubscription = Subscription<InputControl>
-
-    let liftSubscriber:  (DownstreamSubscriber) -> UpstreamSubscriber
-    let subscribe: (DownstreamSubscriber, UpstreamSubscriber) -> UpstreamSubscription
-    let lowerSubscription: (DownstreamSubscriber, UpstreamSubscription) -> DownstreamSubscription
     
+    enum Composition {
+        case publisherSubscriber(
+            liftSubscriber: (DownstreamSubscriber) -> UpstreamSubscriber,
+            subscribe: (UpstreamSubscriber) -> UpstreamSubscription,
+            lowerSubscription: (UpstreamSubscription) -> DownstreamSubscription
+        )
+        case publisher(
+            subscribe: (DownstreamSubscriber) -> DownstreamSubscription
+        )
+    }
+    
+    var downstreamDemand: Demand = .none
+    let composition: Composition
+}
+
+extension Composer {
     func receive(subscriber: DownstreamSubscriber) -> DownstreamSubscription {
-        subscriber |>
-            liftSubscriber >>> (subscriber |> curry(subscribe)) >>> (subscriber |> curry(lowerSubscription))
+        switch composition {
+        case let .publisherSubscriber(liftSubscriber, subscribe, lowerSubscription):
+            return subscriber |> liftSubscriber >>> subscribe >>> lowerSubscription
+        case let .publisher(subscribe):
+            return subscriber |> subscribe
+        }
     }
 }
