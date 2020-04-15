@@ -49,6 +49,7 @@
 		FBCE1B52244674C6001872C0 /* Subscriber+Transforms.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Subscriber+Transforms.swift"; sourceTree = "<group>"; };
 		FBCE1B5424467561001872C0 /* Subscription+Transforms.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Subscription+Transforms.swift"; sourceTree = "<group>"; };
 		FBCE1B5624472A05001872C0 /* Publication.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Publication.swift; sourceTree = "<group>"; };
+		FBCE1B7E24474160001872C0 /* FreeCombine.playground */ = {isa = PBXFileReference; lastKnownFileType = file.playground; path = FreeCombine.playground; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.swift; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -73,6 +74,7 @@
 		FBC21A74243BD4EA00EFD588 = {
 			isa = PBXGroup;
 			children = (
+				FBCE1B7E24474160001872C0 /* FreeCombine.playground */,
 				FBC21A80243BD4EA00EFD588 /* FreeCombine */,
 				FBC21A8B243BD4EA00EFD588 /* FreeCombineTests */,
 				FBC21A7F243BD4EA00EFD588 /* Products */,

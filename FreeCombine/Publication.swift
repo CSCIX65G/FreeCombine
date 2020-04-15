@@ -6,7 +6,7 @@
 //  Copyright © 2020 ComputeCycles, LLC. All rights reserved.
 //
 
-struct Publication<Output, ControlValue, Failure: Error> {
+public struct Publication<Output, ControlValue, Failure: Error> {
     // Types for creating a Subscription from a Subscriber
     typealias RequestGenerator = (Subscriber<Output, Failure>) -> (Demand) -> Void
     typealias ControlGenerator = (Subscriber<Output, Failure>) -> (Control<ControlValue>) -> Void

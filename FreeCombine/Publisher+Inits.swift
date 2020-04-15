@@ -6,15 +6,15 @@
 //  Copyright © 2020 ComputeCycles, LLC. All rights reserved.
 //
 
-typealias UnfailingPublication<T> = Publisher<T, Never, Never, T, Never, Never>
+public typealias UnfailingPublication<T> = Publisher<T, Never, Never, T, Never, Never>
 
 // Empty
-func Empty<T>(_ t: T.Type) -> UnfailingPublication<T> {
+public func Empty<T>(_ t: T.Type) -> UnfailingPublication<T> {
     Publication(Producer(produce: { _ in .done }, finish: { })).publisher
 }
 
 // PublishedSequence
-func PublishedSequence<S>(_ values: S) -> UnfailingPublication<S.Element>
+public func PublishedSequence<S>(_ values: S) -> UnfailingPublication<S.Element>
     where S: Sequence {
     var slice = ArraySlice(values)
     return Publication(
@@ -31,6 +31,6 @@ func PublishedSequence<S>(_ values: S) -> UnfailingPublication<S.Element>
 }
 
 // Just
-func Just<T>(_ value: T) -> UnfailingPublication<T> {
+public func Just<T>(_ value: T) -> UnfailingPublication<T> {
     PublishedSequence([value])
 }

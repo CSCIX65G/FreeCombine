@@ -6,7 +6,7 @@
 //  Copyright © 2020 ComputeCycles, LLC. All rights reserved.
 //
 
-enum Demand {
+public enum Demand {
     case none
     case max(Int)
     case unlimited
@@ -20,23 +20,23 @@ enum Demand {
     }
 }
 
-enum Supply<Value, Failure> {
+public enum Supply<Value, Failure> {
     case none
     case some(Value)
     case done
 }
 
-struct Producer<Value, Failure> {
-    var produce: (Demand) -> Supply<Value, Failure>
-    var finish: () -> Void
+public struct Producer<Value, Failure> {
+    let produce: (Demand) -> Supply<Value, Failure>
+    let finish: () -> Void
 }
 
-enum Completion<Failure: Error> {
+public enum Completion<Failure: Error> {
     case finished
     case error(Failure)
 }
 
-struct Subscriber<Input, Failure: Error> {
+public struct Subscriber<Input, Failure: Error> {
     let input: (Input) -> Demand
     let completion: (Completion<Failure>) -> Void
 }
@@ -46,7 +46,7 @@ enum Control<Value> {
     case control(Value)
 }
 
-class Subscription<ControlValue> {
+public class Subscription<ControlValue> {
     let request: (Demand) -> Void
     let control: (Control<ControlValue>) -> Void
     
@@ -57,23 +57,25 @@ class Subscription<ControlValue> {
         self.request = request
         self.control = control
     }
-    
+}
+
+public extension Subscription {
     func cancel() { control(.finish) }
 }
 
-struct Publisher<Input, InputControl, InputFailure: Error, Output, OutputControl, OutputFailure: Error> {
-    typealias DownstreamSubscriber = Subscriber<Output, OutputFailure>
-    typealias UpstreamSubscriber = Subscriber<Input, InputFailure>
+public struct Publisher<Input, InputControl, InputFailure: Error, Output, OutputControl, OutputFailure: Error> {
+    public typealias DownstreamSubscriber = Subscriber<Output, OutputFailure>
+    public typealias UpstreamSubscriber = Subscriber<Input, InputFailure>
 
-    typealias DownstreamSubscription = Subscription<OutputControl>
-    typealias UpstreamSubscription = Subscription<InputControl>
+    public typealias DownstreamSubscription = Subscription<OutputControl>
+    public typealias UpstreamSubscription = Subscription<InputControl>
 
     let hoist:   (DownstreamSubscriber) -> UpstreamSubscriber     // hoist subscriber
     let convert: (UpstreamSubscriber)   -> UpstreamSubscription   // convert
     let lower:   (UpstreamSubscription) -> DownstreamSubscription // lower subscription
 }
 
-extension Publisher {
+public extension Publisher {
     func receive(subscriber: DownstreamSubscriber) -> DownstreamSubscription {
         subscriber |> hoist >>> convert >>> lower
     }
