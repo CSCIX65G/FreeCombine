@@ -7,6 +7,7 @@
 //
 
 struct Publication<Output, ControlValue, Failure: Error> {
+    // Types which can create a Subscription from a Subscriber
     typealias RequestGenerator = (Subscriber<Output, Failure>) -> (Demand) -> Void
     typealias ControlGenerator = (Subscriber<Output, Failure>) -> (Control<ControlValue>) -> Void
     
@@ -18,7 +19,7 @@ struct Publication<Output, ControlValue, Failure: Error> {
         _ request: RequestGenerator? = nil,
         _ control: ControlGenerator? = nil
     ) {
-        self.request = request ?? Self.output(producer)
-        self.control = control ?? Self.finished(producer)
+        self.request = request ?? Self.output(producer)    // synchronously connect to output
+        self.control = control ?? Self.finished(producer)  // ignore control messages only handle finish
     }
 }
