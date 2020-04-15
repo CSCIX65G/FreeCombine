@@ -9,17 +9,26 @@
 // Maps
 extension Subscriber {
     static func map<UpstreamInput>(
-        _ transform: @escaping (Input) -> UpstreamInput,
-        _ demand: @escaping (Demand) -> Demand
+        _ transform: @escaping (Input) -> UpstreamInput
     ) -> (Self) -> Subscriber<UpstreamInput, Failure> {
         { subscriber in
             recast(Subscriber(
-                input: transform >>> recast(subscriber.input) >>> demand,
+                input: transform >>> recast(subscriber.input),
                 completion: subscriber.completion
             ))
         }
     }
 
+    static func contraMap(
+        _ transform: @escaping (Demand) -> Demand
+    ) -> (Self) -> Subscriber<Input, Failure> {
+        { subscriber in
+            recast(Subscriber(
+                input: subscriber.input >>> transform,
+                completion: subscriber.completion
+            ))
+        }
+    }
     static func mapError<UpstreamFailure: Error>(
         _ transform: @escaping (Failure) -> UpstreamFailure
     ) -> (Self) -> Subscriber<Input, UpstreamFailure> {

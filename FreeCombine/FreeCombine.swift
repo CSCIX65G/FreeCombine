@@ -78,10 +78,7 @@ struct Publisher<Output, ControlValue, Failure: Error> {
     }
 
     func receive(subscriber: Subscriber<Output, Failure>) -> Subscription<ControlValue> {
-        Subscription<ControlValue>(
-            request: subscriber |> request,
-            control: subscriber |> control
-        )
+        .init(request: subscriber |> request, control: subscriber |> control)
     }
 }
 
