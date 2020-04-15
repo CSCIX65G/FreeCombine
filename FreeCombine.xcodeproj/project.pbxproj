@@ -93,9 +93,9 @@
 			children = (
 				FBC21A82243BD4EA00EFD588 /* Info.plist */,
 				FBC21A98243BD52300EFD588 /* FreeCombine.swift */,
+				FBCE1B442443EBA0001872C0 /* Publisher+Inits.swift */,
 				FBCE1B5624472A05001872C0 /* Publisher+TopLevel.swift */,
 				FBCE1B482443EDDA001872C0 /* Publisher+Statics.swift */,
-				FBCE1B442443EBA0001872C0 /* Publisher+Inits.swift */,
 				FBCE1B462443EDA6001872C0 /* Publisher+Unlimited.swift */,
 				FBCE1B4A2444D7EC001872C0 /* Publisher+Map.swift */,
 				FBCE1B52244674C6001872C0 /* Subscriber+Transforms.swift */,
