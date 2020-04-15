@@ -41,7 +41,7 @@ public struct Subscriber<Input, Failure: Error> {
     let completion: (Completion<Failure>) -> Void
 }
 
-enum Control<Value> {
+public enum Control<Value> {
     case finish
     case control(Value)
 }

@@ -10,14 +10,14 @@ public typealias UnfailingPublication<T> = Publisher<T, Never, Never, T, Never, 
 
 // Empty
 public func Empty<T>(_ t: T.Type) -> UnfailingPublication<T> {
-    Publication(Producer(produce: { _ in .done }, finish: { })).publisher
+    UnfailingPublication<T>(Producer(produce: { _ in .done }, finish: { }))
 }
 
 // PublishedSequence
 public func PublishedSequence<S>(_ values: S) -> UnfailingPublication<S.Element>
     where S: Sequence {
     var slice = ArraySlice(values)
-    return Publication(
+    return UnfailingPublication<S.Element>(
         Producer(
             produce: { demand in
                 guard demand.quantity > 0 else { return .none }
@@ -27,7 +27,7 @@ public func PublishedSequence<S>(_ values: S) -> UnfailingPublication<S.Element>
             },
             finish: { slice = ArraySlice() }
         )
-    ).publisher
+    )
 }
 
 // Just

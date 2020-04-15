@@ -6,16 +6,16 @@
 //  Copyright © 2020 ComputeCycles, LLC. All rights reserved.
 //
 
-extension Publication {
+extension Publisher {
     static func finished(
-        _ producer: Producer<Output, Failure>
-    ) -> (Subscriber<Output, Failure>) -> (Control<ControlValue>) -> Void {
+        _ producer: Producer<Output, OutputFailure>
+    ) -> (Subscriber<Output, OutputFailure>) -> (Control<OutputControl>) -> Void {
         { subscriber in
             { control in
                 switch control {
                 case .finish:
                     producer.finish()
-                    subscriber.completion(Completion<Failure>.finished)
+                    subscriber.completion(Completion<OutputFailure>.finished)
                 default: ()
                 }
             }
@@ -23,8 +23,8 @@ extension Publication {
     }
 
     static func output(
-        _ producer: Producer<Output, Failure>
-    ) -> (Subscriber<Output, Failure>) -> (Demand) -> Void {
+        _ producer: Producer<Output, OutputFailure>
+    ) -> (Subscriber<Output, OutputFailure>) -> (Demand) -> Void {
         { subscriber in
             var hasCompleted = false
             return { demand in

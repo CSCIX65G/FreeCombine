@@ -16,7 +16,7 @@
 //}
 
 // Maps
-extension Publisher {
+public extension Publisher {
     typealias MapPublisher<T> =
         Publisher<Output, OutputControl, OutputFailure, T, OutputControl, OutputFailure>
     
