@@ -6,16 +6,43 @@
 //  Copyright © 2020 ComputeCycles, LLC. All rights reserved.
 //
 
+struct Publication<Output, ControlValue, Failure: Error> {
+    typealias RequestGenerator = (Subscriber<Output, Failure>) -> (Demand) -> Void
+    typealias ControlGenerator = (Subscriber<Output, Failure>) -> (Control<ControlValue>) -> Void
+    
+    var request: RequestGenerator
+    var control: ControlGenerator
+    
+    init(
+        _ producer: Producer<Output, Failure>,
+        _ request: RequestGenerator? = nil,
+        _ control: ControlGenerator? = nil
+    ) {
+        self.request = request ?? Self.output(producer)
+        self.control = control ?? Self.finished(producer)
+    }
+
+    func receive(subscriber: Subscriber<Output, Failure>) -> Subscription<ControlValue> {
+        .init(request: subscriber |> request, control: subscriber |> control)
+    }
+}
+
+extension Publication {
+    var publisher: Publisher<Output, ControlValue, Failure,Output, ControlValue, Failure> {
+        Publisher(hoist: identity, convert: receive, lower: identity)
+    }
+}
+
 // Empty
-func Empty<T>(_ t: T.Type) -> Publication<T, Never, Never, T, Never, Never> {
-    Publisher(Producer(produce: { _ in .done }, finish: { })).publication
+func Empty<T>(_ t: T.Type) -> Publisher<T, Never, Never, T, Never, Never> {
+    Publication(Producer(produce: { _ in .done }, finish: { })).publisher
 }
 
 // PublishedSequence
-func PublishedSequence<S>(_ values: S) -> Publication<S.Element, Never, Never, S.Element, Never, Never>
+func PublishedSequence<S>(_ values: S) -> Publisher<S.Element, Never, Never, S.Element, Never, Never>
     where S: Sequence {
     var slice = ArraySlice(values)
-    return Publisher(
+    return Publication(
         Producer(
             produce: { demand in
                 guard demand.quantity > 0 else { return .none }
@@ -25,10 +52,10 @@ func PublishedSequence<S>(_ values: S) -> Publication<S.Element, Never, Never, S
             },
             finish: { slice = ArraySlice() }
         )
-    ).publication
+    ).publisher
 }
 
 // Just
-func Just<Output>(_ value: Output) -> Publication<Output, Never, Never, Output, Never, Never> {
+func Just<Output>(_ value: Output) -> Publisher<Output, Never, Never, Output, Never, Never> {
     PublishedSequence([value])
 }

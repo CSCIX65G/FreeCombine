@@ -16,33 +16,33 @@
 //}
 
 // Maps
-extension Publication {
+extension Publisher {
     func map<T>(
         _ transform: @escaping (Output) -> T
-    ) -> Publication<Output, OutputControl, OutputFailure, T, OutputControl, OutputFailure> {
-        Publication<Output, OutputControl, OutputFailure, T, OutputControl, OutputFailure>(
+    ) -> Publisher<Output, OutputControl, OutputFailure, T, OutputControl, OutputFailure> {
+        Publisher<Output, OutputControl, OutputFailure, T, OutputControl, OutputFailure>(
             hoist: recast(Subscriber<Output, OutputFailure>.map(transform)),
-            subscribe: receive,
+            convert: receive,
             lower: identity
         )
     }
 
     func contraMap(
         _ transform: @escaping (Demand) -> Demand
-    ) -> Publication<Output, OutputControl, OutputFailure, Output, OutputControl, OutputFailure> {
-        Publication<Output, OutputControl, OutputFailure, Output, OutputControl, OutputFailure>(
+    ) -> Publisher<Output, OutputControl, OutputFailure, Output, OutputControl, OutputFailure> {
+        Publisher<Output, OutputControl, OutputFailure, Output, OutputControl, OutputFailure>(
             hoist: Subscriber<Output, OutputFailure>.contraMap(transform),
-            subscribe: receive,
+            convert: receive,
             lower: identity
         )
     }
 
     func mapError<T: Error>(
         _ transform: @escaping (OutputFailure) -> T
-    ) -> Publication<Output, OutputControl, OutputFailure, Output, OutputControl, T> {
-        Publication<Output, OutputControl, OutputFailure, Output, OutputControl, T>(
+    ) -> Publisher<Output, OutputControl, OutputFailure, Output, OutputControl, T> {
+        Publisher<Output, OutputControl, OutputFailure, Output, OutputControl, T>(
             hoist: recast(Subscriber<Output, OutputFailure>.mapError(transform)),
-            subscribe: receive,
+            convert: receive,
             lower: identity
         )
     }

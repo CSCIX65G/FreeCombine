@@ -6,7 +6,7 @@
 //  Copyright © 2020 ComputeCycles, LLC. All rights reserved.
 //
 
-extension Publisher {
+extension Publication {
     static func finished(
         _ producer: Producer<Output, Failure>
     ) -> (Subscriber<Output, Failure>) -> (Control<ControlValue>) -> Void {

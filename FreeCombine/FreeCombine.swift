@@ -61,47 +61,20 @@ class Subscription<ControlValue> {
     func cancel() { control(.finish) }
 }
 
-struct Publisher<Output, ControlValue, Failure: Error> {
-    typealias RequestGenerator = (Subscriber<Output, Failure>) -> (Demand) -> Void
-    typealias ControlGenerator = (Subscriber<Output, Failure>) -> (Control<ControlValue>) -> Void
-    
-    var request: RequestGenerator
-    var control: ControlGenerator
-    
-    init(
-        _ producer: Producer<Output, Failure>,
-        _ request: RequestGenerator? = nil,
-        _ control: ControlGenerator? = nil
-    ) {
-        self.request = request ?? Self.output(producer)
-        self.control = control ?? Self.finished(producer)
-    }
-
-    func receive(subscriber: Subscriber<Output, Failure>) -> Subscription<ControlValue> {
-        .init(request: subscriber |> request, control: subscriber |> control)
-    }
-}
-
-struct Publication<Input, InputControl, InputFailure: Error, Output, OutputControl, OutputFailure: Error> {
+struct Publisher<Input, InputControl, InputFailure: Error, Output, OutputControl, OutputFailure: Error> {
     typealias DownstreamSubscriber = Subscriber<Output, OutputFailure>
     typealias UpstreamSubscriber = Subscriber<Input, InputFailure>
 
     typealias DownstreamSubscription = Subscription<OutputControl>
     typealias UpstreamSubscription = Subscription<InputControl>
 
-    let hoist:     (DownstreamSubscriber) -> UpstreamSubscriber     // hoist subscriber
-    let subscribe: (UpstreamSubscriber)   -> UpstreamSubscription   // subscribe
-    let lower:     (UpstreamSubscription) -> DownstreamSubscription // lower subscription
-}
-
-extension Publication {
-    func receive(subscriber: DownstreamSubscriber) -> DownstreamSubscription {
-        subscriber |> hoist >>> subscribe >>> lower
-    }
+    let hoist:   (DownstreamSubscriber) -> UpstreamSubscriber     // hoist subscriber
+    let convert: (UpstreamSubscriber)   -> UpstreamSubscription   // convert
+    let lower:   (UpstreamSubscription) -> DownstreamSubscription // lower subscription
 }
 
 extension Publisher {
-    var publication: Publication<Output, ControlValue, Failure,Output, ControlValue, Failure> {
-        Publication(hoist: identity, subscribe: receive, lower: identity)
+    func receive(subscriber: DownstreamSubscriber) -> DownstreamSubscription {
+        subscriber |> hoist >>> convert >>> lower
     }
 }
