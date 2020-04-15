@@ -6,7 +6,7 @@
 //  Copyright © 2020 ComputeCycles, LLC. All rights reserved.
 //
 
-extension Composer {
+extension Publication {
     func sink(
         receiveCompletion: @escaping ((Completion<OutputFailure>) -> Void) = { _ in },
         receiveValue: @escaping ((Output) -> Void)

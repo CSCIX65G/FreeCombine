@@ -13,8 +13,8 @@ extension Subscriber {
     ) -> (Self) -> Subscription<ControlValue> {
         { subscriber in
             Subscription<ControlValue> (
-                request: Publisher<Input, Failure>.output(subscriber, producer),
-                control: recast(Publisher<Input, Failure>.finished(subscriber, recast(producer)))
+                request: Publisher<Input, ControlValue, Failure>.output(subscriber, producer),
+                control: recast(Publisher<Input, ControlValue, Failure>.finished(subscriber, recast(producer)))
             )
         }
     }

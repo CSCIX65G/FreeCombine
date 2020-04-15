@@ -6,10 +6,10 @@
 //  Copyright © 2020 ComputeCycles, LLC. All rights reserved.
 //
 
-extension Composer {
+extension Publisher {
     static func output(
-        _ subscriber: Subscriber<Output, OutputFailure>,
-        _ producer: Producer<Output, OutputFailure>
+        _ subscriber: Subscriber<Output, Failure>,
+        _ producer: Producer<Output, Failure>
     ) -> (Demand) -> Void {
         var hasCompleted = false
         return { demand in
@@ -27,12 +27,12 @@ extension Composer {
     }
     
     static func finished(
-        _ subscriber: Subscriber<Output, OutputFailure>,
-        _ producer: Producer<Output, OutputFailure>
-    ) -> (Control<OutputControl>) -> Void {
+        _ subscriber: Subscriber<Output, Failure>,
+        _ producer: Producer<Output, Failure>
+    ) -> (Control<ControlValue>) -> Void {
         { control in
             producer.finish()
-            subscriber.completion(Completion<OutputFailure>.finished)
+            subscriber.completion(Completion<Failure>.finished)
         }
     }
 }

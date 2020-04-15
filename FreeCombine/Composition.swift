@@ -6,29 +6,24 @@
 //  Copyright © 2020 ComputeCycles, LLC. All rights reserved.
 //
 
-extension Composer {
+extension Publication {
     func map<T>(
         _ transform: @escaping (Output) -> T
-    ) -> Composer<Output, OutputControl, OutputFailure, T, OutputControl, OutputFailure> {
-        .init(
-            composition: .publisherSubscriber(
-                recast(Subscriber<Output, OutputFailure>.map(transform, identity)),
-                receive,
-                recast >>> identity
-            )
+    ) -> Publication<Output, OutputControl, OutputFailure, T, OutputControl, OutputFailure> {
+        Publication<Output, OutputControl, OutputFailure, T, OutputControl, OutputFailure>(
+            hoist: recast(Subscriber<Output, OutputFailure>.map(transform, identity)),
+            subscribe: receive,
+            lower: identity
         )
     }
 
     func mapError<T: Error>(
         _ transform: @escaping (OutputFailure) -> T
-    ) -> Composer<Output, OutputControl, OutputFailure, Output, OutputControl, T> {
-        typealias C = Composer<Output, OutputControl, OutputFailure, Output, OutputControl, T>
-        return C(
-            composition: C.Composition.publisherSubscriber(
-                recast(Subscriber<Output, OutputFailure>.mapError(transform)),
-                receive,
-                recast >>> identity
-            )
+    ) -> Publication<Output, OutputControl, OutputFailure, Output, OutputControl, T> {
+        Publication<Output, OutputControl, OutputFailure, Output, OutputControl, T>(
+            hoist: recast(Subscriber<Output, OutputFailure>.mapError(transform)),
+            subscribe: receive,
+            lower: identity
         )
     }
 }

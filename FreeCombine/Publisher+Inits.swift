@@ -6,26 +6,16 @@
 //  Copyright © 2020 ComputeCycles, LLC. All rights reserved.
 //
 
-typealias Publisher<Output, OutputFailure: Error> =
-    Composer<Never, Never, Never, Output, Never, OutputFailure>
-
-extension Publisher {
-    init(_ producer: Producer<Output, OutputFailure>) {
-        composition = .publisher(
-            Subscriber<Output, OutputFailure>.subscription(for: producer)
-        )
-    }
-}
-
 // Empty
-func Empty<T>(_ t: T.Type) -> Publisher<T, Never> {
-    Publisher<T, Never>(Producer(produce: { _ in .done }, finish: { }))
+func Empty<T>(_ t: T.Type) -> Publication<T, Never, Never, T, Never, Never> {
+    Publisher(Producer(produce: { _ in .done }, finish: { })).composable
 }
 
 // PublishedSequence
-func PublishedSequence<S>(_ values: S) -> Publisher<S.Element, Never> where S: Sequence {
+func PublishedSequence<S>(_ values: S) -> Publication<S.Element, Never, Never, S.Element, Never, Never>
+    where S: Sequence {
     var slice = ArraySlice(values)
-    return Publisher<S.Element, Never>(
+    return Publisher(
         Producer(
             produce: { demand in
                 guard demand.quantity > 0 else { return .none }
@@ -35,10 +25,10 @@ func PublishedSequence<S>(_ values: S) -> Publisher<S.Element, Never> where S: S
             },
             finish: { slice = ArraySlice() }
         )
-    )
+    ).composable
 }
 
 // Just
-func Just<Output>(_ value: Output) -> Publisher<Output, Never> {
+func Just<Output>(_ value: Output) -> Publication<Output, Never, Never, Output, Never, Never> {
     PublishedSequence([value])
 }

@@ -61,38 +61,42 @@ class Subscription<ControlValue> {
     func cancel() { control(.finish) }
 }
 
-struct Composer<Input, InputControl, InputFailure: Error, Output, OutputControl, OutputFailure: Error> {
+struct Publisher<Output, ControlValue, Failure: Error> {
+    let subscribe: (Subscriber<Output, Failure>) -> Subscription<ControlValue>
+    
+    init(_ producer: Producer<Output, Failure>) {
+        subscribe = Subscriber<Output, Failure>.subscription(for: producer)
+    }
+
+    func receive(subscriber: Subscriber<Output, Failure>) -> Subscription<ControlValue> {
+        subscriber |> subscribe
+    }
+}
+
+struct Publication<Input, InputControl, InputFailure: Error, Output, OutputControl, OutputFailure: Error> {
     typealias DownstreamSubscriber = Subscriber<Output, OutputFailure>
     typealias UpstreamSubscriber = Subscriber<Input, InputFailure>
 
     typealias DownstreamSubscription = Subscription<OutputControl>
     typealias UpstreamSubscription = Subscription<InputControl>
-    
-    enum Composition {
-        case publisherSubscriber(
-            (DownstreamSubscriber) -> UpstreamSubscriber,    // hoistSubscriber
-            (UpstreamSubscriber)   -> UpstreamSubscription,  // subscribe
-            (UpstreamSubscription) -> DownstreamSubscription // lowerSubscription
-        )
-        case publisher(
-            (DownstreamSubscriber) -> DownstreamSubscription // subscribe
-        )
-    }
-    
-    let composition: Composition
+
+    let hoist:     (DownstreamSubscriber) -> UpstreamSubscriber     // hoist subscriber
+    let subscribe: (UpstreamSubscriber)   -> UpstreamSubscription   // subscribe
+    let lower:     (UpstreamSubscription) -> DownstreamSubscription // lower subscription
 }
 
-extension Composer {
-    init(_ composition: Composition) { self.composition = composition }
-}
-
-extension Composer {
+extension Publication {
     func receive(subscriber: DownstreamSubscriber) -> DownstreamSubscription {
-        switch composition {
-        case let .publisherSubscriber(hoist, subscribe, lower):
-            return subscriber |> hoist >>> subscribe >>> lower
-        case let .publisher(subscribe):
-            return subscriber |> subscribe
-        }
+        subscriber |> hoist >>> subscribe >>> lower
+    }
+}
+
+extension Publisher {
+    var composable: Publication<Output, ControlValue, Failure,Output, ControlValue, Failure> {
+        Publication(
+            hoist: identity,
+            subscribe: receive,
+            lower: identity
+        )
     }
 }
