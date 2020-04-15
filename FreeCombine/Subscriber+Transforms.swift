@@ -6,20 +6,6 @@
 //  Copyright © 2020 ComputeCycles, LLC. All rights reserved.
 //
 
-// Production
-extension Subscriber {
-    static func subscription<ControlValue>(
-        for producer: Producer<Input, Failure>
-    ) -> (Self) -> Subscription<ControlValue> {
-        { subscriber in
-            Subscription<ControlValue> (
-                request: Publisher<Input, ControlValue, Failure>.output(subscriber, producer),
-                control: recast(Publisher<Input, ControlValue, Failure>.finished(subscriber, recast(producer)))
-            )
-        }
-    }
-}
-
 // Maps
 extension Subscriber {
     static func map<UpstreamInput>(

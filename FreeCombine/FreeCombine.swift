@@ -62,14 +62,26 @@ class Subscription<ControlValue> {
 }
 
 struct Publisher<Output, ControlValue, Failure: Error> {
-    let subscribe: (Subscriber<Output, Failure>) -> Subscription<ControlValue>
+    typealias RequestGenerator = (Subscriber<Output, Failure>) -> (Demand) -> Void
+    typealias ControlGenerator = (Subscriber<Output, Failure>) -> (Control<ControlValue>) -> Void
     
-    init(_ producer: Producer<Output, Failure>) {
-        subscribe = Subscriber<Output, Failure>.subscription(for: producer)
+    var request: RequestGenerator
+    var control: ControlGenerator
+    
+    init(
+        _ producer: Producer<Output, Failure>,
+        _ request: RequestGenerator? = nil,
+        _ control: ControlGenerator? = nil
+    ) {
+        self.request = request ?? Self.output(producer)
+        self.control = control ?? Self.finished(producer)
     }
 
     func receive(subscriber: Subscriber<Output, Failure>) -> Subscription<ControlValue> {
-        subscriber |> subscribe
+        Subscription<ControlValue>(
+            request: subscriber |> request,
+            control: subscriber |> control
+        )
     }
 }
 
@@ -92,11 +104,7 @@ extension Publication {
 }
 
 extension Publisher {
-    var composable: Publication<Output, ControlValue, Failure,Output, ControlValue, Failure> {
-        Publication(
-            hoist: identity,
-            subscribe: receive,
-            lower: identity
-        )
+    var publication: Publication<Output, ControlValue, Failure,Output, ControlValue, Failure> {
+        Publication(hoist: identity, subscribe: receive, lower: identity)
     }
 }

@@ -7,32 +7,38 @@
 //
 
 extension Publisher {
-    static func output(
-        _ subscriber: Subscriber<Output, Failure>,
+    static func finished(
         _ producer: Producer<Output, Failure>
-    ) -> (Demand) -> Void {
-        var hasCompleted = false
-        return { demand in
-            guard demand.quantity > 0 && !hasCompleted else { return }
-            var newDemand = demand
-            while newDemand.quantity > 0 {
-                let supply = producer.produce(newDemand)
-                switch supply {
-                case .none: return
-                case .some(let value): newDemand = subscriber.input(value)
-                case .done: subscriber.completion(.finished); hasCompleted = true; return
+    ) -> (Subscriber<Output, Failure>) -> (Control<ControlValue>) -> Void {
+        { subscriber in
+            { control in
+                switch control {
+                case .finish:
+                    producer.finish()
+                    subscriber.completion(Completion<Failure>.finished)
+                default: ()
                 }
             }
         }
     }
-    
-    static func finished(
-        _ subscriber: Subscriber<Output, Failure>,
+
+    static func output(
         _ producer: Producer<Output, Failure>
-    ) -> (Control<ControlValue>) -> Void {
-        { control in
-            producer.finish()
-            subscriber.completion(Completion<Failure>.finished)
+    ) -> (Subscriber<Output, Failure>) -> (Demand) -> Void {
+        { subscriber in
+            var hasCompleted = false
+            return { demand in
+                guard demand.quantity > 0 && !hasCompleted else { return }
+                var newDemand = demand
+                while newDemand.quantity > 0 {
+                    let supply = producer.produce(newDemand)
+                    switch supply {
+                    case .none: return
+                    case .some(let value): newDemand = subscriber.input(value)
+                    case .done: subscriber.completion(.finished); hasCompleted = true; return
+                    }
+                }
+            }
         }
     }
 }

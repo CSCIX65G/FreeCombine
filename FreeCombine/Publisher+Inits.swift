@@ -8,7 +8,7 @@
 
 // Empty
 func Empty<T>(_ t: T.Type) -> Publication<T, Never, Never, T, Never, Never> {
-    Publisher(Producer(produce: { _ in .done }, finish: { })).composable
+    Publisher(Producer(produce: { _ in .done }, finish: { })).publication
 }
 
 // PublishedSequence
@@ -25,7 +25,7 @@ func PublishedSequence<S>(_ values: S) -> Publication<S.Element, Never, Never, S
             },
             finish: { slice = ArraySlice() }
         )
-    ).composable
+    ).publication
 }
 
 // Just
