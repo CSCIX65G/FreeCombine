@@ -6,25 +6,15 @@
 //  Copyright © 2020 ComputeCycles, LLC. All rights reserved.
 //
 
-extension Publication {
-    func receive(subscriber: Subscriber<Output, Failure>) -> Subscription<ControlValue> {
-        .init(request: subscriber |> request, control: subscriber |> control)
-    }
-}
-
-extension Publication {
-    var publisher: Publisher<Output, ControlValue, Failure,Output, ControlValue, Failure> {
-        Publisher(hoist: identity, convert: receive, lower: identity)
-    }
-}
+typealias UnfailingPublication<T> = Publisher<T, Never, Never, T, Never, Never>
 
 // Empty
-func Empty<T>(_ t: T.Type) -> Publisher<T, Never, Never, T, Never, Never> {
+func Empty<T>(_ t: T.Type) -> UnfailingPublication<T> {
     Publication(Producer(produce: { _ in .done }, finish: { })).publisher
 }
 
 // PublishedSequence
-func PublishedSequence<S>(_ values: S) -> Publisher<S.Element, Never, Never, S.Element, Never, Never>
+func PublishedSequence<S>(_ values: S) -> UnfailingPublication<S.Element>
     where S: Sequence {
     var slice = ArraySlice(values)
     return Publication(
@@ -41,6 +31,6 @@ func PublishedSequence<S>(_ values: S) -> Publisher<S.Element, Never, Never, S.E
 }
 
 // Just
-func Just<Output>(_ value: Output) -> Publisher<Output, Never, Never, Output, Never, Never> {
+func Just<T>(_ value: T) -> UnfailingPublication<T> {
     PublishedSequence([value])
 }

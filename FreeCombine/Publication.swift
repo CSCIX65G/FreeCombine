@@ -7,7 +7,7 @@
 //
 
 struct Publication<Output, ControlValue, Failure: Error> {
-    // Types which can create a Subscription from a Subscriber
+    // Types for creating a Subscription from a Subscriber
     typealias RequestGenerator = (Subscriber<Output, Failure>) -> (Demand) -> Void
     typealias ControlGenerator = (Subscriber<Output, Failure>) -> (Control<ControlValue>) -> Void
     
@@ -21,5 +21,17 @@ struct Publication<Output, ControlValue, Failure: Error> {
     ) {
         self.request = request ?? Self.output(producer)    // synchronously connect to output
         self.control = control ?? Self.finished(producer)  // ignore control messages only handle finish
+    }
+}
+
+extension Publication {
+    func receive(subscriber: Subscriber<Output, Failure>) -> Subscription<ControlValue> {
+        .init(request: subscriber |> request, control: subscriber |> control)
+    }
+}
+
+extension Publication {
+    var publisher: Publisher<Output, ControlValue, Failure,Output, ControlValue, Failure> {
+        Publisher(hoist: identity, convert: receive, lower: identity)
     }
 }

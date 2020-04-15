@@ -15,7 +15,7 @@
 		FBCE1B452443EBA0001872C0 /* Publisher+Inits.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBCE1B442443EBA0001872C0 /* Publisher+Inits.swift */; };
 		FBCE1B472443EDA6001872C0 /* Publisher+Unlimited.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBCE1B462443EDA6001872C0 /* Publisher+Unlimited.swift */; };
 		FBCE1B492443EDDA001872C0 /* Publication+Statics.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBCE1B482443EDDA001872C0 /* Publication+Statics.swift */; };
-		FBCE1B4B2444D7EC001872C0 /* Composition.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBCE1B4A2444D7EC001872C0 /* Composition.swift */; };
+		FBCE1B4B2444D7EC001872C0 /* Publisher+Map.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBCE1B4A2444D7EC001872C0 /* Publisher+Map.swift */; };
 		FBCE1B4D2444DF9B001872C0 /* MapTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBCE1B4C2444DF9B001872C0 /* MapTests.swift */; };
 		FBCE1B53244674C6001872C0 /* Subscriber+Transforms.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBCE1B52244674C6001872C0 /* Subscriber+Transforms.swift */; };
 		FBCE1B5524467561001872C0 /* Subscription+Transforms.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBCE1B5424467561001872C0 /* Subscription+Transforms.swift */; };
@@ -44,7 +44,7 @@
 		FBCE1B442443EBA0001872C0 /* Publisher+Inits.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Publisher+Inits.swift"; sourceTree = "<group>"; };
 		FBCE1B462443EDA6001872C0 /* Publisher+Unlimited.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Publisher+Unlimited.swift"; sourceTree = "<group>"; };
 		FBCE1B482443EDDA001872C0 /* Publication+Statics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Publication+Statics.swift"; sourceTree = "<group>"; };
-		FBCE1B4A2444D7EC001872C0 /* Composition.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Composition.swift; sourceTree = "<group>"; };
+		FBCE1B4A2444D7EC001872C0 /* Publisher+Map.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Publisher+Map.swift"; sourceTree = "<group>"; };
 		FBCE1B4C2444DF9B001872C0 /* MapTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapTests.swift; sourceTree = "<group>"; };
 		FBCE1B52244674C6001872C0 /* Subscriber+Transforms.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Subscriber+Transforms.swift"; sourceTree = "<group>"; };
 		FBCE1B5424467561001872C0 /* Subscription+Transforms.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Subscription+Transforms.swift"; sourceTree = "<group>"; };
@@ -99,7 +99,7 @@
 				FBCE1B462443EDA6001872C0 /* Publisher+Unlimited.swift */,
 				FBCE1B52244674C6001872C0 /* Subscriber+Transforms.swift */,
 				FBCE1B5424467561001872C0 /* Subscription+Transforms.swift */,
-				FBCE1B4A2444D7EC001872C0 /* Composition.swift */,
+				FBCE1B4A2444D7EC001872C0 /* Publisher+Map.swift */,
 				FBCE1B482443EDDA001872C0 /* Publication+Statics.swift */,
 				FBCE1B4224420763001872C0 /* FunctionalProgramming.swift */,
 			);
@@ -226,7 +226,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				FBCE1B4B2444D7EC001872C0 /* Composition.swift in Sources */,
+				FBCE1B4B2444D7EC001872C0 /* Publisher+Map.swift in Sources */,
 				FBCE1B5524467561001872C0 /* Subscription+Transforms.swift in Sources */,
 				FBCE1B452443EBA0001872C0 /* Publisher+Inits.swift in Sources */,
 				FBCE1B5724472A05001872C0 /* Publication.swift in Sources */,

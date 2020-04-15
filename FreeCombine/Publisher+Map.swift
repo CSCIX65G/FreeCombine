@@ -17,31 +17,40 @@
 
 // Maps
 extension Publisher {
+    typealias MapPublisher<T> =
+        Publisher<Output, OutputControl, OutputFailure, T, OutputControl, OutputFailure>
+    
     func map<T>(
         _ transform: @escaping (Output) -> T
-    ) -> Publisher<Output, OutputControl, OutputFailure, T, OutputControl, OutputFailure> {
-        Publisher<Output, OutputControl, OutputFailure, T, OutputControl, OutputFailure>(
-            hoist: recast(Subscriber<Output, OutputFailure>.map(transform)),
+    ) -> MapPublisher<T> {
+        MapPublisher<T>(
+            hoist: recast(DownstreamSubscriber.map(transform)),
             convert: receive,
             lower: identity
         )
     }
 
+    typealias ContraMapPublisher =
+        Publisher<Output, OutputControl, OutputFailure, Output, OutputControl, OutputFailure>
+    
     func contraMap(
         _ transform: @escaping (Demand) -> Demand
-    ) -> Publisher<Output, OutputControl, OutputFailure, Output, OutputControl, OutputFailure> {
-        Publisher<Output, OutputControl, OutputFailure, Output, OutputControl, OutputFailure>(
-            hoist: Subscriber<Output, OutputFailure>.contraMap(transform),
+    ) ->  ContraMapPublisher {
+        ContraMapPublisher (
+            hoist: DownstreamSubscriber.contraMap(transform),
             convert: receive,
             lower: identity
         )
     }
 
+    typealias MapErrorPublisher<T: Error> =
+        Publisher<Output, OutputControl, OutputFailure, Output, OutputControl, T>
+    
     func mapError<T: Error>(
         _ transform: @escaping (OutputFailure) -> T
-    ) -> Publisher<Output, OutputControl, OutputFailure, Output, OutputControl, T> {
-        Publisher<Output, OutputControl, OutputFailure, Output, OutputControl, T>(
-            hoist: recast(Subscriber<Output, OutputFailure>.mapError(transform)),
+    ) -> MapErrorPublisher<T> {
+        MapErrorPublisher<T>(
+            hoist: recast(DownstreamSubscriber.mapError(transform)),
             convert: receive,
             lower: identity
         )
