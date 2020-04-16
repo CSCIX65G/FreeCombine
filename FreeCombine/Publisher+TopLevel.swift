@@ -24,7 +24,7 @@ public extension Publisher
         self.convert = { subscriber in
             UpstreamSubscription(
                 request: subscriber |> request,
-                control: subscriber |> recast(control)
+                control: subscriber |> control
             )
         }
         self.lower = identity

@@ -7,9 +7,10 @@
 //
 
 extension Subscription {
-    static func map(
-        _ transform: @escaping (Demand) -> Demand
-    ) -> (Subscription<ControlValue>) -> Subscription<ControlValue> {
+    // turn the requested downstream command into the requested upstream demand
+    static func contraMap(
+        _ transform: @escaping (Demand) -> Demand  // (Downstream) -> (Upstream)
+    ) -> (Subscription<ControlValue>) -> Subscription<ControlValue> {  // lower Upstream -> Downstream
         { subscription in
             Subscription<ControlValue>(
                 request: transform >>> subscription.request,
@@ -17,14 +18,30 @@ extension Subscription {
             )
         }
     }
+}
 
-    static func mapControl<UpstreamControlValue>(
-        _ transform: @escaping (ControlValue) -> UpstreamControlValue
-    ) -> (Subscription<ControlValue>) -> Subscription<UpstreamControlValue> {
+extension Control {
+    static func map<T>(
+        _ transform: @escaping (Value) -> T
+    ) -> (Self) -> Control<T> {
+        { control in
+            switch control {
+            case .finish: return .finish
+            case .control(let c): return .control(transform(c))
+            }
+        }
+    }
+}
+
+extension Subscription {
+    // turn the downstream control command into the upstream upstream control command
+    static func contraMapControl<DownstreamControlValue>(
+        _ transform: @escaping (DownstreamControlValue) -> ControlValue   // (Downstream) -> Upstream
+    ) -> (Subscription<ControlValue>) -> Subscription<DownstreamControlValue> { // lower Upstream -> Downstream
         { subscription in
-            Subscription<UpstreamControlValue>(
+            Subscription<DownstreamControlValue>(
                 request: subscription.request,
-                control: recast(transform) >>> subscription.control
+                control: (transform |> Control.map) >>> subscription.control
             )
         }
     }

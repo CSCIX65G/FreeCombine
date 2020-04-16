@@ -33,9 +33,14 @@ extension Publisher {
                 while newDemand.quantity > 0 {
                     let supply = producer.produce(newDemand)
                     switch supply {
-                    case .none: return
-                    case .some(let value): newDemand = subscriber.input(value)
-                    case .done: subscriber.completion(.finished); hasCompleted = true; return
+                    case .none:
+                        return
+                    case .some(let value):
+                        newDemand = subscriber.input(value)
+                    case .done:
+                        subscriber.completion(.finished)
+                        hasCompleted = true
+                        return
                     }
                 }
             }

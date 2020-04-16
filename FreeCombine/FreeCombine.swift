@@ -63,7 +63,8 @@ public extension Subscription {
     func cancel() { control(.finish) }
 }
 
-public struct Publisher<Input, InputControl, InputFailure: Error, Output, OutputControl, OutputFailure: Error> {
+public struct Publisher<Input, InputControl, InputFailure: Error,
+    Output, OutputControl, OutputFailure: Error> {
     public typealias DownstreamSubscriber = Subscriber<Output, OutputFailure>
     public typealias UpstreamSubscriber = Subscriber<Input, InputFailure>
 

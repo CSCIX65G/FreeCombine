@@ -25,7 +25,9 @@ public func PublishedSequence<S>(_ values: S) -> UnfailingPublisher<S.Element>
                 slice = slice.dropFirst()
                 return .some(value)
             },
-            finish: { slice = ArraySlice() }
+            finish: {
+                slice = ArraySlice()
+            }
         )
     )
 }

@@ -24,33 +24,24 @@ public extension Publisher {
         _ transform: @escaping (Output) -> T
     ) -> MapPublisher<T> {
         MapPublisher<T>(
-            hoist: recast(DownstreamSubscriber.map(transform)),
+            hoist: Subscriber<T, OutputFailure>.contraMap(transform, identity),
             convert: receive,
             lower: identity
         )
     }
+}
 
-    typealias ContraMapPublisher =
-        Publisher<Output, OutputControl, OutputFailure, Output, OutputControl, OutputFailure>
-    
-    func contraMap(
-        _ transform: @escaping (Demand) -> Demand
-    ) ->  ContraMapPublisher {
-        ContraMapPublisher (
-            hoist: DownstreamSubscriber.contraMap(transform),
-            convert: receive,
-            lower: identity
-        )
-    }
-
+public extension Publisher {
     typealias MapErrorPublisher<T: Error> =
-        Publisher<Output, OutputControl, OutputFailure, Output, OutputControl, T>
-    
+        Publisher<Output, OutputControl, OutputFailure,
+        Output, OutputControl, T>
+
     func mapError<T: Error>(
         _ transform: @escaping (OutputFailure) -> T
-    ) -> MapErrorPublisher<T> {
+    ) -> MapErrorPublisher<T>
+    {
         MapErrorPublisher<T>(
-            hoist: recast(DownstreamSubscriber.mapError(transform)),
+            hoist: Subscriber<Output, T>.contraMapError(transform),
             convert: receive,
             lower: identity
         )

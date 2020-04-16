@@ -10,3 +10,4 @@ let c = p.sink(
         print("Success! with value \(value)")
     }
 )
+
