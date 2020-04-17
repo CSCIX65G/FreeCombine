@@ -6,20 +6,6 @@
 //  Copyright © 2020 ComputeCycles, LLC. All rights reserved.
 //
 
-extension Subscription {
-    // turn the requested downstream command into the requested upstream demand
-    static func contraMap(
-        _ transform: @escaping (Demand) -> Demand  // (Downstream) -> (Upstream)
-    ) -> (Subscription<ControlValue>) -> Subscription<ControlValue> {  // lower Upstream -> Downstream
-        { subscription in
-            Subscription<ControlValue>(
-                request: transform >>> subscription.request,
-                control: subscription.control
-            )
-        }
-    }
-}
-
 extension Control {
     static func map<T>(
         _ transform: @escaping (Value) -> T
@@ -29,6 +15,32 @@ extension Control {
             case .finish: return .finish
             case .control(let c): return .control(transform(c))
             }
+        }
+    }
+}
+
+extension Subscription {
+    static func contraMap<DownstreamControlValue>(
+    _ requestTransform: @escaping (Demand) -> Demand,
+    _ controlTransform: @escaping (DownstreamControlValue) -> ControlValue
+    ) -> (Subscription<ControlValue>) -> Subscription<DownstreamControlValue> {
+        { subscription in
+            subscription
+            |> Subscription<ControlValue>.contraMap(requestTransform)
+            >>> Subscription<ControlValue>.contraMapControl(controlTransform)
+        }
+    }
+}
+
+extension Subscription {
+    static func contraMap(
+        _ transform: @escaping (Demand) -> Demand  // (Downstream) -> (Upstream)
+    ) -> (Subscription<ControlValue>) -> Subscription<ControlValue> {  // lower Upstream -> Downstream
+        { subscription in
+            Subscription<ControlValue>(
+                request: transform >>> subscription.request,
+                control: subscription.control
+            )
         }
     }
 }

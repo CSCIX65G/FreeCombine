@@ -6,15 +6,6 @@
 //  Copyright © 2020 ComputeCycles, LLC. All rights reserved.
 //
 
-// FlatMaps
-//extension Publication {
-//    static func flatMap<T>(
-//        _ transform: @escaping (Input) -> Producer<T, OutputFailure>
-//    ) -> (Self) -> Publication<Output, OutputControl, OutputFailure, T, OutputControl, OutputFailure> {
-//
-//    }
-//}
-
 // Maps
 public extension Publisher {
     typealias MapPublisher<T> =
@@ -24,7 +15,7 @@ public extension Publisher {
         _ transform: @escaping (Output) -> T
     ) -> MapPublisher<T> {
         MapPublisher<T>(
-            hoist: Subscriber<T, OutputFailure>.contraMap(transform, identity),
+            hoist: Subscriber.contraMap(transform),
             convert: receive,
             lower: identity
         )
@@ -33,15 +24,14 @@ public extension Publisher {
 
 public extension Publisher {
     typealias MapErrorPublisher<T: Error> =
-        Publisher<Output, OutputControl, OutputFailure,
-        Output, OutputControl, T>
+        Publisher<Output, OutputControl, OutputFailure, Output, OutputControl, T>
 
     func mapError<T: Error>(
         _ transform: @escaping (OutputFailure) -> T
     ) -> MapErrorPublisher<T>
     {
         MapErrorPublisher<T>(
-            hoist: Subscriber<Output, T>.contraMapError(transform),
+            hoist: Subscriber.contraMapError(transform),
             convert: receive,
             lower: identity
         )

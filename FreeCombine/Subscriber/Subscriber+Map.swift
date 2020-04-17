@@ -5,23 +5,48 @@
 //  Created by Van Simmons on 4/14/20.
 //  Copyright © 2020 ComputeCycles, LLC. All rights reserved.
 //
+extension Subscriber {
+    static func map(
+        _ transform: @escaping (Demand) -> Demand
+    ) -> (Self) -> Subscriber<Input, Failure> {
+        { subscriber in
+            Subscriber<Input, Failure>(
+                input: subscriber.input >>> transform ,
+                completion: subscriber.completion
+            )
+        }
+    }
+}
 
 // ContraMaps
 // dInput: (A) -> B
-// uInput: (C) -> D
-// to turn a dinput into an uinput we need:
-// dPre: (C) -> A and dPost: (B) -> D, then:
-// dPre >>> dInput >>> dPost is (C) -> D
+// uInput: (C) -> B
+// to turn a dInput into an uInput we need:
+// transform: (C) -> A then:
+// transform >>> dInput is (C) -> B
 // In this case B and D are both of type Demand, but they may have different values
 // inputTransform is dPre, demandTransform is dPost
 extension Subscriber {
+    static func contraMap<UpstreamInput, UpstreamFailure: Error>(
+        _ inputTransform: @escaping (UpstreamInput) -> Input,
+        _ completionTransform: @escaping (UpstreamFailure) -> Failure
+    ) -> (Self) -> Subscriber<UpstreamInput, UpstreamFailure> {
+        { subscriber in
+            subscriber
+                |> Subscriber<Input, Failure>.contraMap(inputTransform)
+                >>> Subscriber<UpstreamInput, Failure>.contraMapError(completionTransform)
+        }
+    }
+}
+
+
+extension Subscriber {
     static func contraMap<UpstreamInput>(
-        _ preTransform: @escaping (UpstreamInput) -> Input,
-        _ postTransform: @escaping (Demand) -> Demand
+        _ transform: @escaping (UpstreamInput) -> Input
     ) -> (Self) -> Subscriber<UpstreamInput, Failure> {
         { subscriber in
             Subscriber<UpstreamInput, Failure>(
-                input: preTransform >>> subscriber.input >>> postTransform,
+                input: transform >>> subscriber.input,
                 completion: subscriber.completion
             )
         }
