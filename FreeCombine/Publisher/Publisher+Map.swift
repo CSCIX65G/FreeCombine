@@ -8,32 +8,4 @@
 
 // Maps
 public extension Publisher {
-    typealias MapPublisher<T> =
-        Publisher<Output, OutputControl, OutputFailure, T, OutputControl, OutputFailure>
-    
-    func map<T>(
-        _ transform: @escaping (Output) -> T
-    ) -> MapPublisher<T> {
-        MapPublisher<T>(
-            hoist: Subscriber.contraMap(transform),
-            convert: receive,
-            lower: identity
-        )
-    }
-}
-
-public extension Publisher {
-    typealias MapErrorPublisher<T: Error> =
-        Publisher<Output, OutputControl, OutputFailure, Output, OutputControl, T>
-
-    func mapError<T: Error>(
-        _ transform: @escaping (OutputFailure) -> T
-    ) -> MapErrorPublisher<T>
-    {
-        MapErrorPublisher<T>(
-            hoist: Subscriber.contraMapError(transform),
-            convert: receive,
-            lower: identity
-        )
-    }
 }

@@ -6,33 +6,44 @@
 //  Copyright © 2020 ComputeCycles, LLC. All rights reserved.
 //
 
-public typealias UnfailingPublisher<T> = Publisher<T, Never, Never, T, Never, Never>
+extension Publisher: CallableAsFunction {
+    public init(_ call: @escaping (Subscriber<Output, Failure>) -> Subscription) {
+        self.call = call
+    }
 
-// Empty
-public func Empty<T>(_ t: T.Type) -> UnfailingPublisher<T> {
-    UnfailingPublisher<T>(Producer(produce: { _ in .done }, finish: { }))
+    public init(_ f: Func<Subscriber<Output, Failure>, Subscription>) {
+        self.call = f.call
+    }
 }
 
-// PublishedSequence
-public func PublishedSequence<S>(_ values: S) -> UnfailingPublisher<S.Element>
-    where S: Sequence {
-    var slice = ArraySlice(values)
-    return UnfailingPublisher<S.Element>(
-        Producer(
-            produce: { demand in
-                guard demand.quantity > 0 else { return .none }
-                guard let value = slice.first else { return .done }
-                slice = slice.dropFirst()
-                return .some(value)
-            },
-            finish: {
-                slice = ArraySlice()
-            }
-        )
-    )
+extension Publisher {
+    func receive(subscriber: Subscriber<Output, Failure>) -> Subscription {
+        self(subscriber)
+    }
 }
 
-// Just
-public func Just<T>(_ value: T) -> UnfailingPublisher<T> {
-    PublishedSequence([value])
+public extension Publisher {
+    init(_ producer: Producer<Output, Failure>) {
+        self.call = { subscriber in
+            .init(Func(subscriber |> producer.bind).map {_ in })
+        }
+    }
 }
+
+public extension Publisher {
+    // Empty
+    static func Empty<T>(_ t: T.Type) -> Publisher<T, Never> {
+        .init(Producer.empty())
+    }
+    
+    // Just
+    static func Just<T>(_ value: T) -> Publisher<T, Never> {
+        .init(Producer.just(value))
+    }
+    
+    // PublishedSequence
+    static func PublishedSequence<S: Sequence>(_ values: S) -> Publisher<S.Element, Never> {
+        .init(Producer.sequence(values))
+    }
+}
+

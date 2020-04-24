@@ -19,49 +19,65 @@ class FreeCombineTests: XCTestCase {
     }
 
     func testEmptyPublisher() throws {
-        _ = Empty(Int.self).sink(
-            receiveCompletion: { completion in print("Completed") },
-            receiveValue: { _ in XCTFail("Should never receive value") }
-        )
+        _ = Publisher<Int, Never>.Empty(Int.self).sink { completion in
+            guard case .finished = completion else {
+                XCTFail("Should never receive value")
+                return
+            }
+            print("Completed")
+        }
     }
 
     func testJustPublisher() throws {
         var count = 0
-        _ = Just(14).sink(
-            receiveCompletion: { completion in print("Completed") },
-            receiveValue: { value in
+        _ = Publisher<Int, Never>.Just(14).sink { input in
+            switch input {
+            case .value(let value):
                 guard value == 14 else { XCTFail("Received incorrect value"); return }
                 guard count == 0 else { XCTFail("Received more than one value"); return }
                 count += 1
+            default:
+                print("Completed")
             }
-        )
+        }
     }
 
     func testSequencePublisher() throws {
         var count = 0, total = 0
-        _ = PublishedSequence([1, 2, 3, 4]).sink(
-            receiveCompletion: { completion in print("Completed") },
-            receiveValue: { value in
+        _ = Publisher<Int, Never>.PublishedSequence([1, 2, 3, 4]).sink { input in
+            switch input {
+            case .value(let value):
                 guard count < 4 else { XCTFail("Received incorrect number of calls"); return }
                 guard total <= 10 else { XCTFail("Received wrong value"); return }
                 count += 1
                 total += value
+            default:
+                print("Completed")
             }
-        )
+        }
     }
     
     func testSubscribing() throws {
         var count = 0, total = 0
         let subscriber = Subscriber<Int, Never>(
-            input: { print($0); count += 1; total += $0; return .none },
-            completion: { _ in print("Completed") }
+            .init { input in
+                switch input {
+                case .value(let value):
+                    print(value)
+                    count += 1
+                    total += value
+                default: ()
+                }
+                return .none
+            }
         )
-        let subscription = PublishedSequence([1, 2, 3, 4]).receive(subscriber: subscriber)
-        subscription.request(.max(1))
-        subscription.request(.max(1))
-        subscription.request(.max(1))
-        subscription.request(.max(1))
-        subscription.request(.max(1))
+        let publisher = Publisher<Int, Never>.PublishedSequence([1, 2, 3, 4])
+        let subscription = publisher.receive(subscriber: subscriber)
+        subscription(.demand(.max(1)))
+        subscription(.demand(.max(1)))
+        subscription(.demand(.max(1)))
+        subscription(.demand(.max(1)))
+        subscription(.demand(.max(1)))
         XCTAssertEqual(count, 4, "Received incorrect number of calls")
         XCTAssertEqual(total, 10, "Received wrong value")
     }
@@ -70,16 +86,25 @@ class FreeCombineTests: XCTestCase {
         var count = 0
         var total = 0
         let subscriber = Subscriber<Int, Never>(
-            input: { print($0); count += 1; total += $0; return .none },
-            completion: { _ in print("Completed") }
+            .init { input in
+                switch input {
+                case .value(let value):
+                    print(value)
+                    count += 1
+                    total += value
+                default: ()
+                }
+                return .none
+            }
         )
-        let subscription = PublishedSequence([1, 2, 3, 4]).receive(subscriber: subscriber)
-        subscription.request(.max(1))
-        subscription.cancel()
-        subscription.request(.max(1))
-        subscription.request(.max(1))
-        subscription.request(.max(1))
-        subscription.request(.max(1))
+        let subscription = Publisher<Int, Never>.PublishedSequence([1, 2, 3, 4])
+            .receive(subscriber: subscriber)
+        subscription(.demand(.max(1)))
+        subscription(.cancel)
+        subscription(.demand(.max(1)))
+        subscription(.demand(.max(1)))
+        subscription(.demand(.max(1)))
+        subscription(.demand(.max(1)))
         XCTAssertEqual(count, 1, "Received incorrect number of calls")
         XCTAssertEqual(total, 1, "Received wrong value")
     }

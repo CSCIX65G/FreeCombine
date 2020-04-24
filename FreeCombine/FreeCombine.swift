@@ -10,74 +10,48 @@ public enum Demand {
     case none
     case max(Int)
     case unlimited
-    
+    case last
+
     var quantity: Int {
         switch self {
         case .none: return 0
         case .max(let val): return val
         case .unlimited: return Int.max
+        case .last: return 0
         }
     }
 }
 
-public enum Supply<Value, Failure> {
+public enum Request {
+    case demand(Demand)
+    case cancel
+}
+
+public enum Publication<Value, Failure: Error> {
     case none
-    case some(Value)
-    case done
-}
-
-public struct Producer<Value, Failure> {
-    let produce: (Demand) -> Supply<Value, Failure>
-    let finish: () -> Void
-}
-
-public enum Completion<Failure: Error> {
+    case value(Value)
+    case failure(Failure)
     case finished
-    case error(Failure)
 }
 
-public struct Subscriber<Input, Failure: Error> {
-    let input: (Input) -> Demand
-    let completion: (Completion<Failure>) -> Void
+public struct Producer<Value, Failure: Error> {
+    public var call: (Request) -> Publication<Value, Failure>
 }
 
-public enum Control<Value> {
-    case finish
-    case control(Value)
-}
-
-public class Subscription<ControlValue> {
-    let request: (Demand) -> Void
-    let control: (Control<ControlValue>) -> Void
-    
-    init(
-        request: @escaping (Demand) -> Void,
-        control: @escaping (Control<ControlValue>) -> Void
-    ) {
-        self.request = request
-        self.control = control
+public struct Subscriber<Value, Failure: Error> {
+    public let call: (Publication<Value, Failure>) -> Demand
+    public init(_ call: @escaping (Publication<Value, Failure>) -> Demand) {
+        self.call = call
     }
 }
 
-public extension Subscription {
-    func cancel() { control(.finish) }
-}
-
-public struct Publisher<Input, InputControl, InputFailure: Error,
-    Output, OutputControl, OutputFailure: Error> {
-    public typealias DownstreamSubscriber = Subscriber<Output, OutputFailure>
-    public typealias UpstreamSubscriber = Subscriber<Input, InputFailure>
-
-    public typealias DownstreamSubscription = Subscription<OutputControl>
-    public typealias UpstreamSubscription = Subscription<InputControl>
-
-    let hoist:   (DownstreamSubscriber) -> UpstreamSubscriber     // hoist subscriber
-    let convert: (UpstreamSubscriber)   -> UpstreamSubscription   // convert
-    let lower:   (UpstreamSubscription) -> DownstreamSubscription // lower subscription
-}
-
-public extension Publisher {
-    func receive(subscriber: DownstreamSubscriber) -> DownstreamSubscription {
-        subscriber |> hoist >>> convert >>> lower
+public final class Subscription {
+    public let call: (Request) -> Void
+    public init(_ call: @escaping (Request) -> Void) {
+        self.call = call
     }
+}
+
+public struct Publisher<Output, Failure: Error> {
+    public let call: (Subscriber<Output, Failure>) -> Subscription
 }
