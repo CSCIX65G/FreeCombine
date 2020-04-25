@@ -13,4 +13,8 @@ extension Subscription: CallableAsFunction {
     public convenience init(_ f: Func<Request, Void>) {
         self.init(f.call)
     }
+
+    public convenience init(_ f: Func<Request, Demand>) {
+        self.init(f.map(void).call)
+    }
 }
