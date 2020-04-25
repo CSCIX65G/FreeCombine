@@ -12,14 +12,6 @@ extension Publisher: CallableAsFunction {
     }
 }
 
-public extension Publisher {
-    init(_ producer: Producer<Output, Failure>) {
-        self.call = { subscriber in
-            .init(subscriber.contraFlatMap(Subscriber.join(producer), producer.call))
-        }
-    }
-}
-
 func Empty<T>(_ t: T.Type) -> Publisher<T, Never> {
     .init(Producer.empty())
 }

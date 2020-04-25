@@ -126,14 +126,14 @@
 			path = Publication;
 			sourceTree = "<group>";
 		};
-		FBA11A322454BED00022A15B /* Publishers */ = {
+		FBA11A322454BED00022A15B /* PublisherChains */ = {
 			isa = PBXGroup;
 			children = (
 				FBCE1B4A2444D7EC001872C0 /* Map.swift */,
 				FBA11A332454BF1D0022A15B /* MapError.swift */,
 				FBA119D9244A81570022A15B /* FlatMap.swift */,
 			);
-			path = Publishers;
+			path = PublisherChains;
 			sourceTree = "<group>";
 		};
 		FBC21A74243BD4EA00EFD588 = {
@@ -166,7 +166,7 @@
 				FBA119D4244A0F150022A15B /* Subscriber */,
 				FBA119D5244A0F220022A15B /* Subscription */,
 				FBA119DF244B42FA0022A15B /* Producer */,
-				FBA11A322454BED00022A15B /* Publishers */,
+				FBA11A322454BED00022A15B /* PublisherChains */,
 			);
 			path = FreeCombine;
 			sourceTree = "<group>";

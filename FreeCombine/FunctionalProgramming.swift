@@ -13,8 +13,7 @@ precedencegroup CompositionPrecedence {
 }
 
 infix operator >>>: CompositionPrecedence
-
-func >>> <A, B, C>(
+public func >>> <A, B, C>(
     _ f: @escaping (A) -> B,
     _ g: @escaping (B) -> C
 ) -> (A) -> C {
@@ -22,7 +21,10 @@ func >>> <A, B, C>(
 }
 
 infix operator |>: CompositionPrecedence
-public func |> <A, B> (a: A, f: (A) -> B) -> B { f(a) }
+public func |> <A, B> (
+    a: A,
+    f: (A) -> B
+) -> B { f(a) }
 
 public func identity<T>(_ t: T) -> T { t }
 public func void<T>(_ t: T) -> Void { }
