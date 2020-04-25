@@ -10,6 +10,8 @@
  # Combine as the composition of functions
  
  In the beginning is Demand for some values.
+ You only have to say how much you want for now
+ not what kind of thing you want.
 */
 public enum Demand {
     case none
@@ -41,7 +43,7 @@ public enum Request {
  A Request can be fulfilled with a Publication
  which is either no value, a value of the desired
  type, a failure to produce a value, or a notification
- that no future values will be forthcoming.
+ that no future values can be forthcoming.
  
  Since Publication is a generic parameterized by
  two other types, you expect it to have two
@@ -57,6 +59,10 @@ public enum Publication<Value, Failure: Error> {
 /*:
  Ultimately, there must be a function which produces a Publication
  in response to a Request.  We call such a function a Producer.
+ 
+ Like all the functions we will discuss which are parameterized
+ by multiple generic types, producers have a family of interesting
+ map functions, which we will explore at a future date.
 */
 public struct Producer<Value, Failure: Error> {
     public let call: (Request) -> Publication<Value, Failure>
@@ -66,28 +72,29 @@ public struct Producer<Value, Failure: Error> {
 }
 
 /*:
- There must also be a function which satisfies a Request
- by consuming a Publication.  We call such a function
- a Subscriber.  In a very human manner a Subscriber
- consuming a publication can cause even more Demand
- which it provides as its return type.
+ Since we have a function which can produce Publications in
+ response to requests, there must also be a function which
+ satisfies a Request by consuming a Publication.  We call
+ such a function a Subscriber.  In a very human manner a Subscriber
+ consuming a publication can induce even more Demand
+ which it provides as its function return type.
  
- This form means that you can compose Subscribers
- with Producers.  Since you only get the Subscriber
- AFTER you have a producer, the composition must be a
- `contraMap` or `contraFlatMap` (i.e. you prepend the
- Producer to the Subscriber). `contraMap`ping a
- Subscriber with a Producer yields a function
+ This division of production and consumption means
+ that you can compose Subscribers with Producers.  Since
+ you only get the Subscriber AFTER you have a producer,
+ the composition must be a `contraMap` or `contraFlatMap`
+ (i.e. you prepend the Producer to the Subscriber).
+ `contraMap`ping a Subscriber with a Producer yields a function
  from Request to Demand as you can verify:
 
      (Producer >>> Subscriber) -> (Request) -> Demand
 
- erasing the Publication type in the process.
+ and erases the Publication type in the process.
  
  Note that since Subscriber has two generic parameters
  like Publication, you expect it to have multiple forms
  of map, flatMap, contraMap and contraFlatMap. (And
- it does, in another file).
+ since we will need them it actually does, in another file).
  */
 public struct Subscriber<Value, Failure: Error> {
     public let call: (Publication<Value, Failure>) -> Demand
@@ -104,7 +111,7 @@ public struct Subscriber<Value, Failure: Error> {
  
      (Producer >>> Subscriber).map(void)
  
- erasing the Demand type in the process
+ erasing the Demand type in the process.
  */
 public struct Subscription {
     public let call: (Request) -> Void
@@ -114,6 +121,9 @@ public struct Subscription {
 }
 
 /*:
+ Finally, we need some way of taking a Producer and a
+ Subscriber and creating a Subscription.
+ 
  A Publisher is a curried function which combines a Producer
  and a Subscriber to yield a Subscription in the manner
  shown immediately above:
