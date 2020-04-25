@@ -10,9 +10,9 @@
 		FBA119D8244A0F7A0022A15B /* Subscriber+FlatMap.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBA119D7244A0F7A0022A15B /* Subscriber+FlatMap.swift */; };
 		FBA119DA244A81570022A15B /* FlatMap.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBA119D9244A81570022A15B /* FlatMap.swift */; };
 		FBA119DE244B3F840022A15B /* Subscription+Inits.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBA119DD244B3F840022A15B /* Subscription+Inits.swift */; };
-		FBA11A17244E4A6E0022A15B /* Subscriber+Inits.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBA11A16244E4A6E0022A15B /* Subscriber+Inits.swift */; };
+		FBA11A17244E4A6E0022A15B /* Subscriber+Callable.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBA11A16244E4A6E0022A15B /* Subscriber+Callable.swift */; };
 		FBA11A19244E4B680022A15B /* Producer+Inits.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBA11A18244E4B680022A15B /* Producer+Inits.swift */; };
-		FBA11A2224523BCF0022A15B /* Publication+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBA11A2124523BCF0022A15B /* Publication+Extensions.swift */; };
+		FBA11A2224523BCF0022A15B /* Publication+Map.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBA11A2124523BCF0022A15B /* Publication+Map.swift */; };
 		FBA11A342454BF1D0022A15B /* MapError.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBA11A332454BF1D0022A15B /* MapError.swift */; };
 		FBC21A88243BD4EA00EFD588 /* FreeCombine.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FBC21A7E243BD4EA00EFD588 /* FreeCombine.framework */; };
 		FBC21A8D243BD4EA00EFD588 /* PublisherTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBC21A8C243BD4EA00EFD588 /* PublisherTests.swift */; };
@@ -41,9 +41,9 @@
 		FBA119D7244A0F7A0022A15B /* Subscriber+FlatMap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Subscriber+FlatMap.swift"; sourceTree = "<group>"; };
 		FBA119D9244A81570022A15B /* FlatMap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlatMap.swift; sourceTree = "<group>"; };
 		FBA119DD244B3F840022A15B /* Subscription+Inits.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Subscription+Inits.swift"; sourceTree = "<group>"; };
-		FBA11A16244E4A6E0022A15B /* Subscriber+Inits.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Subscriber+Inits.swift"; sourceTree = "<group>"; };
+		FBA11A16244E4A6E0022A15B /* Subscriber+Callable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Subscriber+Callable.swift"; sourceTree = "<group>"; };
 		FBA11A18244E4B680022A15B /* Producer+Inits.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Producer+Inits.swift"; sourceTree = "<group>"; };
-		FBA11A2124523BCF0022A15B /* Publication+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Publication+Extensions.swift"; sourceTree = "<group>"; };
+		FBA11A2124523BCF0022A15B /* Publication+Map.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Publication+Map.swift"; sourceTree = "<group>"; };
 		FBA11A332454BF1D0022A15B /* MapError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapError.swift; sourceTree = "<group>"; };
 		FBC21A7E243BD4EA00EFD588 /* FreeCombine.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = FreeCombine.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		FBC21A82243BD4EA00EFD588 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -84,7 +84,7 @@
 		FBA119D4244A0F150022A15B /* Subscriber */ = {
 			isa = PBXGroup;
 			children = (
-				FBA11A16244E4A6E0022A15B /* Subscriber+Inits.swift */,
+				FBA11A16244E4A6E0022A15B /* Subscriber+Callable.swift */,
 				FBCE1B52244674C6001872C0 /* Subscriber+Map.swift */,
 				FBA119D7244A0F7A0022A15B /* Subscriber+FlatMap.swift */,
 			);
@@ -121,7 +121,7 @@
 		FBA11A2024523BBC0022A15B /* Publication */ = {
 			isa = PBXGroup;
 			children = (
-				FBA11A2124523BCF0022A15B /* Publication+Extensions.swift */,
+				FBA11A2124523BCF0022A15B /* Publication+Map.swift */,
 			);
 			path = Publication;
 			sourceTree = "<group>";
@@ -160,13 +160,13 @@
 			children = (
 				FBC21A98243BD52300EFD588 /* FreeCombine.swift */,
 				FBCE1B4224420763001872C0 /* FunctionalProgramming.swift */,
-				FBC21A82243BD4EA00EFD588 /* Info.plist */,
 				FBA119D6244A0F520022A15B /* Publisher */,
 				FBA11A2024523BBC0022A15B /* Publication */,
 				FBA119D4244A0F150022A15B /* Subscriber */,
 				FBA119D5244A0F220022A15B /* Subscription */,
 				FBA119DF244B42FA0022A15B /* Producer */,
 				FBA11A322454BED00022A15B /* PublisherChains */,
+				FBC21A82243BD4EA00EFD588 /* Info.plist */,
 			);
 			path = FreeCombine;
 			sourceTree = "<group>";
@@ -291,7 +291,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				FBCE1B4B2444D7EC001872C0 /* Map.swift in Sources */,
-				FBA11A17244E4A6E0022A15B /* Subscriber+Inits.swift in Sources */,
+				FBA11A17244E4A6E0022A15B /* Subscriber+Callable.swift in Sources */,
 				FBCE1B5524467561001872C0 /* Subscription+FlatMap.swift in Sources */,
 				FBA11A19244E4B680022A15B /* Producer+Inits.swift in Sources */,
 				FBCE1B452443EBA0001872C0 /* Publisher+Inits.swift in Sources */,
@@ -301,7 +301,7 @@
 				FBCE1B53244674C6001872C0 /* Subscriber+Map.swift in Sources */,
 				FBA119DA244A81570022A15B /* FlatMap.swift in Sources */,
 				FBCE1B492443EDDA001872C0 /* Producer+Statics.swift in Sources */,
-				FBA11A2224523BCF0022A15B /* Publication+Extensions.swift in Sources */,
+				FBA11A2224523BCF0022A15B /* Publication+Map.swift in Sources */,
 				FBC21A99243BD52300EFD588 /* FreeCombine.swift in Sources */,
 				FBA119DE244B3F840022A15B /* Subscription+Inits.swift in Sources */,
 				FBCE1B472443EDA6001872C0 /* Publisher+Unlimited.swift in Sources */,

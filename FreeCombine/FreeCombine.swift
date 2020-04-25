@@ -83,6 +83,11 @@ public struct Producer<Value, Failure: Error> {
      (Producer >>> Subscriber) -> (Request) -> Demand
 
  erasing the Publication type in the process.
+ 
+ Note that since Subscriber has two generic parameters
+ like Publication, you expect it to have multiple forms
+ of map, flatMap, contraMap and contraFlatMap. (And
+ it does, in another file).
  */
 public struct Subscriber<Value, Failure: Error> {
     public let call: (Publication<Value, Failure>) -> Demand
@@ -119,6 +124,14 @@ public struct Subscription {
  or with a function (Subscriber) -> Subscription (the second
  init below) where the Producer has already been partially
  applied to the entire function.
+ 
+ And as always, because Publisher is parameterized by multiple
+ generic types, it too, has multiple forms of map.  Indeed
+ it has a host of monadic functions which allow us to chain
+ Publishers together in all sorts of interesting ways.
+ 
+ The majority of this library is given over to chaining
+ Publishers in fact.
 */
 public struct Publisher<Output, Failure: Error> {
     public let call: (Subscriber<Output, Failure>) -> Subscription

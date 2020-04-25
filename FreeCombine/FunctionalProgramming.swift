@@ -12,6 +12,9 @@ precedencegroup CompositionPrecedence {
   lowerThan: MultiplicationPrecedence, AdditionPrecedence
 }
 
+/*:
+ Define composition of two functions
+ */
 infix operator >>>: CompositionPrecedence
 public func >>> <A, B, C>(
     _ f: @escaping (A) -> B,
@@ -20,25 +23,27 @@ public func >>> <A, B, C>(
     { (a: A) -> C in g(f(a)) }
 }
 
+/*:
+ Define application of a function to a
+ value
+ */
 infix operator |>: CompositionPrecedence
 public func |> <A, B> (
     a: A,
     f: (A) -> B
 ) -> B { f(a) }
 
+/*:
+ Handy functions for composition
+ */
 public func identity<T>(_ t: T) -> T { t }
 public func void<T>(_ t: T) -> Void { }
 
-public func curry<A, B, C>(
-    _ function: @escaping (A, B) -> C
-) -> (A) -> (B) -> C {
-    { (a: A) -> (B) -> C in
-        { (b: B) -> C in
-            function(a, b)
-        }
-    }
-}
-
+/*:
+ Allow structs which are callable as functions
+ of one value to get all the same operations
+ as regular functions
+ */
 public protocol CallableAsFunction {
     associatedtype A
     associatedtype B
@@ -47,8 +52,6 @@ public protocol CallableAsFunction {
     init(_ call: @escaping (A) -> B)
     
     init(_ f: Func<A, B>)
-    
-    static func pure<T, U>(_ t: T) -> Self where A == U, B == T
     
     func callAsFunction(_ a: A) -> B
     
@@ -84,26 +87,7 @@ public protocol CallableAsFunction {
     ) -> Func<C, D>
 }
 
-public struct Func<FA, FB>: CallableAsFunction {
-    
-    public typealias A = FA
-    public typealias B = FB
-    public let call: (FA) -> FB
-    
-    public init(_ call: @escaping (FA) -> FB) {
-        self.call = call
-    }
-    
-    public init(_ f: Func<A, B>) {
-        self.call = f.call
-    }
-}
-
 public extension CallableAsFunction {
-    static func pure<T, U>(_ t: T) -> Self where A == U, B == T {
-        return .init { _ in t }
-    }
-
     func callAsFunction(_ a: A) -> B {
         call(a)
     }
@@ -158,6 +142,28 @@ public extension CallableAsFunction {
     }
 }
 
+/*:
+ Define a struct which wraps a function
+ underneath to serve as the value returned
+ from the functions above.
+ */
+public struct Func<FA, FB>: CallableAsFunction {
+    public typealias A = FA
+    public typealias B = FB
+    public let call: (FA) -> FB
+    
+    public init(_ call: @escaping (FA) -> FB) {
+        self.call = call
+    }
+    
+    public init(_ f: Func<A, B>) {
+        self.call = f.call
+    }
+}
+
+/*:
+ Various forms of mixing plain functions with Funcs
+ */
 func >>> <A, B, C, D: CallableAsFunction> (
     _ f: @escaping (A) -> B,
     _ g: D
