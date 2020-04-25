@@ -9,9 +9,9 @@
 /* Begin PBXBuildFile section */
 		FBA119D8244A0F7A0022A15B /* Subscriber+FlatMap.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBA119D7244A0F7A0022A15B /* Subscriber+FlatMap.swift */; };
 		FBA119DA244A81570022A15B /* FlatMap.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBA119D9244A81570022A15B /* FlatMap.swift */; };
-		FBA119DE244B3F840022A15B /* Subscription+Inits.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBA119DD244B3F840022A15B /* Subscription+Inits.swift */; };
+		FBA119DE244B3F840022A15B /* Subscription+Callable.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBA119DD244B3F840022A15B /* Subscription+Callable.swift */; };
 		FBA11A17244E4A6E0022A15B /* Subscriber+Callable.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBA11A16244E4A6E0022A15B /* Subscriber+Callable.swift */; };
-		FBA11A19244E4B680022A15B /* Producer+Inits.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBA11A18244E4B680022A15B /* Producer+Inits.swift */; };
+		FBA11A19244E4B680022A15B /* Producer+Callable.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBA11A18244E4B680022A15B /* Producer+Callable.swift */; };
 		FBA11A2224523BCF0022A15B /* Publication+Map.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBA11A2124523BCF0022A15B /* Publication+Map.swift */; };
 		FBA11A342454BF1D0022A15B /* MapError.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBA11A332454BF1D0022A15B /* MapError.swift */; };
 		FBC21A88243BD4EA00EFD588 /* FreeCombine.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FBC21A7E243BD4EA00EFD588 /* FreeCombine.framework */; };
@@ -40,9 +40,9 @@
 /* Begin PBXFileReference section */
 		FBA119D7244A0F7A0022A15B /* Subscriber+FlatMap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Subscriber+FlatMap.swift"; sourceTree = "<group>"; };
 		FBA119D9244A81570022A15B /* FlatMap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlatMap.swift; sourceTree = "<group>"; };
-		FBA119DD244B3F840022A15B /* Subscription+Inits.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Subscription+Inits.swift"; sourceTree = "<group>"; };
+		FBA119DD244B3F840022A15B /* Subscription+Callable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Subscription+Callable.swift"; sourceTree = "<group>"; };
 		FBA11A16244E4A6E0022A15B /* Subscriber+Callable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Subscriber+Callable.swift"; sourceTree = "<group>"; };
-		FBA11A18244E4B680022A15B /* Producer+Inits.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Producer+Inits.swift"; sourceTree = "<group>"; };
+		FBA11A18244E4B680022A15B /* Producer+Callable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Producer+Callable.swift"; sourceTree = "<group>"; };
 		FBA11A2124523BCF0022A15B /* Publication+Map.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Publication+Map.swift"; sourceTree = "<group>"; };
 		FBA11A332454BF1D0022A15B /* MapError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapError.swift; sourceTree = "<group>"; };
 		FBC21A7E243BD4EA00EFD588 /* FreeCombine.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = FreeCombine.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -94,7 +94,7 @@
 		FBA119D5244A0F220022A15B /* Subscription */ = {
 			isa = PBXGroup;
 			children = (
-				FBA119DD244B3F840022A15B /* Subscription+Inits.swift */,
+				FBA119DD244B3F840022A15B /* Subscription+Callable.swift */,
 				FBCE1B5424467561001872C0 /* Subscription+FlatMap.swift */,
 			);
 			path = Subscription;
@@ -112,7 +112,7 @@
 		FBA119DF244B42FA0022A15B /* Producer */ = {
 			isa = PBXGroup;
 			children = (
-				FBA11A18244E4B680022A15B /* Producer+Inits.swift */,
+				FBA11A18244E4B680022A15B /* Producer+Callable.swift */,
 				FBCE1B482443EDDA001872C0 /* Producer+Statics.swift */,
 			);
 			path = Producer;
@@ -293,7 +293,7 @@
 				FBCE1B4B2444D7EC001872C0 /* Map.swift in Sources */,
 				FBA11A17244E4A6E0022A15B /* Subscriber+Callable.swift in Sources */,
 				FBCE1B5524467561001872C0 /* Subscription+FlatMap.swift in Sources */,
-				FBA11A19244E4B680022A15B /* Producer+Inits.swift in Sources */,
+				FBA11A19244E4B680022A15B /* Producer+Callable.swift in Sources */,
 				FBCE1B452443EBA0001872C0 /* Publisher+Inits.swift in Sources */,
 				FBA11A342454BF1D0022A15B /* MapError.swift in Sources */,
 				FBCE1B4324420763001872C0 /* FunctionalProgramming.swift in Sources */,
@@ -303,7 +303,7 @@
 				FBCE1B492443EDDA001872C0 /* Producer+Statics.swift in Sources */,
 				FBA11A2224523BCF0022A15B /* Publication+Map.swift in Sources */,
 				FBC21A99243BD52300EFD588 /* FreeCombine.swift in Sources */,
-				FBA119DE244B3F840022A15B /* Subscription+Inits.swift in Sources */,
+				FBA119DE244B3F840022A15B /* Subscription+Callable.swift in Sources */,
 				FBCE1B472443EDA6001872C0 /* Publisher+Unlimited.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

@@ -13,8 +13,4 @@ extension Subscription: CallableAsFunction {
     public init(_ f: Func<Request, Void>) {
         self.init(f.call)
     }
-
-    public init(_ f: Func<Request, Demand>) {
-        self.init(f.map(void).call)
-    }
 }

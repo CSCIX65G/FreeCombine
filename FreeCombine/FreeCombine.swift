@@ -84,14 +84,22 @@ public struct Producer<Value, Failure: Error> {
  you only get the Subscriber AFTER you have a producer,
  the composition must be a `contraMap` or `contraFlatMap`
  (i.e. you prepend the Producer to the Subscriber).
- `contraMap`ping a Subscriber with a Producer yields a function
- from Request to Demand as you can verify:
+ In particular, since we can produce in batches, we are
+ going to want to use `contraFlatMap`, which means that
+ we are going to need at least one `join` function on
+ Subscriber as well (in fact we have two as you will
+ see later).
+ 
+ `contraMap`ping a Subscriber with a Producer yields a
+ function from Request to Demand as you can verify:
 
      (Producer >>> Subscriber) -> (Request) -> Demand
 
- and erases the Publication type in the process.
+ (I use >>> here imprecisely since I don't have an
+ operator for `contraFlatMap` with `join`). Note that
+ this operation erases the Publication type in the process.
  
- Note that since Subscriber has two generic parameters
+ Also note that since Subscriber has two generic parameters
  like Publication, you expect it to have multiple forms
  of map, flatMap, contraMap and contraFlatMap. (And
  since we will need them it actually does, in another file).
@@ -111,12 +119,19 @@ public struct Subscriber<Value, Failure: Error> {
  
      (Producer >>> Subscriber).map(void)
  
- erasing the Demand type in the process.
+ erasing the Demand type in the process.  The second
+ `init` below allows us to go straight from:
+ `(Producer >>> Subscriber)` to `Subscription` in
+ this manner
  */
 public struct Subscription {
     public let call: (Request) -> Void
     public init(_ call: @escaping (Request) -> Void) {
         self.call = call
+    }
+    
+    public init(_ f: Func<Request, Demand>) {
+        self.init(f.map(void).call)
     }
 }
 
@@ -126,14 +141,14 @@ public struct Subscription {
  
  A Publisher is a curried function which combines a Producer
  and a Subscriber to yield a Subscription in the manner
- shown immediately above:
+ shown above.  I.e. it has the form:
  
      (Producer) -> (Subscriber) -> Subscription
 
  It can be initialized with a Producer (the first init below)
  or with a function (Subscriber) -> Subscription (the second
  init below) where the Producer has already been partially
- applied to the entire function.
+ applied to the function.
  
  And as always, because Publisher is parameterized by multiple
  generic types, it too, has multiple forms of map.  Indeed
