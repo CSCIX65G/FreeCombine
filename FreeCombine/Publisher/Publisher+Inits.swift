@@ -7,21 +7,10 @@
 //
 
 extension Publisher: CallableAsFunction {
-    public init(_ call: @escaping (Subscriber<Output, Failure>) -> Subscription) {
-        self.call = call
-    }
-
     public init(_ f: Func<Subscriber<Output, Failure>, Subscription>) {
         self.call = f.call
     }
 }
-
-extension Publisher {
-    func receive(subscriber: Subscriber<Output, Failure>) -> Subscription {
-        self(subscriber)
-    }
-}
-
 public extension Publisher {
     init(_ producer: Producer<Output, Failure>) {
         self.call = { subscriber in

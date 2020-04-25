@@ -35,7 +35,10 @@ public enum Publication<Value, Failure: Error> {
 }
 
 public struct Producer<Value, Failure: Error> {
-    public var call: (Request) -> Publication<Value, Failure>
+    public let call: (Request) -> Publication<Value, Failure>
+    public init(_ call: @escaping (Request) -> Publication<Value, Failure>) {
+        self.call = call
+    }
 }
 
 public struct Subscriber<Value, Failure: Error> {
@@ -54,4 +57,7 @@ public final class Subscription {
 
 public struct Publisher<Output, Failure: Error> {
     public let call: (Subscriber<Output, Failure>) -> Subscription
+    public init(_ call: @escaping (Subscriber<Output, Failure>) -> Subscription) {
+        self.call = call
+    }
 }

@@ -72,7 +72,7 @@ class FreeCombineTests: XCTestCase {
             }
         )
         let publisher = Publisher<Int, Never>.PublishedSequence([1, 2, 3, 4])
-        let subscription = publisher.receive(subscriber: subscriber)
+        let subscription = publisher(subscriber)
         subscription(.demand(.max(1)))
         subscription(.demand(.max(1)))
         subscription(.demand(.max(1)))
@@ -97,8 +97,8 @@ class FreeCombineTests: XCTestCase {
                 return .none
             }
         )
-        let subscription = Publisher<Int, Never>.PublishedSequence([1, 2, 3, 4])
-            .receive(subscriber: subscriber)
+        let publisher = Publisher<Int, Never>.PublishedSequence([1, 2, 3, 4])
+        let subscription = publisher(subscriber)
         subscription(.demand(.max(1)))
         subscription(.cancel)
         subscription(.demand(.max(1)))

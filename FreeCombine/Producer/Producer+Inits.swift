@@ -10,10 +10,6 @@ extension Producer: CallableAsFunction {
     public typealias A = Request
     public typealias B = Publication<Value, Failure>
     
-    public init(_ call: @escaping (Request) -> Publication<Value, Failure>) {
-        self.call = call
-    }
-    
     public init(_ f: Func<Request, Publication<Value, Failure>>) {
         self.call = f.call
     }
