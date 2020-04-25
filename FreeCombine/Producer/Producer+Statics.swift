@@ -6,12 +6,12 @@
 //  Copyright © 2020 ComputeCycles, LLC. All rights reserved.
 //
 
-extension Producer {
-    static func empty() -> Producer {
+extension Producer where Failure == Never {
+    static func empty() -> Producer<Value, Never> {
         return Producer({ _ in .finished })
     }
     
-    static func just(_ value: Value) -> Producer {
+    static func just(_ value: Value) -> Producer<Value, Never> {
         var hasPublished = false
         return Producer({ demand in
             guard !hasPublished else { return .none }
@@ -20,7 +20,7 @@ extension Producer {
         })
     }
     
-    static func sequence<S: Sequence>(_ values: S) -> Producer
+    static func sequence<S: Sequence>(_ values: S) -> Producer<Value, Never>
         where S.Element == Value
     {
         var slice = ArraySlice(values)

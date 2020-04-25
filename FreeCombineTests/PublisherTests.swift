@@ -19,7 +19,7 @@ class FreeCombineTests: XCTestCase {
     }
 
     func testEmptyPublisher() throws {
-        _ = Publisher<Int, Never>.Empty(Int.self).sink { completion in
+        _ = Empty(Int.self).sink { completion in
             guard case .finished = completion else {
                 XCTFail("Should never receive value")
                 return
@@ -30,8 +30,8 @@ class FreeCombineTests: XCTestCase {
 
     func testJustPublisher() throws {
         var count = 0
-        _ = Publisher<Int, Never>.Just(14).sink { input in
-            switch input {
+        _ = Just(14).sink {
+            switch $0 {
             case .value(let value):
                 guard value == 14 else { XCTFail("Received incorrect value"); return }
                 guard count == 0 else { XCTFail("Received more than one value"); return }
@@ -44,7 +44,7 @@ class FreeCombineTests: XCTestCase {
 
     func testSequencePublisher() throws {
         var count = 0, total = 0
-        _ = Publisher<Int, Never>.PublishedSequence([1, 2, 3, 4]).sink { input in
+        _ = [1, 2, 3, 4].publisher.sink { input in
             switch input {
             case .value(let value):
                 guard count < 4 else { XCTFail("Received incorrect number of calls"); return }
@@ -71,8 +71,7 @@ class FreeCombineTests: XCTestCase {
                 return .none
             }
         )
-        let publisher = Publisher<Int, Never>.PublishedSequence([1, 2, 3, 4])
-        let subscription = publisher(subscriber)
+        let subscription = [1, 2, 3, 4].publisher(subscriber)
         subscription(.demand(.max(1)))
         subscription(.demand(.max(1)))
         subscription(.demand(.max(1)))
@@ -97,7 +96,7 @@ class FreeCombineTests: XCTestCase {
                 return .none
             }
         )
-        let publisher = Publisher<Int, Never>.PublishedSequence([1, 2, 3, 4])
+        let publisher = [1, 2, 3, 4].publisher
         let subscription = publisher(subscriber)
         subscription(.demand(.max(1)))
         subscription(.cancel)

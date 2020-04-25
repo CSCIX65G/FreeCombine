@@ -21,7 +21,8 @@ class MapTests: XCTestCase {
 
     func testMap() throws {
         var count = 0, total = 0
-        _ = Publisher<Int, Never>.PublishedSequence([1, 2, 3, 4])
+        _ = [1, 2, 3, 4]
+            .publisher
             .map { $0 * 2 }
             .sink {
                 switch $0 {
@@ -48,7 +49,8 @@ class MapTests: XCTestCase {
 
     func testChainedMap() throws {
         var count = 0, total = 0
-        _ = Publisher<Int, Never>.PublishedSequence([1, 2, 3, 4])
+        _ = [1, 2, 3, 4]
+            .publisher
             .map { $0 * 2 }
             .map { $0 / 2 }
             .sink {
