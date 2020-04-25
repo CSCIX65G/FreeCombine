@@ -6,19 +6,18 @@
 //  Copyright © 2020 ComputeCycles, LLC. All rights reserved.
 //
 
-// Maps
 public extension Publisher {
     func map<T>(_ transform: @escaping (Output) -> T) -> Publisher<T, Failure> {
         //public struct Publisher<T, Failure: Error> {
         //    public let call: (Subscriber<T, Failure>) -> Subscription
         //}
 
-        let hoist = { (subscriber: Subscriber<T, Failure>) -> Subscriber<Output, Failure> in
-            subscriber.contraMap(transform)
+        let hoist = { (downstream: Subscriber<T, Failure>) -> Subscriber<Output, Failure> in
+            downstream.contraMap(transform)
         }
         
-        let lower = { (subscription: Subscription) -> Subscription in
-            subscription
+        let lower = { (upstream: Subscription) -> Subscription in
+            upstream
         }
         
         return .init(dimap(hoist, lower))

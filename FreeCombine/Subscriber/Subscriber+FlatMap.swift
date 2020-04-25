@@ -44,11 +44,4 @@ extension Subscriber {
             }
         }
     }
-    
-    func contraFlatMap<T>(
-        _ join: (Self) -> Self,
-        _ transform: @escaping (T) -> Publication<Value, Failure>
-    ) -> Func<T, Demand> {
-        .init(transform >>> join(self))
-    }
 }

@@ -8,11 +8,12 @@
 
 /* Begin PBXBuildFile section */
 		FBA119D8244A0F7A0022A15B /* Subscriber+FlatMap.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBA119D7244A0F7A0022A15B /* Subscriber+FlatMap.swift */; };
-		FBA119DA244A81570022A15B /* Publisher+FlatMap.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBA119D9244A81570022A15B /* Publisher+FlatMap.swift */; };
+		FBA119DA244A81570022A15B /* FlatMap.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBA119D9244A81570022A15B /* FlatMap.swift */; };
 		FBA119DE244B3F840022A15B /* Subscription+Inits.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBA119DD244B3F840022A15B /* Subscription+Inits.swift */; };
 		FBA11A17244E4A6E0022A15B /* Subscriber+Inits.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBA11A16244E4A6E0022A15B /* Subscriber+Inits.swift */; };
 		FBA11A19244E4B680022A15B /* Producer+Inits.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBA11A18244E4B680022A15B /* Producer+Inits.swift */; };
 		FBA11A2224523BCF0022A15B /* Publication+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBA11A2124523BCF0022A15B /* Publication+Extensions.swift */; };
+		FBA11A342454BF1D0022A15B /* MapError.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBA11A332454BF1D0022A15B /* MapError.swift */; };
 		FBC21A88243BD4EA00EFD588 /* FreeCombine.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FBC21A7E243BD4EA00EFD588 /* FreeCombine.framework */; };
 		FBC21A8D243BD4EA00EFD588 /* PublisherTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBC21A8C243BD4EA00EFD588 /* PublisherTests.swift */; };
 		FBC21A99243BD52300EFD588 /* FreeCombine.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBC21A98243BD52300EFD588 /* FreeCombine.swift */; };
@@ -20,7 +21,7 @@
 		FBCE1B452443EBA0001872C0 /* Publisher+Inits.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBCE1B442443EBA0001872C0 /* Publisher+Inits.swift */; };
 		FBCE1B472443EDA6001872C0 /* Publisher+Unlimited.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBCE1B462443EDA6001872C0 /* Publisher+Unlimited.swift */; };
 		FBCE1B492443EDDA001872C0 /* Producer+Statics.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBCE1B482443EDDA001872C0 /* Producer+Statics.swift */; };
-		FBCE1B4B2444D7EC001872C0 /* Publisher+Map.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBCE1B4A2444D7EC001872C0 /* Publisher+Map.swift */; };
+		FBCE1B4B2444D7EC001872C0 /* Map.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBCE1B4A2444D7EC001872C0 /* Map.swift */; };
 		FBCE1B4D2444DF9B001872C0 /* MapTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBCE1B4C2444DF9B001872C0 /* MapTests.swift */; };
 		FBCE1B53244674C6001872C0 /* Subscriber+Map.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBCE1B52244674C6001872C0 /* Subscriber+Map.swift */; };
 		FBCE1B5524467561001872C0 /* Subscription+FlatMap.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBCE1B5424467561001872C0 /* Subscription+FlatMap.swift */; };
@@ -38,11 +39,12 @@
 
 /* Begin PBXFileReference section */
 		FBA119D7244A0F7A0022A15B /* Subscriber+FlatMap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Subscriber+FlatMap.swift"; sourceTree = "<group>"; };
-		FBA119D9244A81570022A15B /* Publisher+FlatMap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Publisher+FlatMap.swift"; sourceTree = "<group>"; };
+		FBA119D9244A81570022A15B /* FlatMap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlatMap.swift; sourceTree = "<group>"; };
 		FBA119DD244B3F840022A15B /* Subscription+Inits.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Subscription+Inits.swift"; sourceTree = "<group>"; };
 		FBA11A16244E4A6E0022A15B /* Subscriber+Inits.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Subscriber+Inits.swift"; sourceTree = "<group>"; };
 		FBA11A18244E4B680022A15B /* Producer+Inits.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Producer+Inits.swift"; sourceTree = "<group>"; };
 		FBA11A2124523BCF0022A15B /* Publication+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Publication+Extensions.swift"; sourceTree = "<group>"; };
+		FBA11A332454BF1D0022A15B /* MapError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapError.swift; sourceTree = "<group>"; };
 		FBC21A7E243BD4EA00EFD588 /* FreeCombine.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = FreeCombine.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		FBC21A82243BD4EA00EFD588 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		FBC21A87243BD4EA00EFD588 /* FreeCombineTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FreeCombineTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -53,7 +55,7 @@
 		FBCE1B442443EBA0001872C0 /* Publisher+Inits.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Publisher+Inits.swift"; sourceTree = "<group>"; };
 		FBCE1B462443EDA6001872C0 /* Publisher+Unlimited.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Publisher+Unlimited.swift"; sourceTree = "<group>"; };
 		FBCE1B482443EDDA001872C0 /* Producer+Statics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Producer+Statics.swift"; sourceTree = "<group>"; };
-		FBCE1B4A2444D7EC001872C0 /* Publisher+Map.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Publisher+Map.swift"; sourceTree = "<group>"; };
+		FBCE1B4A2444D7EC001872C0 /* Map.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Map.swift; sourceTree = "<group>"; };
 		FBCE1B4C2444DF9B001872C0 /* MapTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapTests.swift; sourceTree = "<group>"; };
 		FBCE1B52244674C6001872C0 /* Subscriber+Map.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Subscriber+Map.swift"; sourceTree = "<group>"; };
 		FBCE1B5424467561001872C0 /* Subscription+FlatMap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Subscription+FlatMap.swift"; sourceTree = "<group>"; };
@@ -103,8 +105,6 @@
 			children = (
 				FBCE1B442443EBA0001872C0 /* Publisher+Inits.swift */,
 				FBCE1B462443EDA6001872C0 /* Publisher+Unlimited.swift */,
-				FBCE1B4A2444D7EC001872C0 /* Publisher+Map.swift */,
-				FBA119D9244A81570022A15B /* Publisher+FlatMap.swift */,
 			);
 			path = Publisher;
 			sourceTree = "<group>";
@@ -124,6 +124,16 @@
 				FBA11A2124523BCF0022A15B /* Publication+Extensions.swift */,
 			);
 			path = Publication;
+			sourceTree = "<group>";
+		};
+		FBA11A322454BED00022A15B /* Publishers */ = {
+			isa = PBXGroup;
+			children = (
+				FBCE1B4A2444D7EC001872C0 /* Map.swift */,
+				FBA11A332454BF1D0022A15B /* MapError.swift */,
+				FBA119D9244A81570022A15B /* FlatMap.swift */,
+			);
+			path = Publishers;
 			sourceTree = "<group>";
 		};
 		FBC21A74243BD4EA00EFD588 = {
@@ -156,6 +166,7 @@
 				FBA119D4244A0F150022A15B /* Subscriber */,
 				FBA119D5244A0F220022A15B /* Subscription */,
 				FBA119DF244B42FA0022A15B /* Producer */,
+				FBA11A322454BED00022A15B /* Publishers */,
 			);
 			path = FreeCombine;
 			sourceTree = "<group>";
@@ -279,15 +290,16 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				FBCE1B4B2444D7EC001872C0 /* Publisher+Map.swift in Sources */,
+				FBCE1B4B2444D7EC001872C0 /* Map.swift in Sources */,
 				FBA11A17244E4A6E0022A15B /* Subscriber+Inits.swift in Sources */,
 				FBCE1B5524467561001872C0 /* Subscription+FlatMap.swift in Sources */,
 				FBA11A19244E4B680022A15B /* Producer+Inits.swift in Sources */,
 				FBCE1B452443EBA0001872C0 /* Publisher+Inits.swift in Sources */,
+				FBA11A342454BF1D0022A15B /* MapError.swift in Sources */,
 				FBCE1B4324420763001872C0 /* FunctionalProgramming.swift in Sources */,
 				FBA119D8244A0F7A0022A15B /* Subscriber+FlatMap.swift in Sources */,
 				FBCE1B53244674C6001872C0 /* Subscriber+Map.swift in Sources */,
-				FBA119DA244A81570022A15B /* Publisher+FlatMap.swift in Sources */,
+				FBA119DA244A81570022A15B /* FlatMap.swift in Sources */,
 				FBCE1B492443EDDA001872C0 /* Producer+Statics.swift in Sources */,
 				FBA11A2224523BCF0022A15B /* Publication+Extensions.swift in Sources */,
 				FBC21A99243BD52300EFD588 /* FreeCombine.swift in Sources */,

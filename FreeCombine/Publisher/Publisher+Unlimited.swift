@@ -10,10 +10,7 @@ public extension Publisher {
     func sink(
         receive: @escaping (Publication<Output, Failure>) -> Void
     ) -> Subscription {
-        let subscriber = Subscriber<Output, Failure> {
-            receive($0)
-            return .unlimited
-        }
+        let subscriber = Subscriber<Output, Failure> { receive($0); return .unlimited }
         let subscription = self(subscriber)
         subscription(.demand(.unlimited))
         return subscription
