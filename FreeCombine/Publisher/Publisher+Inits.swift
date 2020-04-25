@@ -25,7 +25,7 @@ extension Publisher {
 public extension Publisher {
     init(_ producer: Producer<Output, Failure>) {
         self.call = { subscriber in
-            .init(Func(subscriber |> producer.bind).map {_ in })
+            .init(Func(subscriber |> producer.supply).map(void))
         }
     }
 }

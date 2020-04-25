@@ -134,6 +134,7 @@
 			children = (
 				FBCE1B7E24474160001872C0 /* FreeCombine.playground */,
 				FBC21A80243BD4EA00EFD588 /* FreeCombine */,
+				FBC21A82243BD4EA00EFD588 /* Info.plist */,
 				FBC21A8B243BD4EA00EFD588 /* FreeCombineTests */,
 				FBC21A7F243BD4EA00EFD588 /* Products */,
 			);
@@ -157,7 +158,6 @@
 				FBA11A2024523BBC0022A15B /* Publication */,
 				FBA119D4244A0F150022A15B /* Subscriber */,
 				FBA119D5244A0F220022A15B /* Subscription */,
-				FBC21A82243BD4EA00EFD588 /* Info.plist */,
 				FBA119DF244B42FA0022A15B /* Producer */,
 			);
 			path = FreeCombine;

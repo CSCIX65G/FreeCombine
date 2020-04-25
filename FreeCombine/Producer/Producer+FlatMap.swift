@@ -7,10 +7,11 @@
 //
 
 extension Producer {
-    func bind(subscriber: Subscriber<Value, Failure>) -> (Request) -> Demand {
+    func supply(subscriber: Subscriber<Value, Failure>) -> (Request) -> Demand {
         var hasCompleted = false
         return { request in
             guard case .demand(let demand) = request else {
+                hasCompleted = true
                 return subscriber(.finished)
             }
             guard demand.quantity > 0 && !hasCompleted else { return .none }

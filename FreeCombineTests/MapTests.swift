@@ -19,42 +19,52 @@ class MapTests: XCTestCase {
         // Put teardown code here. This method is called after the invocation of each test method in the class.
     }
 
-//    func testMap() throws {
-//        var count = 0, total = 0
-//        _ = PublishedSequence([1, 2, 3, 4])
-//            .map { $0 * 2 }
-//            .sink(
-//                receiveCompletion: { completion in
-//                    XCTAssertEqual(count, 4,  "Completed with wrong count")
-//                    XCTAssertEqual(total, 20, "Completed with wrong count")
-//                    print("Completed")
-//                },
-//                receiveValue: { value in
-//                    guard count < 4 else { XCTFail("Received incorrect number of calls"); return }
-//                    guard total <= 20 else { XCTFail("Received wrong value"); return }
-//                    count += 1
-//                    total += value
-//                }
-//            )
-//    }
-//
-//    func testChainedMap() throws {
-//        var count = 0, total = 0
-//        _ = PublishedSequence([1, 2, 3, 4])
-//            .map { $0 * 2 }
-//            .map { $0 / 2 }
-//            .sink(
-//                receiveCompletion: { completion in
-//                    XCTAssertEqual(count, 4,  "Completed with wrong count")
-//                    XCTAssertEqual(total, 10, "Completed with wrong count")
-//                    print("Completed")
-//                },
-//                receiveValue: { value in
-//                    guard count < 4 else { XCTFail("Received incorrect number of calls"); return }
-//                    guard total <= 10 else { XCTFail("Received wrong value"); return }
-//                    count += 1
-//                    total += value
-//                }
-//            )
-//    }
+    func testMap() throws {
+        var count = 0, total = 0
+        _ = Publisher<Int, Never>.PublishedSequence([1, 2, 3, 4])
+            .map { $0 * 2 }
+            .sink {
+                switch $0 {
+                case .none, .failure:
+                    ()
+                case .value(let value):
+                    guard count < 4 else {
+                        XCTFail("Received incorrect number of calls");
+                        return
+                    }
+                    guard total <= 20 else {
+                        XCTFail("Received wrong value")
+                        return
+                    }
+                    count += 1
+                    total += value
+                case .finished:
+                    XCTAssertEqual(count, 4,  "Completed with wrong count")
+                    XCTAssertEqual(total, 20, "Completed with wrong count")
+                    print("Completed")
+                }
+            }
+    }
+
+    func testChainedMap() throws {
+        var count = 0, total = 0
+        _ = Publisher<Int, Never>.PublishedSequence([1, 2, 3, 4])
+            .map { $0 * 2 }
+            .map { $0 / 2 }
+            .sink {
+                switch $0 {
+                case .none, .failure:
+                    ()
+                case .value(let value):
+                    guard count < 4 else { XCTFail("Received incorrect number of calls"); return }
+                    guard total <= 10 else { XCTFail("Received wrong value"); return }
+                    count += 1
+                    total += value
+                case .finished:
+                    XCTAssertEqual(count, 4,  "Completed with wrong count")
+                    XCTAssertEqual(total, 10, "Completed with wrong count")
+                    print("Completed")
+                }
+            }
+    }
 }

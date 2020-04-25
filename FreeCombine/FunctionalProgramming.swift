@@ -25,6 +25,7 @@ infix operator |>: CompositionPrecedence
 public func |> <A, B> (a: A, f: (A) -> B) -> B { f(a) }
 
 public func identity<T>(_ t: T) -> T { t }
+public func void<T>(_ t: T) -> Void { }
 
 public func curry<A, B, C>(
     _ function: @escaping (A, B) -> C
