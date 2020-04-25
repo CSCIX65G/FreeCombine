@@ -8,14 +8,13 @@
 
 public extension Publisher {
     func sink(
-        receivePublication: @escaping (Publication<Output, Failure>) -> Void
+        receive: @escaping (Publication<Output, Failure>) -> Void
     ) -> Subscription {
-        let subscription = self(
-            Subscriber<Output, Failure> {
-                receivePublication($0)
-                return .unlimited
-            }
-        )
+        let subscriber = Subscriber<Output, Failure> {
+            receive($0)
+            return .unlimited
+        }
+        let subscription = self(subscriber)
         subscription(.demand(.unlimited))
         return subscription
     }
@@ -24,16 +23,15 @@ public extension Publisher {
         to keyPath: ReferenceWritableKeyPath<Root, Output>,
         on object: Root
     ) -> Subscription {
-        let subscription = self(
-            Subscriber<Output, Failure> { input in
-                switch input {
-                case .value(let value): object[keyPath: keyPath] = value
-                case .failure, .finished: ()
-                case .none: return .none
-                }
-                return .unlimited
+        let subscriber = Subscriber<Output, Failure> { input in
+            switch input {
+            case .value(let value): object[keyPath: keyPath] = value
+            case .failure, .finished: ()
+            case .none: return .none
             }
-        )
+            return .unlimited
+        }
+        let subscription = self(subscriber)
         subscription(.demand(.unlimited))
         return subscription
     }

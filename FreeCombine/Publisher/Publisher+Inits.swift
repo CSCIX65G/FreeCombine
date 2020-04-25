@@ -11,6 +11,7 @@ extension Publisher: CallableAsFunction {
         self.call = f.call
     }
 }
+
 public extension Publisher {
     init(_ producer: Producer<Output, Failure>) {
         self.call = { subscriber in

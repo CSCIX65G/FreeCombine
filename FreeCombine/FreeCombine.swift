@@ -48,7 +48,7 @@ public struct Subscriber<Value, Failure: Error> {
     }
 }
 
-public final class Subscription {
+public struct Subscription {
     public let call: (Request) -> Void
     public init(_ call: @escaping (Request) -> Void) {
         self.call = call

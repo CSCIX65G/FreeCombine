@@ -10,11 +10,11 @@ extension Subscription: CallableAsFunction {
     public typealias A = Request
     public typealias B = Void
 
-    public convenience init(_ f: Func<Request, Void>) {
+    public init(_ f: Func<Request, Void>) {
         self.init(f.call)
     }
 
-    public convenience init(_ f: Func<Request, Demand>) {
+    public init(_ f: Func<Request, Demand>) {
         self.init(f.map(void).call)
     }
 }
