@@ -6,12 +6,6 @@
 //  Copyright © 2020 ComputeCycles, LLC. All rights reserved.
 //
 
-extension Publisher: CallableAsFunction {
-    public init(_ f: Func<Subscriber<Output, Failure>, Subscription>) {
-        self.call = f.call
-    }
-}
-
 func Empty<T>(_ t: T.Type) -> Publisher<T, Never> {
     .init(Producer.empty())
 }

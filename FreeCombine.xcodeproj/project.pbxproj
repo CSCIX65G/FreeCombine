@@ -14,12 +14,19 @@
 		FBA11A19244E4B680022A15B /* Producer+Callable.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBA11A18244E4B680022A15B /* Producer+Callable.swift */; };
 		FBA11A2224523BCF0022A15B /* Publication+Map.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBA11A2124523BCF0022A15B /* Publication+Map.swift */; };
 		FBA11A342454BF1D0022A15B /* MapError.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBA11A332454BF1D0022A15B /* MapError.swift */; };
+		FBA11A36245517700022A15B /* Publisher+Callable.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBA11A35245517700022A15B /* Publisher+Callable.swift */; };
+		FBA11A3824551A5B0022A15B /* Reduce.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBA11A3724551A5B0022A15B /* Reduce.swift */; };
+		FBA11A3A24551A860022A15B /* SubscribeOn.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBA11A3924551A860022A15B /* SubscribeOn.swift */; };
+		FBA11A3C24551A920022A15B /* ReceiveOn.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBA11A3B24551A920022A15B /* ReceiveOn.swift */; };
+		FBA11A3E245521EC0022A15B /* CompactMap.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBA11A3D245521EC0022A15B /* CompactMap.swift */; };
+		FBA11A40245522750022A15B /* TryMap.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBA11A3F245522750022A15B /* TryMap.swift */; };
+		FBA11A422455BB200022A15B /* Filter.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBA11A412455BB200022A15B /* Filter.swift */; };
 		FBC21A88243BD4EA00EFD588 /* FreeCombine.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FBC21A7E243BD4EA00EFD588 /* FreeCombine.framework */; };
 		FBC21A8D243BD4EA00EFD588 /* PublisherTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBC21A8C243BD4EA00EFD588 /* PublisherTests.swift */; };
 		FBC21A99243BD52300EFD588 /* FreeCombine.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBC21A98243BD52300EFD588 /* FreeCombine.swift */; };
 		FBCE1B4324420763001872C0 /* FunctionalProgramming.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBCE1B4224420763001872C0 /* FunctionalProgramming.swift */; };
 		FBCE1B452443EBA0001872C0 /* Publisher+Inits.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBCE1B442443EBA0001872C0 /* Publisher+Inits.swift */; };
-		FBCE1B472443EDA6001872C0 /* Publisher+Unlimited.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBCE1B462443EDA6001872C0 /* Publisher+Unlimited.swift */; };
+		FBCE1B472443EDA6001872C0 /* Publisher+SinkAssign.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBCE1B462443EDA6001872C0 /* Publisher+SinkAssign.swift */; };
 		FBCE1B492443EDDA001872C0 /* Producer+Statics.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBCE1B482443EDDA001872C0 /* Producer+Statics.swift */; };
 		FBCE1B4B2444D7EC001872C0 /* Map.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBCE1B4A2444D7EC001872C0 /* Map.swift */; };
 		FBCE1B4D2444DF9B001872C0 /* MapTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBCE1B4C2444DF9B001872C0 /* MapTests.swift */; };
@@ -45,6 +52,13 @@
 		FBA11A18244E4B680022A15B /* Producer+Callable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Producer+Callable.swift"; sourceTree = "<group>"; };
 		FBA11A2124523BCF0022A15B /* Publication+Map.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Publication+Map.swift"; sourceTree = "<group>"; };
 		FBA11A332454BF1D0022A15B /* MapError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapError.swift; sourceTree = "<group>"; };
+		FBA11A35245517700022A15B /* Publisher+Callable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Publisher+Callable.swift"; sourceTree = "<group>"; };
+		FBA11A3724551A5B0022A15B /* Reduce.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Reduce.swift; sourceTree = "<group>"; };
+		FBA11A3924551A860022A15B /* SubscribeOn.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscribeOn.swift; sourceTree = "<group>"; };
+		FBA11A3B24551A920022A15B /* ReceiveOn.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReceiveOn.swift; sourceTree = "<group>"; };
+		FBA11A3D245521EC0022A15B /* CompactMap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompactMap.swift; sourceTree = "<group>"; };
+		FBA11A3F245522750022A15B /* TryMap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TryMap.swift; sourceTree = "<group>"; };
+		FBA11A412455BB200022A15B /* Filter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Filter.swift; sourceTree = "<group>"; };
 		FBC21A7E243BD4EA00EFD588 /* FreeCombine.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = FreeCombine.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		FBC21A82243BD4EA00EFD588 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		FBC21A87243BD4EA00EFD588 /* FreeCombineTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FreeCombineTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -53,7 +67,7 @@
 		FBC21A98243BD52300EFD588 /* FreeCombine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FreeCombine.swift; sourceTree = "<group>"; };
 		FBCE1B4224420763001872C0 /* FunctionalProgramming.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FunctionalProgramming.swift; sourceTree = "<group>"; };
 		FBCE1B442443EBA0001872C0 /* Publisher+Inits.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Publisher+Inits.swift"; sourceTree = "<group>"; };
-		FBCE1B462443EDA6001872C0 /* Publisher+Unlimited.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Publisher+Unlimited.swift"; sourceTree = "<group>"; };
+		FBCE1B462443EDA6001872C0 /* Publisher+SinkAssign.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Publisher+SinkAssign.swift"; sourceTree = "<group>"; };
 		FBCE1B482443EDDA001872C0 /* Producer+Statics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Producer+Statics.swift"; sourceTree = "<group>"; };
 		FBCE1B4A2444D7EC001872C0 /* Map.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Map.swift; sourceTree = "<group>"; };
 		FBCE1B4C2444DF9B001872C0 /* MapTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapTests.swift; sourceTree = "<group>"; };
@@ -104,7 +118,8 @@
 			isa = PBXGroup;
 			children = (
 				FBCE1B442443EBA0001872C0 /* Publisher+Inits.swift */,
-				FBCE1B462443EDA6001872C0 /* Publisher+Unlimited.swift */,
+				FBA11A35245517700022A15B /* Publisher+Callable.swift */,
+				FBCE1B462443EDA6001872C0 /* Publisher+SinkAssign.swift */,
 			);
 			path = Publisher;
 			sourceTree = "<group>";
@@ -130,8 +145,14 @@
 			isa = PBXGroup;
 			children = (
 				FBCE1B4A2444D7EC001872C0 /* Map.swift */,
+				FBA11A3F245522750022A15B /* TryMap.swift */,
 				FBA11A332454BF1D0022A15B /* MapError.swift */,
+				FBA11A412455BB200022A15B /* Filter.swift */,
+				FBA11A3D245521EC0022A15B /* CompactMap.swift */,
 				FBA119D9244A81570022A15B /* FlatMap.swift */,
+				FBA11A3724551A5B0022A15B /* Reduce.swift */,
+				FBA11A3924551A860022A15B /* SubscribeOn.swift */,
+				FBA11A3B24551A920022A15B /* ReceiveOn.swift */,
 			);
 			path = PublisherChains;
 			sourceTree = "<group>";
@@ -295,16 +316,23 @@
 				FBCE1B5524467561001872C0 /* Subscription+FlatMap.swift in Sources */,
 				FBA11A19244E4B680022A15B /* Producer+Callable.swift in Sources */,
 				FBCE1B452443EBA0001872C0 /* Publisher+Inits.swift in Sources */,
+				FBA11A40245522750022A15B /* TryMap.swift in Sources */,
 				FBA11A342454BF1D0022A15B /* MapError.swift in Sources */,
 				FBCE1B4324420763001872C0 /* FunctionalProgramming.swift in Sources */,
 				FBA119D8244A0F7A0022A15B /* Subscriber+FlatMap.swift in Sources */,
+				FBA11A3824551A5B0022A15B /* Reduce.swift in Sources */,
 				FBCE1B53244674C6001872C0 /* Subscriber+Map.swift in Sources */,
+				FBA11A3C24551A920022A15B /* ReceiveOn.swift in Sources */,
 				FBA119DA244A81570022A15B /* FlatMap.swift in Sources */,
+				FBA11A422455BB200022A15B /* Filter.swift in Sources */,
 				FBCE1B492443EDDA001872C0 /* Producer+Statics.swift in Sources */,
 				FBA11A2224523BCF0022A15B /* Publication+Map.swift in Sources */,
+				FBA11A3A24551A860022A15B /* SubscribeOn.swift in Sources */,
+				FBA11A36245517700022A15B /* Publisher+Callable.swift in Sources */,
+				FBA11A3E245521EC0022A15B /* CompactMap.swift in Sources */,
 				FBC21A99243BD52300EFD588 /* FreeCombine.swift in Sources */,
 				FBA119DE244B3F840022A15B /* Subscription+Callable.swift in Sources */,
-				FBCE1B472443EDA6001872C0 /* Publisher+Unlimited.swift in Sources */,
+				FBCE1B472443EDA6001872C0 /* Publisher+SinkAssign.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

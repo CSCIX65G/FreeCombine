@@ -13,6 +13,12 @@ extension Subscriber {
         .init { transform |> $0.map >>> self }
     }
 
+//    func contraMap<T>(
+//        _ transform: @escaping (T) throws -> Value
+//    ) throws -> Subscriber<T, Failure> {
+//        .init { transform |> $0.map >>> self }
+//    }
+
     func contraMapError<T: Error>(
         _ transform: @escaping (T) -> Failure
     ) -> Subscriber<Value, T> {
