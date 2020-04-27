@@ -38,6 +38,7 @@ public func |> <A, B> (
  */
 public func identity<T>(_ t: T) -> T { t }
 public func void<T>(_ t: T) -> Void { }
+public func cons<T>(_ t: T) -> () -> T { { t } }
 
 /*:
  Allow structs which are callable as functions
@@ -55,6 +56,10 @@ public protocol CallableAsFunction {
     
     func callAsFunction(_ a: A) -> B
     
+    static func catching(
+        _ f: @escaping (A) throws -> B
+    ) -> Func<A, Result<B, Error>>
+
     func map<C>(
         _ f: @escaping (B) -> C
     ) -> Func<A, C>
@@ -90,6 +95,15 @@ public protocol CallableAsFunction {
 public extension CallableAsFunction {
     func callAsFunction(_ a: A) -> B {
         call(a)
+    }
+    
+    static func catching(
+        _ f: @escaping (A) throws -> B
+    ) -> Func<A, Result<B, Error>> {
+        .init {
+            do { return .success(try f($0)) }
+            catch { return .failure(error) }
+        }
     }
     
     func map<C>(

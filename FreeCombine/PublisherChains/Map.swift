@@ -8,18 +8,12 @@
 
 public extension Publisher {
     func map<T>(_ transform: @escaping (Output) -> T) -> Publisher<T, Failure> {
-        //public struct Publisher<T, Failure: Error> {
-        //    public let call: (Subscriber<T, Failure>) -> Subscription
-        //}
-
-        let hoist = { (downstream: Subscriber<T, Failure>) -> Subscriber<Output, Failure> in
-            downstream.contraMap(transform)
-        }
-        
-        let lower = { (upstream: Subscription) -> Subscription in
-            upstream
-        }
-        
-        return .init(dimap(hoist, lower))
+        transforming(
+            initialState: (),
+            preSubscriber: { _ in Publication.map(transform) },
+            postSubscriber: { _ in identity },
+            preSubscription: { _ in identity },
+            postSubscription: { _ in { } }
+        )
     }
 }

@@ -10,21 +10,19 @@
  # Combine as the composition of functions
  
  In the beginning is Demand for some values.
- You only have to say how much you want for now
+ You only have to say how much you want
  not what kind of thing you want.
 */
 public enum Demand {
     case none
     case max(Int)
     case unlimited
-    case last
 
     var quantity: Int {
         switch self {
         case .none: return 0
         case .max(let val): return val
         case .unlimited: return Int.max
-        case .last: return 0
         }
     }
 }
@@ -57,12 +55,22 @@ public enum Publication<Value, Failure: Error> {
 }
 
 /*:
+ The are our 3 basic types.  Everything we do in this package
+ is simply writing functions that manipulate these types.
+ Best of all the manipulations that we want to do themselves
+ come in 3 basic types of functions which can then be composed
+ using the 5 stand functions on Func.  So you _must_ understand
+ how those function-returning-functions do.
+ 
+ So diving into our function types...
+ 
  Ultimately, there must be a function which produces a Publication
  in response to a Request.  We call such a function a Producer.
  
  Like all the functions we will discuss which are parameterized
  by multiple generic types, producers have a family of interesting
- map functions, which we will explore at a future date.
+ map functions, which we will explore in detail elsewhere in
+ the library.
 */
 public struct Producer<Value, Failure: Error> {
     public let call: (Request) -> Publication<Value, Failure>
@@ -75,28 +83,32 @@ public struct Producer<Value, Failure: Error> {
  Since we have a function which can produce Publications in
  response to requests, there must also be a function which
  satisfies a Request by consuming a Publication.  We call
- such a function a Subscriber.  In a very human manner a Subscriber
- consuming a publication can induce even more Demand
- which it provides as its function return type.
+ such a function a Subscriber.
+ 
+ In a very human manner a Subscriber consuming a publication
+ can induce even more Demand which it provides as its function
+ return type.
  
  This division of production and consumption means
- that you can compose Subscribers with Producers.  Since
- you only get the Subscriber AFTER you have a producer,
- the composition must be a `contraMap` or `contraFlatMap`
- (i.e. you prepend the Producer to the Subscriber).
- In particular, since we can produce in batches, we are
- going to want to use `contraFlatMap`, which means that
- we are going to need at least one `join` function on
- Subscriber as well (in fact we have two as you will
- see later).
+ that you can compose Subscribers with Producers.
+ This should be very intuitive since it is how all
+ of economics actually works as well.
  
- `contraMap`ping a Subscriber with a Producer yields a
+ But... You only get the Subscriber AFTER you have a producer,
+ so the composition of the two functions must be a `contraMap`
+ or `contraFlatMap` (i.e. you prepend the Producer to the Subscriber).
+ In particular, since we can produce Publications in batches, we are
+ going to want to use `contraFlatMap`, which means that
+ we are going to need at least a `join` function on
+ Subscriber as well.
+ 
+ `contraFlatMap`ping a Subscriber with a Producer yields a
  function from Request to Demand as you can verify:
 
      (Producer >>> Subscriber) -> (Request) -> Demand
 
- (I use >>> here imprecisely since I don't have an
- operator for `contraFlatMap` with `join`). Note that
+ (I use >>> here imprecisely since I haven't written an
+ operator for `contraFlatMap` in the `join` form). Note that
  this operation erases the Publication type in the process.
  
  Also note that since Subscriber has two generic parameters
@@ -152,7 +164,7 @@ public struct Subscription {
  
  And as always, because Publisher is parameterized by multiple
  generic types, it too, has multiple forms of map.  Indeed
- it has a host of monadic functions which allow us to chain
+ it has a generalized form of monadic function which allow us to chain
  Publishers together in all sorts of interesting ways.
  
  The majority of this library is given over to chaining
@@ -171,3 +183,28 @@ public struct Publisher<Output, Failure: Error> {
         self.call = call
     }
 }
+/*:
+ All of FreeCombine is implemented as composition of the 3 basic value types
+ using the 4 basic function types.  To reiterate, the value types are:
+ 
+     Demand
+     Request
+     Publication
+ 
+ and the function types (all represented as "call-as-function"
+ Swift structs) are:
+ 
+     Producer: (Request) -> Publication
+     Subscriber: (Publication) -> Demand
+     Subscription: (Request) -> Void
+     Publisher: (Producer) -> (Subscriber) -> Subscription
+ 
+ and we "combine" these elements using the basic functional
+ programming elements of:
+ 
+     map
+     flatMap
+     contraMap
+     contraFlatMap
+     dimap
+ */

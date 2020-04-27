@@ -8,30 +8,6 @@
 
 extension Subscriber {
     /*:
-     Joining one subscriber to another in a way that allows
-     a single subscriber to be attached to a series of Publishers.
-     The trick is to prepend a subscriber which never allows
-     `.finished` to be passed to the original subscriber.
-     The new subscriber does this by simply returning in
-     response to .finished, the last demand
-     the original subscriber had replied with.
-     */
-    var join: Self {
-        var demand = Demand.none
-        return .init { input in
-            switch input {
-            case .finished:
-                return demand
-            case .value, .failure:
-                demand = self(input)
-                return demand
-            case .none:
-                return .last
-            }
-        }
-    }
-    
-    /*:
      Prepending a new subscriber to another subscriber
      in such a way that the prepended subscriber, on invocation
      with a publication, will:
@@ -40,6 +16,8 @@ extension Subscriber {
      2. iterate over a producer as long as a) the producer can
         produce and b) the original subscriber returns additional
         demand.
+     
+     This is used to `contraFlatMap` and `Subscriber` into a `Producer`
      */
     static func join(_ producer: Producer<Value, Failure>) -> (Self) -> Self {
         return { subscriber in

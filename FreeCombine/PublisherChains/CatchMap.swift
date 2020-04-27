@@ -1,16 +1,19 @@
 //
-//  MapError.swift
+//  TryMap.swift
 //  FreeCombine
 //
 //  Created by Van Simmons on 4/25/20.
 //  Copyright © 2020 ComputeCycles, LLC. All rights reserved.
 //
 
+// TODO: Implement tryMap
 public extension Publisher {
-    func mapError<T: Error>(_ transform: @escaping (Failure) -> T) -> Publisher<Output, T> {
+    func catchMap<T>(
+        _ transform: @escaping (Output) throws -> T
+    ) -> Publisher<Result<T, Error>, Error> {
         transforming(
             initialState: (),
-            preSubscriber: { _ in Publication.mapError(transform) },
+            preSubscriber: { _ in Publication.catchMap(transform) },
             postSubscriber: { _ in identity },
             preSubscription: { _ in identity },
             postSubscription: { _ in { } }
