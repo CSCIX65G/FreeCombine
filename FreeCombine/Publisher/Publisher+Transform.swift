@@ -18,7 +18,7 @@ extension Publisher {
         initialState: State,
         joinSubscriber: @escaping (StateRef<State>)
             -> (Subscriber<Downstream, DownstreamFailure>)
-        -> Subscriber<Downstream, DownstreamFailure> = { _ in identity },
+            -> Subscriber<Downstream, DownstreamFailure> = { _ in identity },
         preSubscriber: @escaping (StateRef<State>)
             -> (Publication<Output, Failure>)
             -> Publication<Downstream, DownstreamFailure>,

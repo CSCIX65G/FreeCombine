@@ -12,7 +12,7 @@ public extension Publisher {
     ) -> Publisher<Output, Failure> {
         transforming(
             initialState: Demand.none,
-            joinSubscriber: { ref in
+            joinSubscriber: { ref in   /// Block sending .none downstream
                 { downstream in
                     .init { (publication) -> Demand in
                         switch publication {
@@ -22,7 +22,7 @@ public extension Publisher {
                     }
                 }
             },
-            preSubscriber: { _ in
+            preSubscriber: { _ in     /// check the value received, convert it to .none if it doesn't pass
                 { upstreamPublication in
                     switch upstreamPublication {
                     case .value(let value):
@@ -31,7 +31,7 @@ public extension Publisher {
                     }
                 }
             },
-            postSubscriber: { ref in
+            postSubscriber: { ref in   /// save the demand state so that we can echo it when we filter
                 { demand in
                     ref.state = demand; return demand
                 }
