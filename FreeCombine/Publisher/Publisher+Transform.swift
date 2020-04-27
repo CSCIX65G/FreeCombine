@@ -11,6 +11,11 @@ class StateRef<State> {
     init(_ state: State) {
         self.state = state
     }
+    
+    func save(_ state: State) -> State {
+        self.state = state
+        return state
+    }
 }
 
 extension Publisher {
