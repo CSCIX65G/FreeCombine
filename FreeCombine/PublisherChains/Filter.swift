@@ -6,24 +6,36 @@
 //  Copyright © 2020 ComputeCycles, LLC. All rights reserved.
 //
 
-//public extension Publisher {
-//    func filter(_ transform: @escaping (Output) -> Bool) -> Publisher<Output, Failure> {
-//        struct FilterState {
-//            var hasFailed = false
-//            demand = Demand.none
-//        }
-//        transforming(
-//            initialState: Demand.none,
-//            preSubscriber: { state in
-//                { upstreamPublication in
-//                    switch upstreamPublication {
-//                        
-//                    }
-//                }
-//            },
-//            postSubscriber: { state in { newDemand in state = newDemand } },
-//            preSubscription: { _ in identity },
-//            postSubscription: { _ in { } }
-//        )
-//    }
-//}
+public extension Publisher {
+    func filter(
+        _ isIncluded: @escaping (Output) -> Bool
+    ) -> Publisher<Output, Failure> {
+        transforming(
+            initialState: Demand.none,
+            joinSubscriber: { ref in
+                { downstream in
+                    .init { (publication) -> Demand in
+                        switch publication {
+                        case .none: return ref.state
+                        case .value, .failure, .finished: return downstream(publication)
+                        }
+                    }
+                }
+            },
+            preSubscriber: { _ in
+                { upstreamPublication in
+                    switch upstreamPublication {
+                    case .value(let value):
+                        return isIncluded(value) ? upstreamPublication : .none
+                    case .none, .failure, .finished: return upstreamPublication
+                    }
+                }
+            },
+            postSubscriber: { ref in
+                { demand in
+                    ref.state = demand; return demand
+                }
+            }
+        )
+    }
+}

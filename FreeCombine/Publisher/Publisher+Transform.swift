@@ -6,28 +6,35 @@
 //  Copyright © 2020 ComputeCycles, LLC. All rights reserved.
 //
 
+class StateRef<State> {
+    var state: State
+    init(_ state: State) {
+        self.state = state
+    }
+}
+
 extension Publisher {
     func transforming<State, Downstream, DownstreamFailure>(
         initialState: State,
-        joinSubscriber: @escaping (inout State)
+        joinSubscriber: @escaping (StateRef<State>)
             -> (Subscriber<Downstream, DownstreamFailure>)
-            -> Subscriber<Downstream, DownstreamFailure>,
-        preSubscriber: @escaping (inout State)
+        -> Subscriber<Downstream, DownstreamFailure> = { _ in identity },
+        preSubscriber: @escaping (StateRef<State>)
             -> (Publication<Output, Failure>)
             -> Publication<Downstream, DownstreamFailure>,
-        postSubscriber: @escaping (inout State) -> (Demand) -> Demand,
-        joinSubscription: @escaping (inout State) -> (Subscription) -> Subscription,
-        preSubscription: @escaping (inout State) -> (Request) -> Request,
-        postSubscription: @escaping (inout State) -> () -> Void
+        postSubscriber: @escaping (StateRef<State>) -> (Demand) -> Demand  = { _ in identity },
+        joinSubscription: @escaping (StateRef<State>) -> (Subscription) -> Subscription = { _ in identity },
+        preSubscription: @escaping (StateRef<State>) -> (Request) -> Request  = { _ in identity },
+        postSubscription: @escaping (StateRef<State>) -> () -> Void = { _ in { } }
     ) -> Publisher<Downstream, DownstreamFailure> {
-        var state = initialState
+        let state = StateRef(initialState)
         
         let hoist = { (downstream: Subscriber<Downstream, DownstreamFailure>) -> Subscriber<Output, Failure> in
-            .init(joinSubscriber(&state)(downstream).dimap(preSubscriber(&state), postSubscriber(&state)))
+            .init(joinSubscriber(state)(downstream).dimap(preSubscriber(state), postSubscriber(state)))
         }
         
         let lower = { (upstream: Subscription) -> Subscription in
-            .init(joinSubscription(&state)(upstream).dimap(preSubscription(&state), postSubscription(&state)))
+            .init(joinSubscription(state)(upstream).dimap(preSubscription(state), postSubscription(state)))
         }
 
         return .init(dimap(hoist, lower))
