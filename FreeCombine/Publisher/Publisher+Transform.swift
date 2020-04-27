@@ -9,19 +9,25 @@
 extension Publisher {
     func transforming<State, Downstream, DownstreamFailure>(
         initialState: State,
-        preSubscriber: @escaping (inout State) -> (Publication<Output, Failure>) -> Publication<Downstream, DownstreamFailure>,
+        joinSubscriber: @escaping (inout State)
+            -> (Subscriber<Downstream, DownstreamFailure>)
+            -> Subscriber<Downstream, DownstreamFailure>,
+        preSubscriber: @escaping (inout State)
+            -> (Publication<Output, Failure>)
+            -> Publication<Downstream, DownstreamFailure>,
         postSubscriber: @escaping (inout State) -> (Demand) -> Demand,
+        joinSubscription: @escaping (inout State) -> (Subscription) -> Subscription,
         preSubscription: @escaping (inout State) -> (Request) -> Request,
         postSubscription: @escaping (inout State) -> () -> Void
     ) -> Publisher<Downstream, DownstreamFailure> {
         var state = initialState
         
         let hoist = { (downstream: Subscriber<Downstream, DownstreamFailure>) -> Subscriber<Output, Failure> in
-            .init(downstream.dimap(preSubscriber(&state), postSubscriber(&state)))
+            .init(joinSubscriber(&state)(downstream).dimap(preSubscriber(&state), postSubscriber(&state)))
         }
         
         let lower = { (upstream: Subscription) -> Subscription in
-            Subscription.init(upstream.dimap(preSubscription(&state), postSubscription(&state)))
+            .init(joinSubscription(&state)(upstream).dimap(preSubscription(&state), postSubscription(&state)))
         }
 
         return .init(dimap(hoist, lower))
