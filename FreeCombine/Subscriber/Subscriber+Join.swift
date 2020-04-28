@@ -8,16 +8,17 @@
 
 extension Subscriber {
     /*:
-     Prepending a new subscriber to another subscriber
-     in such a way that the prepended subscriber, on invocation
-     with a publication, will:
+     Wrapping a producer in a subscriber
+     in such a way that the new subscriber, will now
+     accept Requests for invocation.  On
+     invocation the new subscriber will:
      
-     1. forward the publication to the original subscriber
-     2. iterate over a producer as long as a) the producer can
+     1. forward the request to the producer
+     2. iterate over the producer as long as a) the producer can
         produce and b) the original subscriber returns additional
         demand.
      
-     This is used to `contraFlatMap` and `Subscriber` into a `Producer`
+     This is used to `contraFlatMap` a `Subscriber` over a `Producer`
      */
     static func join(_ producer: Producer<Value, Failure>) -> (Self) -> Self {
         return { subscriber in

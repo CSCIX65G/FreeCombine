@@ -8,17 +8,24 @@
 
 // TODO: Implement flatMap
 //public extension Publisher {
-//    func compactMap<T>(
-//        _ isIncluded: @escaping (T?) -> T
-//    ) -> Publisher<Output, Failure> where Output == T? {
+public extension Publisher {
+    fileprivate struct FlatMapState<T> {
+        var subscription = Optional<Subscription>.none
+        var demand = Demand.max(1)
+    }
+    
+//    func flatMap<T>(
+//        _ transform: @escaping (Output) -> Publisher<T, Failure>
+//    ) -> Publisher<T, Failure> {
 //        transforming(
-//            initialState: Demand.max(1),
+//            initialState: FlatMapState<T>(),
 //            joinSubscriber: { ref in         /// Block sending unincluded downstream
 //                { downstream in
 //                    .init { (publication) -> Demand in
 //                        switch publication {
 //                        case .value(let value):
-//                            return value != nil ? ref.save(downstream(.value(value!))) : ref.state
+//                            let subscription = transform(value)(downstream)
+//                            subscription(.demand(ref.state.demand))
 //                        case .none, .failure, .finished:
 //                            return downstream(publication)
 //                        }
@@ -28,5 +35,6 @@
 //            preSubscriber: { _ in identity }
 //        )
 //    }
-//}
+}
+
 

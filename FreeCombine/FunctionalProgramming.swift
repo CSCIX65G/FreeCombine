@@ -56,10 +56,6 @@ public protocol CallableAsFunction {
     
     func callAsFunction(_ a: A) -> B
     
-    static func catching(
-        _ f: @escaping (A) throws -> B
-    ) -> Func<A, Result<B, Error>>
-
     func map<C>(
         _ f: @escaping (B) -> C
     ) -> Func<A, C>
@@ -71,15 +67,6 @@ public protocol CallableAsFunction {
     func flatMap<C>(
         _ f:  @escaping (B) -> (A) -> C
     ) -> Func<A, C>
-    
-    func flatMap<C>(
-        join:  @escaping (Self) -> Self,
-        transform:  @escaping (B) -> C
-    ) -> Func<A, C>
-    
-    func contraFlatMap<C>(
-        _ f:  @escaping (C) -> (C) -> A
-    ) -> Func<C, B>
     
     func contraFlatMap<C>(
         _ join:  @escaping (Self) -> Self,
@@ -96,16 +83,7 @@ public extension CallableAsFunction {
     func callAsFunction(_ a: A) -> B {
         call(a)
     }
-    
-    static func catching(
-        _ f: @escaping (A) throws -> B
-    ) -> Func<A, Result<B, Error>> {
-        .init {
-            do { return .success(try f($0)) }
-            catch { return .failure(error) }
-        }
-    }
-    
+        
     func map<C>(
         _ f: @escaping (B) -> C
     ) -> Func<A, C> {
@@ -118,29 +96,12 @@ public extension CallableAsFunction {
         f >>> self
     }
     
-    //bind form
     func flatMap<C>(
         _ f: @escaping (B) -> (A) -> C
     ) -> Func<A, C> {
         .init { (self >>> f)($0)($0) }
     }
 
-    // join form
-    func flatMap<C>(
-        join: (Self) -> Self,
-        transform: @escaping (B) -> C
-    ) -> Func<A, C> {
-        join(self) >>> transform
-    }
-
-    // bind form
-    func contraFlatMap<C>(
-        _ f:  @escaping (C) -> (C) -> A
-    ) -> Func<C, B> {
-        .init { (f($0) >>> self)($0) }
-    }
-
-    // join form
     func contraFlatMap<C>(
         _ join:  @escaping (Self) -> Self,
         _ transform:@escaping (C) -> A
@@ -172,6 +133,13 @@ public struct Func<FA, FB>: CallableAsFunction {
     
     public init(_ f: Func<A, B>) {
         self.call = f.call
+    }
+    
+    public init<C>(_ f: @escaping (A) throws -> C) where B == Result<C, Error> {
+        self = .init {
+            do { return .success(try f($0)) }
+            catch { return .failure(error) }
+        }
     }
 }
 

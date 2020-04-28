@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		FBA119D8244A0F7A0022A15B /* Subscriber+FlatMap.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBA119D7244A0F7A0022A15B /* Subscriber+FlatMap.swift */; };
+		FBA119D8244A0F7A0022A15B /* Subscriber+Join.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBA119D7244A0F7A0022A15B /* Subscriber+Join.swift */; };
 		FBA119DA244A81570022A15B /* FlatMap.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBA119D9244A81570022A15B /* FlatMap.swift */; };
 		FBA119DE244B3F840022A15B /* Subscription+Callable.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBA119DD244B3F840022A15B /* Subscription+Callable.swift */; };
 		FBA11A17244E4A6E0022A15B /* Subscriber+Callable.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBA11A16244E4A6E0022A15B /* Subscriber+Callable.swift */; };
@@ -33,8 +33,7 @@
 		FBCE1B492443EDDA001872C0 /* Producer+Statics.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBCE1B482443EDDA001872C0 /* Producer+Statics.swift */; };
 		FBCE1B4B2444D7EC001872C0 /* Map.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBCE1B4A2444D7EC001872C0 /* Map.swift */; };
 		FBCE1B4D2444DF9B001872C0 /* MapTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBCE1B4C2444DF9B001872C0 /* MapTests.swift */; };
-		FBCE1B53244674C6001872C0 /* Subscriber+Map.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBCE1B52244674C6001872C0 /* Subscriber+Map.swift */; };
-		FBCE1B5524467561001872C0 /* Subscription+FlatMap.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBCE1B5424467561001872C0 /* Subscription+FlatMap.swift */; };
+		FBCE1B5524467561001872C0 /* Subscription+Join.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBCE1B5424467561001872C0 /* Subscription+Join.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -48,7 +47,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		FBA119D7244A0F7A0022A15B /* Subscriber+FlatMap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Subscriber+FlatMap.swift"; sourceTree = "<group>"; };
+		FBA119D7244A0F7A0022A15B /* Subscriber+Join.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Subscriber+Join.swift"; sourceTree = "<group>"; };
 		FBA119D9244A81570022A15B /* FlatMap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlatMap.swift; sourceTree = "<group>"; };
 		FBA119DD244B3F840022A15B /* Subscription+Callable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Subscription+Callable.swift"; sourceTree = "<group>"; };
 		FBA11A16244E4A6E0022A15B /* Subscriber+Callable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Subscriber+Callable.swift"; sourceTree = "<group>"; };
@@ -77,8 +76,7 @@
 		FBCE1B482443EDDA001872C0 /* Producer+Statics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Producer+Statics.swift"; sourceTree = "<group>"; };
 		FBCE1B4A2444D7EC001872C0 /* Map.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Map.swift; sourceTree = "<group>"; };
 		FBCE1B4C2444DF9B001872C0 /* MapTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapTests.swift; sourceTree = "<group>"; };
-		FBCE1B52244674C6001872C0 /* Subscriber+Map.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Subscriber+Map.swift"; sourceTree = "<group>"; };
-		FBCE1B5424467561001872C0 /* Subscription+FlatMap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Subscription+FlatMap.swift"; sourceTree = "<group>"; };
+		FBCE1B5424467561001872C0 /* Subscription+Join.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Subscription+Join.swift"; sourceTree = "<group>"; };
 		FBCE1B7E24474160001872C0 /* FreeCombine.playground */ = {isa = PBXFileReference; lastKnownFileType = file.playground; path = FreeCombine.playground; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.swift; };
 /* End PBXFileReference section */
 
@@ -101,12 +99,35 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		FB4CF08724587156006F9D03 /* StatelessChains */ = {
+			isa = PBXGroup;
+			children = (
+				FBCE1B4A2444D7EC001872C0 /* Map.swift */,
+				FBA11A332454BF1D0022A15B /* MapError.swift */,
+				FBA11A3F245522750022A15B /* CatchMap.swift */,
+				FBA11A4324564E120022A15B /* TryMap.swift */,
+				FBA11A3924551A860022A15B /* SubscribeOn.swift */,
+				FBA11A3B24551A920022A15B /* ReceiveOn.swift */,
+			);
+			path = StatelessChains;
+			sourceTree = "<group>";
+		};
+		FB4CF08824587171006F9D03 /* StatefulChains */ = {
+			isa = PBXGroup;
+			children = (
+				FBA11A412455BB200022A15B /* Filter.swift */,
+				FBA11A3D245521EC0022A15B /* CompactMap.swift */,
+				FBA119D9244A81570022A15B /* FlatMap.swift */,
+				FBA11A3724551A5B0022A15B /* Reduce.swift */,
+			);
+			path = StatefulChains;
+			sourceTree = "<group>";
+		};
 		FBA119D4244A0F150022A15B /* Subscriber */ = {
 			isa = PBXGroup;
 			children = (
 				FBA11A16244E4A6E0022A15B /* Subscriber+Callable.swift */,
-				FBCE1B52244674C6001872C0 /* Subscriber+Map.swift */,
-				FBA119D7244A0F7A0022A15B /* Subscriber+FlatMap.swift */,
+				FBA119D7244A0F7A0022A15B /* Subscriber+Join.swift */,
 			);
 			path = Subscriber;
 			sourceTree = "<group>";
@@ -115,7 +136,7 @@
 			isa = PBXGroup;
 			children = (
 				FBA119DD244B3F840022A15B /* Subscription+Callable.swift */,
-				FBCE1B5424467561001872C0 /* Subscription+FlatMap.swift */,
+				FBCE1B5424467561001872C0 /* Subscription+Join.swift */,
 			);
 			path = Subscription;
 			sourceTree = "<group>";
@@ -152,16 +173,8 @@
 		FBA11A322454BED00022A15B /* PublisherChains */ = {
 			isa = PBXGroup;
 			children = (
-				FBCE1B4A2444D7EC001872C0 /* Map.swift */,
-				FBA11A332454BF1D0022A15B /* MapError.swift */,
-				FBA11A3F245522750022A15B /* CatchMap.swift */,
-				FBA11A4324564E120022A15B /* TryMap.swift */,
-				FBA11A412455BB200022A15B /* Filter.swift */,
-				FBA11A3D245521EC0022A15B /* CompactMap.swift */,
-				FBA119D9244A81570022A15B /* FlatMap.swift */,
-				FBA11A3724551A5B0022A15B /* Reduce.swift */,
-				FBA11A3924551A860022A15B /* SubscribeOn.swift */,
-				FBA11A3B24551A920022A15B /* ReceiveOn.swift */,
+				FB4CF08724587156006F9D03 /* StatelessChains */,
+				FB4CF08824587171006F9D03 /* StatefulChains */,
 			);
 			path = PublisherChains;
 			sourceTree = "<group>";
@@ -323,7 +336,7 @@
 				FBCE1B4B2444D7EC001872C0 /* Map.swift in Sources */,
 				FBA11A4424564E130022A15B /* TryMap.swift in Sources */,
 				FBA11A17244E4A6E0022A15B /* Subscriber+Callable.swift in Sources */,
-				FBCE1B5524467561001872C0 /* Subscription+FlatMap.swift in Sources */,
+				FBCE1B5524467561001872C0 /* Subscription+Join.swift in Sources */,
 				FBA11A19244E4B680022A15B /* Producer+Callable.swift in Sources */,
 				FBCE1B452443EBA0001872C0 /* Publisher+Inits.swift in Sources */,
 				FBA11A40245522750022A15B /* CatchMap.swift in Sources */,
@@ -331,9 +344,8 @@
 				FBA11A462456FF4E0022A15B /* Publication+Throws.swift in Sources */,
 				FBA11A342454BF1D0022A15B /* MapError.swift in Sources */,
 				FBCE1B4324420763001872C0 /* FunctionalProgramming.swift in Sources */,
-				FBA119D8244A0F7A0022A15B /* Subscriber+FlatMap.swift in Sources */,
+				FBA119D8244A0F7A0022A15B /* Subscriber+Join.swift in Sources */,
 				FBA11A3824551A5B0022A15B /* Reduce.swift in Sources */,
-				FBCE1B53244674C6001872C0 /* Subscriber+Map.swift in Sources */,
 				FBA11A3C24551A920022A15B /* ReceiveOn.swift in Sources */,
 				FBA119DA244A81570022A15B /* FlatMap.swift in Sources */,
 				FBA11A422455BB200022A15B /* Filter.swift in Sources */,

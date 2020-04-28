@@ -10,9 +10,6 @@ public extension Publisher {
     func map<T>(
         _ transform: @escaping (Output) -> T
     ) -> Publisher<T, Failure> {
-        transforming(
-            initialState: (),
-            preSubscriber: { _ in Publication.map(transform) }
-        )
+        mapTransformation(preSubscriber: Publication.map(transform))
     }
 }

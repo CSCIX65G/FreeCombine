@@ -43,7 +43,6 @@ extension Publication {
             case .finished:
                 return .finished
             }
-
         }
     }
 }
