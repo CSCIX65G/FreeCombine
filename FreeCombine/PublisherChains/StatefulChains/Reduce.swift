@@ -6,4 +6,14 @@
 //  Copyright © 2020 ComputeCycles, LLC. All rights reserved.
 //
 
-// TODO: Implement reduce
+public extension Publisher {
+    func reduce(
+        _ initial: Output,
+        _ reduce: @escaping (Output, Output) -> Output
+    ) -> Publisher<Output, Failure> {
+        transformation(
+            joinSubscriber: Subscriber<Output, Failure>.join(initial, reduce),
+            transformPublication: identity
+        )
+    }
+}

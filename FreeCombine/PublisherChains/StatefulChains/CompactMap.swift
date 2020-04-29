@@ -10,18 +10,8 @@ public extension Publisher {
     func compactMap<T>(
         _ isIncluded: @escaping (T?) -> T
     ) -> Publisher<Output, Failure> where Output == T? {
-        let ref = StateRef<Demand>(.max(1))
         return transformation(
-            joinSubscriber: { downstream in
-                .init { (publication) -> Demand in
-                    switch publication {
-                    case .value(let value):
-                        return value != nil ? ref.save(downstream(.value(value!))) : ref.state
-                    case .none, .failure, .finished:
-                        return downstream(publication)
-                    }
-                }
-            },
+            joinSubscriber: Subscriber<Output, Failure>.join({ $0 != nil }),
             transformPublication: identity
         )
     }

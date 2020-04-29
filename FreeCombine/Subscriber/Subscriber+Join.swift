@@ -20,7 +20,9 @@ extension Subscriber {
      
      This is used to `contraFlatMap` a `Subscriber` over a `Producer`
      */
-    static func join(_ producer: Producer<Value, Failure>) -> (Self) -> Self {
+    static func join(
+        _ producer: Producer<Value, Failure>
+    ) -> (Self) -> Self {
         return { subscriber in
             var hasCompleted = false
             return .init { publication in
@@ -43,16 +45,42 @@ extension Subscriber {
         }
     }
     
-    static func join(_ ref: StateRef<Demand>) -> (Self) -> (Self) {
+    static func join(
+        _ test: @escaping (Value) -> Bool
+    ) -> (Self) -> (Self) {
+        let ref = StateRef<Demand>(.max(1))
         return { downstream in
             .init { publication in
                 switch publication {
-                case .value:
-                    return ref.save(downstream(publication))
+                case .value(let value):
+                    return test(value)
+                        ? ref.save(downstream(publication))
+                        : ref.state
                 case .none, .failure:
                     return downstream(publication)
                 case .finished:
                     return ref.state
+                }
+            }
+        }
+    }
+
+    static func join(
+        _ initial: Value,
+        _ next: @escaping (Value, Value) -> Value
+    ) -> (Self) -> (Self) {
+        let ref = StateRef<Value>(initial)
+        return { downstream in
+            .init { publication in
+                switch publication {
+                case .value(let value):
+                    _ = ref.save(next(ref.state, value))
+                    return .unlimited
+                case .none, .failure:
+                    return downstream(publication)
+                case .finished:
+                    _ = downstream(.value(ref.state))
+                    return downstream(.finished)
                 }
             }
         }
