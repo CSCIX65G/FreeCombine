@@ -24,18 +24,19 @@ extension Publisher {
             -> Subscriber<Downstream, DownstreamFailure> = identity,
         transformPublication: @escaping (Publication<Output, Failure>)
             -> (Publication<Downstream, DownstreamFailure>),
-        joinSubscription: @escaping (Subscription)
-            -> Subscription = identity,
-        transformRequest: @escaping (Request)
-            -> Request = identity
+        transformRequest: @escaping (Request) -> Request = identity
     ) -> Publisher<Downstream, DownstreamFailure> {
+        typealias DownstreamSubscriber = Subscriber<Downstream, DownstreamFailure>
+        typealias MySubscriber = Subscriber<Output, Failure>
+        typealias DownstreamSubscription = Subscription
+        typealias MySubscription = Subscription
         
-        let hoist = { (downstream: Subscriber<Downstream, DownstreamFailure>) -> Subscriber<Output, Failure> in
+        let hoist = { (downstream: DownstreamSubscriber) -> MySubscriber in
             .init(downstream.contraFlatMap(joinSubscriber, transformPublication))
         }
         
-        let lower = { (upstream: Subscription) -> Subscription in
-            .init(upstream.contraFlatMap(joinSubscription, transformRequest))
+        let lower = { (mySubscription: MySubscription) -> DownstreamSubscription in
+            .init(mySubscription.contraMap(transformRequest))
         }
 
         return .init(dimap(hoist, lower))

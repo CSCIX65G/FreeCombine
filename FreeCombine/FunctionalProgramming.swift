@@ -39,6 +39,7 @@ public func |> <A, B> (
 public func identity<T>(_ t: T) -> T { t }
 public func void<T>(_ t: T) -> Void { }
 public func cons<T>(_ t: T) -> () -> T { { t } }
+public func unwrap<T>(_ t: T?) -> T { t! }
 
 /*:
  Allow structs which are callable as functions

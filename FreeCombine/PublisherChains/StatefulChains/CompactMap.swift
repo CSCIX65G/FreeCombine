@@ -6,13 +6,20 @@
 //  Copyright © 2020 ComputeCycles, LLC. All rights reserved.
 //
 
-//public extension Publisher {
-//    func compactMap<T>(
-//        _ transform: @escaping (Output) -> T?
-//    ) -> Publisher<T, Failure> where Output == T? {
-//        return transformation(
-//            joinSubscriber: Subscriber<Output, Failure>.join({ $0 != nil }),
-//            transformPublication: identity
-//        )
-//    }
-//}
+public extension Publisher {
+    func compactMap<T>(
+        _ transform: @escaping (Output) -> T?
+    ) -> Publisher<T, Failure> {
+        transformation(
+            joinSubscriber: identity,
+            transformPublication: Publication.map(transform)
+        )
+        .transformation(
+            joinSubscriber: Subscriber<T?, Failure>.join({ $0 != nil}),
+            transformPublication: identity
+        )
+        .transformation(
+            transformPublication: Publication.map(unwrap)
+        )
+    }
+}
