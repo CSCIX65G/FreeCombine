@@ -176,7 +176,7 @@ public struct Publisher<Output, Failure: Error> {
     
     init(_ producer: Producer<Output, Failure>) {
         self.call = { subscriber in
-            .init(subscriber.contraFlatMap(Subscriber.join(producer), producer.call))
+            .init(subscriber.contraFlatMap(Subscriber.producerJoin(producer), producer.call))
         }
     }
 

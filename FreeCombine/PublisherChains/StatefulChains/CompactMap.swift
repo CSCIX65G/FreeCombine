@@ -11,11 +11,10 @@ public extension Publisher {
         _ transform: @escaping (Output) -> T?
     ) -> Publisher<T, Failure> {
         transformation(
-            joinSubscriber: identity,
             transformPublication: Publication.map(transform)
         )
         .transformation(
-            joinSubscriber: Subscriber<T?, Failure>.join({ $0 != nil}),
+            joinSubscriber: Subscriber<T?, Failure>.filterJoin({ $0 != nil}),
             transformPublication: identity
         )
         .transformation(

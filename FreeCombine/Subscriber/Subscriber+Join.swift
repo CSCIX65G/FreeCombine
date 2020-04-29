@@ -20,68 +20,27 @@ extension Subscriber {
      
      This is used to `contraFlatMap` a `Subscriber` over a `Producer`
      */
-    static func join(
+    static func producerJoin(
         _ producer: Producer<Value, Failure>
     ) -> (Self) -> Self {
-        return { subscriber in
+        return { downstream in
             var hasCompleted = false
             return .init { publication in
-                var demand = subscriber(publication)
+                var demand = downstream(publication)
                 guard demand.quantity > 0 && !hasCompleted else { return .none }
                 while demand.quantity > 0 {
                     let subsequentPublication = producer(Request.demand(demand))
                     switch subsequentPublication {
                     case .none:
-                        return subscriber(.none)
+                        return downstream(.none)
                     case .value:
-                        demand = subscriber(subsequentPublication)
+                        demand = downstream(subsequentPublication)
                     case .finished, .failure:
                         hasCompleted = true
-                        return subscriber(subsequentPublication)
+                        return downstream(subsequentPublication)
                     }
                 }
                 return demand
-            }
-        }
-    }
-    
-    static func join(
-        _ test: @escaping (Value) -> Bool
-    ) -> (Self) -> (Self) {
-        let ref = StateRef<Demand>(.max(1))
-        return { downstream in
-            .init { publication in
-                switch publication {
-                case .value(let value):
-                    return test(value)
-                        ? ref.save(downstream(publication))
-                        : ref.state
-                case .none, .failure:
-                    return downstream(publication)
-                case .finished:
-                    return ref.state
-                }
-            }
-        }
-    }
-
-    static func join(
-        _ initial: Value,
-        _ next: @escaping (Value, Value) -> Value
-    ) -> (Self) -> (Self) {
-        let ref = StateRef<Value>(initial)
-        return { downstream in
-            .init { publication in
-                switch publication {
-                case .value(let value):
-                    _ = ref.save(next(ref.state, value))
-                    return .unlimited
-                case .none, .failure:
-                    return downstream(publication)
-                case .finished:
-                    _ = downstream(.value(ref.state))
-                    return downstream(.finished)
-                }
             }
         }
     }

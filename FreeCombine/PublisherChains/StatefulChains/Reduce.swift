@@ -6,13 +6,36 @@
 //  Copyright © 2020 ComputeCycles, LLC. All rights reserved.
 //
 
+extension Subscriber {
+    static func reducerJoin(
+        _ initial: Value,
+        _ next: @escaping (Value, Value) -> Value
+    ) -> (Self) -> (Self) {
+        let ref = StateRef<Value>(initial)
+        return { downstream in
+            .init { publication in
+                switch publication {
+                case .value(let value):
+                    _ = ref.save(next(ref.state, value))
+                    return .unlimited
+                case .none, .failure:
+                    return downstream(publication)
+                case .finished:
+                    _ = downstream(.value(ref.state))
+                    return downstream(.finished)
+                }
+            }
+        }
+    }
+}
+
 public extension Publisher {
     func reduce(
         _ initial: Output,
         _ reduce: @escaping (Output, Output) -> Output
     ) -> Publisher<Output, Failure> {
         transformation(
-            joinSubscriber: Subscriber<Output, Failure>.join(initial, reduce),
+            joinSubscriber: Subscriber<Output, Failure>.reducerJoin(initial, reduce),
             transformPublication: identity,
             transformRequest: {
                 switch $0 {

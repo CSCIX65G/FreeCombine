@@ -11,7 +11,7 @@ public extension Publisher {
         _ transform: @escaping (Output) -> Publisher<T, Failure>
     ) -> Publisher<T, Failure> {
         transformation(
-            joinSubscriber: Subscriber<T, Failure>.join({_ in true}),
+            joinSubscriber: Subscriber<T, Failure>.filterJoin({_ in true}),
             transformPublication: { publication in
                 switch publication {
                 case .value(let value):
