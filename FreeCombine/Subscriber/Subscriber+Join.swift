@@ -23,6 +23,7 @@ extension Subscriber {
     static func producerJoin(
         _ producer: Producer<Value, Failure>
     ) -> (Self) -> Self {
+        let ref = StateRef<Demand>(.max(1))
         return { downstream in
             var hasCompleted = false
             return .init { publication in
@@ -32,9 +33,9 @@ extension Subscriber {
                     let subsequentPublication = producer(Request.demand(demand))
                     switch subsequentPublication {
                     case .none:
-                        return downstream(.none)
+                        return ref.state
                     case .value:
-                        demand = downstream(subsequentPublication)
+                        demand = ref.save(downstream(subsequentPublication))
                     case .finished, .failure:
                         hasCompleted = true
                         return downstream(subsequentPublication)

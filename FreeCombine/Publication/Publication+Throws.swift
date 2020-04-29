@@ -9,14 +9,12 @@
 extension Publication {
     static func catchMap<T>(
         _ transform: @escaping (Value) throws -> T
-    ) -> (Self) -> Publication<Result<T, Error>, Error> {
+    ) -> (Self) -> Publication<Result<T, Error>, Failure> {
         return { publication in
             switch publication {
             case .value(let v):
-                let result: Result<T, Error>
-                do { result = .success(try transform(v)) }
-                catch { result = .failure(error) }
-                return .value(result)
+                do { return .value(Result<T, Error>.success(try transform(v))) }
+                catch { return .value(.failure(error)) }
             case .failure(let failure): return .failure(failure)
             case .finished: return .finished
             case .none: return .none

@@ -9,7 +9,7 @@
 public extension Publisher {
     func catchMap<T>(
         _ transform: @escaping (Output) throws -> T
-    ) -> Publisher<Result<T, Error>, Error> {
+    ) -> Publisher<Result<T, Error>, Failure> {
         transformation(transformPublication: Publication.catchMap(transform))
     }
 }

@@ -104,8 +104,6 @@
 				FBA11A332454BF1D0022A15B /* MapError.swift */,
 				FBA11A3F245522750022A15B /* CatchMap.swift */,
 				FBA11A4324564E120022A15B /* TryMap.swift */,
-				FBA11A3924551A860022A15B /* SubscribeOn.swift */,
-				FBA11A3B24551A920022A15B /* ReceiveOn.swift */,
 			);
 			path = StatelessChains;
 			sourceTree = "<group>";
@@ -117,6 +115,8 @@
 				FBA11A3D245521EC0022A15B /* CompactMap.swift */,
 				FBA119D9244A81570022A15B /* FlatMap.swift */,
 				FBA11A3724551A5B0022A15B /* Reduce.swift */,
+				FBA11A3B24551A920022A15B /* ReceiveOn.swift */,
+				FBA11A3924551A860022A15B /* SubscribeOn.swift */,
 			);
 			path = StatefulChains;
 			sourceTree = "<group>";
