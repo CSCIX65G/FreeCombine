@@ -10,6 +10,6 @@ public extension Publisher {
     func catchMap<T>(
         _ transform: @escaping (Output) throws -> T
     ) -> Publisher<Result<T, Error>, Error> {
-        mapTransformation(preSubscriber: Publication.catchMap(transform))
+        transformation(transformPublication: Publication.catchMap(transform))
     }
 }

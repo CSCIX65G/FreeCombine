@@ -42,4 +42,19 @@ extension Subscriber {
             }
         }
     }
+    
+    static func join(_ ref: StateRef<Demand>) -> (Self) -> (Self) {
+        return { downstream in
+            .init { publication in
+                switch publication {
+                case .value:
+                    return ref.save(downstream(publication))
+                case .none, .failure:
+                    return downstream(publication)
+                case .finished:
+                    return ref.state
+                }
+            }
+        }
+    }
 }

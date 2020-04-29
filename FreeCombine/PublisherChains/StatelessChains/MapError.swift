@@ -10,6 +10,6 @@ public extension Publisher {
     func mapError<T: Error>(
         _ transform: @escaping (Failure) -> T
     ) -> Publisher<Output, T> {
-        mapTransformation(preSubscriber: Publication.mapError(transform))
+        transformation(transformPublication: Publication.mapError(transform))
     }
 }

@@ -6,60 +6,36 @@
 //  Copyright © 2020 ComputeCycles, LLC. All rights reserved.
 //
 
-extension Publisher {
-    func mapTransformation<Downstream, DownstreamFailure>(
-        preSubscriber: @escaping (Publication<Output, Failure>)  -> Publication<Downstream, DownstreamFailure>,
-        postSubscriber: @escaping (Demand) -> Demand  = identity,
-        preSubscription: @escaping (Request) -> Request  = identity ,
-        postSubscription: @escaping () -> Void = { }
-    ) -> Publisher<Downstream, DownstreamFailure> {
-        
-        let hoist = { (downstream: Subscriber<Downstream, DownstreamFailure>) -> Subscriber<Output, Failure> in
-            .init(downstream.dimap(preSubscriber, postSubscriber))
-        }
-        
-        let lower = { (upstream: Subscription) -> Subscription in
-            .init(upstream.dimap(preSubscription, postSubscription))
-        }
-
-        return .init(dimap(hoist, lower))
+public final class StateRef<State> {
+    var state: State
+    init(_ state: State) {
+        self.state = state
     }
     
-    public final class StateRef<State> {
-        var state: State
-        init(_ state: State) {
-            self.state = state
-        }
-        
-        func save(_ state: State) -> State {
-            self.state = state
-            return state
-        }
+    func save(_ state: State) -> State {
+        self.state = state
+        return state
     }
+}
 
-    func flatMapTransformation<State, Downstream, DownstreamFailure>(
-        initialState: State,
-        joinSubscriber: @escaping (StateRef<State>)
-            -> (Subscriber<Downstream, DownstreamFailure>)
-            -> Subscriber<Downstream, DownstreamFailure> = { _ in identity },
-        transformPublication: @escaping (StateRef<State>)
-            -> (Publication<Output, Failure>)
+extension Publisher {
+    func transformation<Downstream, DownstreamFailure>(
+        joinSubscriber: @escaping (Subscriber<Downstream, DownstreamFailure>)
+            -> Subscriber<Downstream, DownstreamFailure> = identity,
+        transformPublication: @escaping (Publication<Output, Failure>)
             -> (Publication<Downstream, DownstreamFailure>),
-        joinSubscription: @escaping (StateRef<State>)
-            -> (Subscription)
-            -> Subscription = { _ in identity },
-        transformRequest: @escaping (StateRef<State>)
-            -> (Request)
-            -> Request = { _ in identity }
+        joinSubscription: @escaping (Subscription)
+            -> Subscription = identity,
+        transformRequest: @escaping (Request)
+            -> Request = identity
     ) -> Publisher<Downstream, DownstreamFailure> {
-        let state = StateRef(initialState)
         
         let hoist = { (downstream: Subscriber<Downstream, DownstreamFailure>) -> Subscriber<Output, Failure> in
-            .init(downstream.contraFlatMap(joinSubscriber(state), transformPublication(state)))
+            .init(downstream.contraFlatMap(joinSubscriber, transformPublication))
         }
         
         let lower = { (upstream: Subscription) -> Subscription in
-            .init(upstream.contraFlatMap(joinSubscription(state), transformRequest(state)))
+            .init(upstream.contraFlatMap(joinSubscription, transformRequest))
         }
 
         return .init(dimap(hoist, lower))

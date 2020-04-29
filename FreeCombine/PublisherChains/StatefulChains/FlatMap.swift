@@ -6,35 +6,29 @@
 //  Copyright © 2020 ComputeCycles, LLC. All rights reserved.
 //
 
-// TODO: Implement flatMap
-//public extension Publisher {
 public extension Publisher {
-    fileprivate struct FlatMapState<T> {
-        var subscription = Optional<Subscription>.none
-        var demand = Demand.max(1)
+    func flatMap<T>(
+        _ transform: @escaping (Output) -> Publisher<T, Failure>
+    ) -> Publisher<T, Failure> {
+        transformation(
+            joinSubscriber: Subscriber<T, Failure>.join(StateRef<Demand>(.max(1))),
+            transformPublication: { publication in
+                switch publication {
+                case .value(let value):
+                    let publisher = transform(value)
+                    var first: Publication<T, Failure>?
+                    let subscription = publisher.sink { first = $0 }
+                    subscription(.demand(.max(1)))
+                    guard let current = first else {
+                        fatalError("Add asyncrony")
+                    }
+                    return current
+                case .none: return .none
+                case .failure(let failure): return .failure(failure)
+                case .finished: return .finished                    }
+        }
+        )
     }
-    
-//    func flatMap<T>(
-//        _ transform: @escaping (Output) -> Publisher<T, Failure>
-//    ) -> Publisher<T, Failure> {
-//        transforming(
-//            initialState: FlatMapState<T>(),
-//            joinSubscriber: { ref in         /// Block sending unincluded downstream
-//                { downstream in
-//                    .init { (publication) -> Demand in
-//                        switch publication {
-//                        case .value(let value):
-//                            let subscription = transform(value)(downstream)
-//                            subscription(.demand(ref.state.demand))
-//                        case .none, .failure, .finished:
-//                            return downstream(publication)
-//                        }
-//                    }
-//                }
-//            },
-//            preSubscriber: { _ in identity }
-//        )
-//    }
 }
 
 
