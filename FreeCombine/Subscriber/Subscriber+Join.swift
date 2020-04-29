@@ -24,21 +24,20 @@ extension Subscriber {
         _ producer: Producer<Value, Failure>
     ) -> (Self) -> Self {
         let ref = StateRef<Demand>(.max(1))
-        return { downstream in
+        return { downstreamSubscriber in
             var hasCompleted = false
             return .init { publication in
-                var demand = downstream(publication)
-                guard demand.quantity > 0 && !hasCompleted else { return .none }
-                while demand.quantity > 0 {
-                    let subsequentPublication = producer(Request.demand(demand))
-                    switch subsequentPublication {
+                var demand = downstreamSubscriber(publication)
+                while demand.quantity > 0 && !hasCompleted {
+                    let nextPublication = producer(Request.demand(demand))
+                    switch nextPublication {
                     case .none:
                         return ref.state
-                    case .value:
-                        demand = ref.save(downstream(subsequentPublication))
-                    case .finished, .failure:
+                    case .value, .failure:
+                        demand = ref.save(downstreamSubscriber(nextPublication))
+                    case .finished:
                         hasCompleted = true
-                        return downstream(subsequentPublication)
+                        return downstreamSubscriber(nextPublication)
                     }
                 }
                 return demand

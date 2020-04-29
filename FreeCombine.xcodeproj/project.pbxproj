@@ -142,9 +142,9 @@
 			isa = PBXGroup;
 			children = (
 				FBCE1B442443EBA0001872C0 /* Publisher+Inits.swift */,
-				FBA11A472457038F0022A15B /* Publisher+Transform.swift */,
-				FBA11A35245517700022A15B /* Publisher+Callable.swift */,
 				FBCE1B462443EDA6001872C0 /* Publisher+SinkAssign.swift */,
+				FBA11A35245517700022A15B /* Publisher+Callable.swift */,
+				FBA11A472457038F0022A15B /* Publisher+Transform.swift */,
 			);
 			path = Publisher;
 			sourceTree = "<group>";
