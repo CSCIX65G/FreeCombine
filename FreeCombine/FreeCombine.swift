@@ -164,8 +164,9 @@ public struct Subscription {
  
  And as always, because Publisher is parameterized by multiple
  generic types, it too, has multiple forms of map.  Indeed
- it has a generalized form of monadic function which allow us to chain
- Publishers together in all sorts of interesting ways.
+ it has a generalized form of monadic functionality which
+ allow us to chain Publishers together in all sorts of
+ interesting ways.
  
  The majority of this library is given over to chaining
  Publishers in fact.

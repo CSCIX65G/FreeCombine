@@ -13,7 +13,13 @@ public extension Publisher {
     ) -> Publisher<Output, Failure> {
         transformation(
             joinSubscriber: Subscriber<Output, Failure>.join(initial, reduce),
-            transformPublication: identity
+            transformPublication: identity,
+            transformRequest: {
+                switch $0 {
+                case .cancel: return .cancel
+                case .demand: return .demand(.unlimited)
+                }
+            }
         )
     }
 }

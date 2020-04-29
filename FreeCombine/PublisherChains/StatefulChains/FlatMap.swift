@@ -26,7 +26,13 @@ public extension Publisher {
                 case .none: return .none
                 case .failure(let failure): return .failure(failure)
                 case .finished: return .finished                    }
-        }
+            },
+            transformRequest: {
+                switch $0 {
+                case .cancel: return .cancel
+                case .demand: return .demand(.max(1))
+                }
+            }
         )
     }
 }

@@ -33,7 +33,6 @@
 		FBCE1B492443EDDA001872C0 /* Producer+Statics.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBCE1B482443EDDA001872C0 /* Producer+Statics.swift */; };
 		FBCE1B4B2444D7EC001872C0 /* Map.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBCE1B4A2444D7EC001872C0 /* Map.swift */; };
 		FBCE1B4D2444DF9B001872C0 /* MapTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBCE1B4C2444DF9B001872C0 /* MapTests.swift */; };
-		FBCE1B5524467561001872C0 /* Subscription+Join.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBCE1B5424467561001872C0 /* Subscription+Join.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -76,7 +75,6 @@
 		FBCE1B482443EDDA001872C0 /* Producer+Statics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Producer+Statics.swift"; sourceTree = "<group>"; };
 		FBCE1B4A2444D7EC001872C0 /* Map.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Map.swift; sourceTree = "<group>"; };
 		FBCE1B4C2444DF9B001872C0 /* MapTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapTests.swift; sourceTree = "<group>"; };
-		FBCE1B5424467561001872C0 /* Subscription+Join.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Subscription+Join.swift"; sourceTree = "<group>"; };
 		FBCE1B7E24474160001872C0 /* FreeCombine.playground */ = {isa = PBXFileReference; lastKnownFileType = file.playground; path = FreeCombine.playground; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.swift; };
 /* End PBXFileReference section */
 
@@ -136,7 +134,6 @@
 			isa = PBXGroup;
 			children = (
 				FBA119DD244B3F840022A15B /* Subscription+Callable.swift */,
-				FBCE1B5424467561001872C0 /* Subscription+Join.swift */,
 			);
 			path = Subscription;
 			sourceTree = "<group>";
@@ -336,7 +333,6 @@
 				FBCE1B4B2444D7EC001872C0 /* Map.swift in Sources */,
 				FBA11A4424564E130022A15B /* TryMap.swift in Sources */,
 				FBA11A17244E4A6E0022A15B /* Subscriber+Callable.swift in Sources */,
-				FBCE1B5524467561001872C0 /* Subscription+Join.swift in Sources */,
 				FBA11A19244E4B680022A15B /* Producer+Callable.swift in Sources */,
 				FBCE1B452443EBA0001872C0 /* Publisher+Inits.swift in Sources */,
 				FBA11A40245522750022A15B /* CatchMap.swift in Sources */,
