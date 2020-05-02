@@ -11,7 +11,7 @@ extension Subscriber {
         _ initial: Value,
         _ next: @escaping (Value, Value) -> Value
     ) -> (Self) -> (Self) {
-        let ref = StateRef<Value>(initial)
+        let ref = Reference<Value>(initial)
         return { downstream in
             .init { publication in
                 switch publication {

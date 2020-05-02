@@ -12,7 +12,7 @@ extension Subscriber {
     static func receiveOnJoin(
         _ opQueue: OperationQueue
     ) -> (Self) -> (Self) {
-        let ref = StateRef<Demand>(.max(1))
+        let ref = Reference<Demand>(.max(1))
         return { downstream in
             .init { publication in
                 ref.state = .max(ref.state.quantity - 1)

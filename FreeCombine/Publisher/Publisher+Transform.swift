@@ -6,7 +6,7 @@
 //  Copyright © 2020 ComputeCycles, LLC. All rights reserved.
 //
 
-public final class StateRef<State> {
+public final class Reference<State> {
     var state: State
     init(_ state: State) {
         self.state = state
@@ -19,25 +19,21 @@ public final class StateRef<State> {
 }
 
 extension Publisher {
-    func transformation<Downstream, DownstreamFailure>(
-        joinSubscriber: @escaping (Subscriber<Downstream, DownstreamFailure>)
-            -> Subscriber<Downstream, DownstreamFailure> = identity,
+    func transformation<DI, DF>(
+        joinSubscriber: @escaping (Subscriber<DI, DF>)
+            -> Subscriber<DI, DF> = identity,
         transformPublication: @escaping (Publication<Output, Failure>)
-            -> (Publication<Downstream, DownstreamFailure>),
+            -> (Publication<DI, DF>),
         joinSubscription: @escaping (Subscription)
             -> Subscription = identity,
         transformRequest: @escaping (Request) -> Request = identity
-    ) -> Publisher<Downstream, DownstreamFailure> {
-        typealias DownstreamSubscriber = Subscriber<Downstream, DownstreamFailure>
-        typealias MySubscriber = Subscriber<Output, Failure>
-        typealias DownstreamSubscription = Subscription
-        typealias MySubscription = Subscription
-        
-        let hoist = { (downstream: DownstreamSubscriber) -> MySubscriber in
+    ) -> Publisher<DI, DF> {
+
+        let hoist = { (downstream: Subscriber<DI, DF>) -> Subscriber<Output, Failure> in
             .init(downstream.contraFlatMap(joinSubscriber, transformPublication))
         }
         
-        let lower = { (mySubscription: MySubscription) -> DownstreamSubscription in
+        let lower = { (mySubscription: Subscription) -> Subscription in
             .init(mySubscription.contraFlatMap(joinSubscription, transformRequest))
         }
 

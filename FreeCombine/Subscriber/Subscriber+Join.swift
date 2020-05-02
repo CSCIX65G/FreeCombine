@@ -23,7 +23,7 @@ extension Subscriber {
     static func producerJoin(
         _ producer: Producer<Value, Failure>
     ) -> (Self) -> Self {
-        let ref = StateRef<Demand>(.max(1))
+        let ref = Reference<Demand>(.max(1))
         return { downstreamSubscriber in
             var hasCompleted = false
             return .init { publication in

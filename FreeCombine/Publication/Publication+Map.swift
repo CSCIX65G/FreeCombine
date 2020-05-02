@@ -32,4 +32,19 @@ extension Publication {
             }
         }
     }
+
+    static func tryMap<T> (
+        _ transform: @escaping (Value) throws -> T
+    ) -> (Self) -> Publication<T, Error> {
+        { this in
+            switch this {
+            case .value(let v):
+                do { return .value(try transform(v)) }
+                catch { return .failure(error) }
+            case .failure(let failure): return .failure(failure)
+            case .none: return .none
+            case .finished: return .finished
+            }
+        }
+    }
 }

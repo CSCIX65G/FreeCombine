@@ -10,7 +10,7 @@ extension Subscriber {
     static func filterJoin(
         _ test: @escaping (Value) -> Bool
     ) -> (Self) -> (Self) {
-        let ref = StateRef<Demand>(.max(1))
+        let ref = Reference<Demand>(.max(1))
         return { downstream in
             .init { publication in
                 switch publication {

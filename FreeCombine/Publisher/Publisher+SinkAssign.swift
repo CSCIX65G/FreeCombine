@@ -21,10 +21,8 @@ public extension Publisher {
         on object: Root
     ) -> Subscription {
         let subscriber = Subscriber<Output, Failure> { input in
-            switch input {
-            case .value(let value): object[keyPath: keyPath] = value
-            case .failure, .finished: ()
-            case .none: return .none
+            if case .value(let value) = input {
+                object[keyPath: keyPath] = value
             }
             return .unlimited
         }
