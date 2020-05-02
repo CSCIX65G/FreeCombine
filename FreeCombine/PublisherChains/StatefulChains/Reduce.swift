@@ -13,15 +13,15 @@ extension Subscriber {
     ) -> (Self) -> (Self) {
         let ref = Reference<Value>(initial)
         return { downstream in
-            .init { publication in
-                switch publication {
+            .init { supply in
+                switch supply {
                 case .value(let value):
-                    _ = ref.save(next(ref.state, value))
+                    _ = ref.set(next(ref.value, value))
                     return .unlimited
                 case .none, .failure:
-                    return downstream(publication)
+                    return downstream(supply)
                 case .finished:
-                    _ = downstream(.value(ref.state))
+                    _ = downstream(.value(ref.value))
                     return downstream(.finished)
                 }
             }
@@ -36,11 +36,11 @@ public extension Publisher {
     ) -> Publisher<Output, Failure> {
         transformation(
             joinSubscriber: Subscriber<Output, Failure>.reducerJoin(initial, reduce),
-            transformPublication: identity,
-            transformRequest: {
+            transformSupply: identity,
+            transformDemand: {
                 switch $0 {
                 case .cancel: return .cancel
-                case .demand: return .demand(.unlimited)
+                default: return .unlimited
                 }
             }
         )

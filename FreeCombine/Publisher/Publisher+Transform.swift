@@ -6,35 +6,23 @@
 //  Copyright © 2020 ComputeCycles, LLC. All rights reserved.
 //
 
-public final class Reference<State> {
-    var state: State
-    init(_ state: State) {
-        self.state = state
-    }
-    
-    func save(_ state: State) -> State {
-        self.state = state
-        return state
-    }
-}
-
 extension Publisher {
     func transformation<DI, DF>(
         joinSubscriber: @escaping (Subscriber<DI, DF>)
             -> Subscriber<DI, DF> = identity,
-        transformPublication: @escaping (Publication<Output, Failure>)
-            -> (Publication<DI, DF>),
+        transformSupply: @escaping (Supply<Output, Failure>)
+            -> (Supply<DI, DF>),
         joinSubscription: @escaping (Subscription)
             -> Subscription = identity,
-        transformRequest: @escaping (Request) -> Request = identity
+        transformDemand: @escaping (Demand) -> Demand = identity
     ) -> Publisher<DI, DF> {
 
         let hoist = { (downstream: Subscriber<DI, DF>) -> Subscriber<Output, Failure> in
-            .init(downstream.contraFlatMap(joinSubscriber, transformPublication))
+            .init(downstream.contraFlatMap(joinSubscriber, transformSupply))
         }
         
         let lower = { (mySubscription: Subscription) -> Subscription in
-            .init(mySubscription.contraFlatMap(joinSubscription, transformRequest))
+            .init(mySubscription.contraFlatMap(joinSubscription, transformDemand))
         }
 
         return .init(dimap(hoist, lower))

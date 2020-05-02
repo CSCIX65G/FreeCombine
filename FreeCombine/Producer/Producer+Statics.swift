@@ -25,8 +25,8 @@ extension Producer where Failure == Never {
     {
         var slice = ArraySlice(values)
         return .init(
-            .init { request in
-                guard case .demand(let demand) = request else {
+            .init { demand in
+                guard case .cancel = demand else {
                     slice = ArraySlice()
                     return .finished
                 }

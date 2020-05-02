@@ -14,12 +14,12 @@ extension Subscriber {
     ) -> (Self) -> (Self) {
         let ref = Reference<Demand>(.max(1))
         return { downstream in
-            .init { publication in
-                ref.state = .max(ref.state.quantity - 1)
+            .init { supply in
+                ref.value = .max(ref.value.quantity - 1)
                 opQueue.addOperation {
-                    _ = ref.save(downstream(publication))
+                    _ = ref.set(downstream(supply))
                 }
-                return ref.state
+                return ref.value
             }
         }
     }
@@ -31,7 +31,7 @@ public extension Publisher {
     ) -> Publisher<Output, Failure> {
         transformation(
             joinSubscriber: Subscriber<Output, Failure>.receiveOnJoin(opQueue),
-            transformPublication: identity
+            transformSupply: identity
         )
     }
 }

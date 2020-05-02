@@ -13,9 +13,9 @@ extension Subscription {
         _ opQueue: OperationQueue
     ) -> (Self) -> (Self) {
         return { upstream in
-            .init { request in
+            .init { demand in
                 opQueue.addOperation {
-                    _ = upstream(request)
+                    _ = upstream(demand)
                 }
             }
         }
@@ -27,7 +27,7 @@ public extension Publisher {
         _ opQueue: OperationQueue
     ) -> Publisher<Output, Failure> {
         transformation(
-            transformPublication: identity,
+            transformSupply: identity,
             joinSubscription: Subscription.subscribeOnJoin(opQueue)
         )
     }

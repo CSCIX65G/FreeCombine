@@ -10,10 +10,10 @@ extension Subscriber {
     /*:
      Wrapping a producer in a subscriber
      in such a way that the new subscriber, will now
-     accept Requests for invocation.  On
+     accept Demands for invocation.  On
      invocation the new subscriber will:
      
-     1. forward the request to the producer
+     1. forward the demand to the producer
      2. iterate over the producer as long as a) the producer can
         produce and b) the original subscriber returns additional
         demand.
@@ -26,18 +26,19 @@ extension Subscriber {
         let ref = Reference<Demand>(.max(1))
         return { downstreamSubscriber in
             var hasCompleted = false
-            return .init { publication in
-                var demand = downstreamSubscriber(publication)
+            return .init { supply in
+                // TODO: This should be flatMap on Supply
+                var demand = downstreamSubscriber(supply)
                 while demand.quantity > 0 && !hasCompleted {
-                    let nextPublication = producer(Request.demand(demand))
-                    switch nextPublication {
+                    let nextSupply = producer(demand)
+                    switch nextSupply {
                     case .none:
-                        return ref.state
+                        return ref.value
                     case .value, .failure:
-                        demand = ref.save(downstreamSubscriber(nextPublication))
+                        demand = ref.set(downstreamSubscriber(nextSupply))
                     case .finished:
                         hasCompleted = true
-                        return downstreamSubscriber(nextPublication)
+                        return downstreamSubscriber(nextSupply)
                     }
                 }
                 return demand

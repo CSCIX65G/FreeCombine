@@ -10,6 +10,6 @@ public extension Publisher {
     func map<T>(
         _ transform: @escaping (Output) -> T
     ) -> Publisher<T, Failure> {
-        transformation(transformPublication: Publication.map(transform))
+        transformation(transformSupply: Supply.map(transform))
     }
 }

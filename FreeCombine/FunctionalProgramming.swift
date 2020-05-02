@@ -42,6 +42,21 @@ public func cons<T>(_ t: T) -> () -> T { { t } }
 public func unwrap<T>(_ t: T?) -> T { t! }
 
 /*:
+ Sometimes we need a reference to a value type (sadly)
+ */
+public final class Reference<Value> {
+    var value: Value
+    init(_ state: Value) {
+        self.value = state
+    }
+    
+    func set(_ state: Value) -> Value {
+        self.value = state
+        return state
+    }
+}
+
+/*:
  Allow structs which are callable as functions
  of one value to get all the same operations
  as regular functions

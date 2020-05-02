@@ -10,6 +10,6 @@ public extension Publisher {
     func tryMap<T>(
         _ transform: @escaping (Output) throws -> T
     ) -> Publisher<T, Error> {
-        transformation(transformPublication: Publication.tryMap(transform))
+        transformation(transformSupply: Supply.tryMap(transform))
     }
 }

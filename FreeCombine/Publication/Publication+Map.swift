@@ -1,15 +1,15 @@
 //
-//  Publication+Extensions.swift
+//  Supply+Extensions.swift
 //  FreeCombine
 //
 //  Created by Van Simmons on 4/23/20.
 //  Copyright © 2020 ComputeCycles, LLC. All rights reserved.
 //
 
-extension Publication {
+extension Supply {
     static func map<T>(
         _ transform: @escaping (Value) -> T
-    ) -> (Self) -> Publication<T, Failure> {
+    ) -> (Self) -> Supply<T, Failure> {
          {
             switch $0 {
             case .value(let value): return .value(transform(value))
@@ -22,7 +22,7 @@ extension Publication {
         
     static func mapError<T>(
         _ transform: @escaping (Failure) -> T
-    ) -> (Self) -> Publication<Value, T> {
+    ) -> (Self) -> Supply<Value, T> {
         {
             switch $0 {
             case .value(let value): return .value(value)
@@ -35,7 +35,7 @@ extension Publication {
 
     static func tryMap<T> (
         _ transform: @escaping (Value) throws -> T
-    ) -> (Self) -> Publication<T, Error> {
+    ) -> (Self) -> Supply<T, Error> {
         { this in
             switch this {
             case .value(let v):
