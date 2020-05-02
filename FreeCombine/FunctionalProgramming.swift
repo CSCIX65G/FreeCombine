@@ -103,12 +103,14 @@ public extension CallableAsFunction {
     func map<C>(
         _ f: @escaping (B) -> C
     ) -> Func<A, C> {
+        // (A -> B) >>> (B -> C) = (A -> C)
         self >>> f
     }
 
     func contraMap<C>(
         _ f: @escaping (C) -> A
     ) -> Func<C, B> {
+        // (C -> A) >>> (A -> B) = (C -> B)
         f >>> self
     }
     
@@ -116,17 +118,18 @@ public extension CallableAsFunction {
         _ f: @escaping (B) -> (A) -> C
     ) -> Func<A, C> {
         // self >>> f = ((A) -> B) >>> (B) -> (A) -> C = (A) -> (A) -> C
-        .init { (self >>> f)($0)($0) }
+        // a |> (self >>> f) = (A) -> C
+        .init { (a: A) in  a |> (a |> (self >>> f)) }
     }
 
     func contraFlatMap<C>(
         _ join:  @escaping (Self) -> Self,
         _ transform:@escaping (C) -> A
     ) -> Func<C, B> {
-        // join(self) = (((A) -> B) -> (A) -> B)((A) -> B) = A -> B
-        // transform >>> join(self)
+        // self |> join = (A -> B) |> ((A) -> B) -> (A) -> B) = A -> B
+        // transform >>> (self |> join)
         // = (C -> A) >>> (A -> B) = C -> B
-        transform >>> join(self)
+        transform >>> (self |> join)
     }
     
     func dimap<C, D>(
