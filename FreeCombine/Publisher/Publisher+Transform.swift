@@ -25,6 +25,9 @@ extension Publisher {
             .init(mySubscription.contraFlatMap(joinSubscription, transformDemand))
         }
 
+//        (DownstreamSubscriber) -> MySubscriber
+//            MySubscriber -> MySubscription
+//                MySubscription -> DownstreamSubscription
         return .init(dimap(hoist, lower))
     }
 }

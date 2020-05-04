@@ -8,9 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		FB323524245DC141006B800C /* Callable.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB323523245DC141006B800C /* Callable.swift */; };
-		FBA119D8244A0F7A0022A15B /* Subscriber+Join.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBA119D7244A0F7A0022A15B /* Subscriber+Join.swift */; };
 		FBA119DA244A81570022A15B /* FlatMap.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBA119D9244A81570022A15B /* FlatMap.swift */; };
-		FBA11A2224523BCF0022A15B /* Publication+Map.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBA11A2124523BCF0022A15B /* Publication+Map.swift */; };
+		FBA11A2224523BCF0022A15B /* Supply+Map.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBA11A2124523BCF0022A15B /* Supply+Map.swift */; };
 		FBA11A342454BF1D0022A15B /* MapError.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBA11A332454BF1D0022A15B /* MapError.swift */; };
 		FBA11A3824551A5B0022A15B /* Reduce.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBA11A3724551A5B0022A15B /* Reduce.swift */; };
 		FBA11A3A24551A860022A15B /* SubscribeOn.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBA11A3924551A860022A15B /* SubscribeOn.swift */; };
@@ -42,9 +41,8 @@
 
 /* Begin PBXFileReference section */
 		FB323523245DC141006B800C /* Callable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Callable.swift; sourceTree = "<group>"; };
-		FBA119D7244A0F7A0022A15B /* Subscriber+Join.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Subscriber+Join.swift"; sourceTree = "<group>"; };
 		FBA119D9244A81570022A15B /* FlatMap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlatMap.swift; sourceTree = "<group>"; };
-		FBA11A2124523BCF0022A15B /* Publication+Map.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Publication+Map.swift"; sourceTree = "<group>"; };
+		FBA11A2124523BCF0022A15B /* Supply+Map.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Supply+Map.swift"; sourceTree = "<group>"; };
 		FBA11A332454BF1D0022A15B /* MapError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapError.swift; sourceTree = "<group>"; };
 		FBA11A3724551A5B0022A15B /* Reduce.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Reduce.swift; sourceTree = "<group>"; };
 		FBA11A3924551A860022A15B /* SubscribeOn.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscribeOn.swift; sourceTree = "<group>"; };
@@ -110,21 +108,6 @@
 			path = StatefulChains;
 			sourceTree = "<group>";
 		};
-		FBA119D4244A0F150022A15B /* Subscriber */ = {
-			isa = PBXGroup;
-			children = (
-				FBA119D7244A0F7A0022A15B /* Subscriber+Join.swift */,
-			);
-			path = Subscriber;
-			sourceTree = "<group>";
-		};
-		FBA119D5244A0F220022A15B /* Subscription */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = Subscription;
-			sourceTree = "<group>";
-		};
 		FBA119D6244A0F520022A15B /* Publisher */ = {
 			isa = PBXGroup;
 			children = (
@@ -143,12 +126,12 @@
 			path = Producer;
 			sourceTree = "<group>";
 		};
-		FBA11A2024523BBC0022A15B /* Publication */ = {
+		FBA11A2024523BBC0022A15B /* Supply */ = {
 			isa = PBXGroup;
 			children = (
-				FBA11A2124523BCF0022A15B /* Publication+Map.swift */,
+				FBA11A2124523BCF0022A15B /* Supply+Map.swift */,
 			);
-			path = Publication;
+			path = Supply;
 			sourceTree = "<group>";
 		};
 		FBA11A322454BED00022A15B /* PublisherChains */ = {
@@ -186,9 +169,7 @@
 				FBC21A98243BD52300EFD588 /* FreeCombine.swift */,
 				FB323523245DC141006B800C /* Callable.swift */,
 				FBA119D6244A0F520022A15B /* Publisher */,
-				FBA11A2024523BBC0022A15B /* Publication */,
-				FBA119D4244A0F150022A15B /* Subscriber */,
-				FBA119D5244A0F220022A15B /* Subscription */,
+				FBA11A2024523BBC0022A15B /* Supply */,
 				FBA119DF244B42FA0022A15B /* Producer */,
 				FBA11A322454BED00022A15B /* PublisherChains */,
 				FBC21A82243BD4EA00EFD588 /* Info.plist */,
@@ -322,13 +303,12 @@
 				FBA11A482457038F0022A15B /* Publisher+Transform.swift in Sources */,
 				FBA11A342454BF1D0022A15B /* MapError.swift in Sources */,
 				FBCE1B4324420763001872C0 /* FunctionalProgramming.swift in Sources */,
-				FBA119D8244A0F7A0022A15B /* Subscriber+Join.swift in Sources */,
 				FBA11A3824551A5B0022A15B /* Reduce.swift in Sources */,
 				FBA11A3C24551A920022A15B /* ReceiveOn.swift in Sources */,
 				FBA119DA244A81570022A15B /* FlatMap.swift in Sources */,
 				FBA11A422455BB200022A15B /* Filter.swift in Sources */,
 				FBCE1B492443EDDA001872C0 /* Producer+Statics.swift in Sources */,
-				FBA11A2224523BCF0022A15B /* Publication+Map.swift in Sources */,
+				FBA11A2224523BCF0022A15B /* Supply+Map.swift in Sources */,
 				FBA11A3A24551A860022A15B /* SubscribeOn.swift in Sources */,
 				FBA11A3E245521EC0022A15B /* CompactMap.swift in Sources */,
 				FBC21A99243BD52300EFD588 /* FreeCombine.swift in Sources */,

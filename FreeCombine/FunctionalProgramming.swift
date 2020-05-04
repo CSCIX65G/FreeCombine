@@ -13,7 +13,8 @@ precedencegroup CompositionPrecedence {
 }
 
 /*:
- Define composition of two functions
+ Define an operator for the composition of two
+ functions
  */
 infix operator >>>: CompositionPrecedence
 public func >>> <A, B, C>(
@@ -24,8 +25,8 @@ public func >>> <A, B, C>(
 }
 
 /*:
- Define application of a function to a
- value
+ Define an operator for the application of a
+ function to a value
  */
 infix operator |>: CompositionPrecedence
 public func |> <A, B> (
@@ -43,6 +44,8 @@ public func unwrap<T>(_ t: T?) -> T { t! }
 
 /*:
  Sometimes we need a reference to a value type (sadly)
+ We want it to be generic and to return the value
+ when set so that it can be composed
  */
 public final class Reference<Value> {
     var value: Value
@@ -67,7 +70,6 @@ public protocol CallableAsFunction {
     var call: (A) -> B { get }
     
     init(_ call: @escaping (A) -> B)
-    
     init(_ f: Func<A, B>)
     
     func callAsFunction(_ a: A) -> B
@@ -122,6 +124,12 @@ public extension CallableAsFunction {
         .init { (a: A) in  a |> (a |> (self >>> f)) }
     }
 
+    // The key point is that (Self) -> Self
+    // allows us to substitute in any function
+    // at all for self as long as it accepts and
+    // returns the same values.  In particular we can
+    // substitute in a function will will call self
+    // repeatedly
     func contraFlatMap<C>(
         _ join:  @escaping (Self) -> Self,
         _ transform:@escaping (C) -> A
@@ -143,8 +151,7 @@ public extension CallableAsFunction {
 
 /*:
  Define a struct which wraps a function
- underneath to serve as the value returned
- from the functions above.
+ underneath and meets the above protocol.
  */
 public struct Func<FA, FB>: CallableAsFunction {
     public typealias A = FA

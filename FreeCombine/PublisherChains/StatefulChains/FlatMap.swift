@@ -14,9 +14,9 @@ extension Subscriber {
                 switch supply {
                 case .value:
                     return ref.set(downstream(supply))
-                case .none, .failure:
+                case .failure:
                     return downstream(supply)
-                case .finished:
+                case .none, .finished:
                     return ref.value
                 }
             }

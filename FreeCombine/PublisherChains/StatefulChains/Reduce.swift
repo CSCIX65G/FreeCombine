@@ -16,7 +16,7 @@ extension Subscriber {
             .init { supply in
                 switch supply {
                 case .value(let value):
-                    _ = ref.set(next(ref.value, value))
+                    ref.value = next(ref.value, value)
                     return .unlimited
                 case .none, .failure:
                     return downstream(supply)

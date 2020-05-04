@@ -13,11 +13,12 @@ extension Producer where Failure == Never {
     
     static func just(_ value: Value) -> Producer<Value, Never> {
         var hasPublished = false
-        return Producer({ demand in
-            guard !hasPublished else { return .none }
+        return Producer { demand in
+            guard !hasPublished else { return .finished }
+            guard demand.quantity > 0 else { return .none }
             hasPublished = true
             return .value(value)
-        })
+        }
     }
     
     static func sequence<S: Sequence>(_ values: S) -> Producer<Value, Never>

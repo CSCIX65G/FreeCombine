@@ -163,12 +163,6 @@ public struct Subscription {
 public struct Publisher<Output, Failure: Error> {
     public let call: (Subscriber<Output, Failure>) -> Subscription
     
-    init(_ producer: Producer<Output, Failure>) {
-        self.call = { subscriber in
-            .init(subscriber.contraFlatMap(Subscriber.producerJoin(producer), producer.call))
-        }
-    }
-
     public init(_ call: @escaping (Subscriber<Output, Failure>) -> Subscription) {
         self.call = call
     }
@@ -199,3 +193,37 @@ public struct Publisher<Output, Failure: Error> {
  
  which are all the functions we defined on our Func struct.
  */
+
+// The produce/consume loop
+extension Subscriber {
+    static func producerJoin(
+        _ producer: Producer<Value, Failure>
+    ) -> (Self) -> Self {
+        let demandRef = Reference<Demand>(.max(1))
+        return { downstreamSubscriber in
+            return .init { supply in
+                demandRef.value = downstreamSubscriber(supply)
+                while demandRef.value.quantity > 0 {
+                    let nextSupply = producer(demandRef.value)
+                    switch nextSupply {
+                    case .none:
+                        return demandRef.value
+                    case .value, .failure:
+                        demandRef.value = downstreamSubscriber(nextSupply)
+                    case .finished:
+                        return downstreamSubscriber(nextSupply)
+                    }
+                }
+                return demandRef.value
+            }
+        }
+    }
+}
+
+extension Publisher {
+    init(_ producer: Producer<Output, Failure>) {
+        self.call = { subscriber in
+            .init(subscriber.contraFlatMap(Subscriber.producerJoin(producer), producer.call))
+        }
+    }
+}
