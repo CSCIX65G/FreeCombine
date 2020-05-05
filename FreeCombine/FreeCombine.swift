@@ -100,11 +100,9 @@ public struct Producer<Value, Failure: Error> {
  `contraFlatMap`ping a Subscriber with a Producer yields a
  function from Demand to Demand as you can verify:
 
-     (Producer >>> Subscriber) -> (Demand) -> Demand
+     (Subscriber.contraFlatMap(Producer)) -> (Demand) -> Demand
 
- (I use >>> here imprecisely since I haven't written an
- operator for `contraFlatMap` in the `join` form). Note that
- this operation erases the Supply type in the process.
+ Note that this operation erases the Supply type in the process.
  */
 public struct Subscriber<Value, Failure: Error> {
     public let call: (Supply<Value, Failure>) -> Demand
@@ -112,18 +110,17 @@ public struct Subscriber<Value, Failure: Error> {
         self.call = call
     }
 }
-
 /*:
  A Subscription is a function which is its own independent source
  of Demand, so it doesn't care about the demand returned from
  a Subscriber.  Hence a Subscription is a function
  (Demand) -> Void which can be derived as follows:
  
-     (Producer >>> Subscriber).map(void)
+     (Subscriber.contraFlatMap(Producer)).map(void)
  
- erasing the Demand type in the process.  The second
+ erasing the Demand return type in the process.  The second
  `init` below allows us to go straight from:
- `(Producer >>> Subscriber)` to `Subscription` in
+ `(Subscriber.contraFlatMap(Producer))` to `Subscription` in
  this manner
  */
 public struct Subscription {
@@ -136,7 +133,6 @@ public struct Subscription {
         self.init(f.map(void).call)
     }
 }
-
 /*:
  Finally, we need some way of taking a Producer and a
  Subscriber and creating a Subscription.
@@ -180,7 +176,7 @@ public struct Publisher<Output, Failure: Error> {
  
      Producer: (Demand) -> Supply
      Subscriber: (Supply) -> Demand
-     Subscription: (Demand) -> Void (which is (Producer >>> Subscriber) ignoring output)
+     Subscription: (Demand) -> Void
      Publisher: (Producer) -> (Subscriber) -> Subscription
  
  and we "combine" these elements using the basic functional
@@ -192,6 +188,9 @@ public struct Publisher<Output, Failure: Error> {
  
  which are all the functions we defined on our Func struct.
 
+ 
+ ### More explanation
+ 
  To do anything we need to connect our Producer type to our
  Subscriber type.  Subscriber is a function:
  
@@ -201,8 +200,8 @@ public struct Publisher<Output, Failure: Error> {
     
      (Demand) -> Supply
  
- Clearly the two functions compose, the question is which way,
- do I want to end up with a function of (Demand) -> Demand
+ Clearly the two functions compose, the question is which way?
+ Do I want to end up with a function of (Demand) -> Demand
  or of (Supply) -> Supply.
  
  In this, as in economics, Demand precedes Supply, so
