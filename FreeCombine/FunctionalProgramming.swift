@@ -105,14 +105,12 @@ public extension CallableAsFunction {
     func map<C>(
         _ f: @escaping (B) -> C
     ) -> Func<A, C> {
-        // (A -> B) >>> (B -> C) = (A -> C)
         self >>> f
     }
 
     func contraMap<C>(
         _ f: @escaping (C) -> A
     ) -> Func<C, B> {
-        // (C -> A) >>> (A -> B) = (C -> B)
         f >>> self
     }
     
@@ -124,12 +122,6 @@ public extension CallableAsFunction {
         .init { (a: A) in  a |> (a |> (self >>> f)) }
     }
 
-    // The key point is that (Self) -> Self
-    // allows us to substitute in any function
-    // at all for self as long as it accepts and
-    // returns the same values.  In particular we can
-    // substitute in a function will will call self
-    // repeatedly
     func contraFlatMap<C>(
         _ join:  @escaping (Self) -> Self,
         _ transform:@escaping (C) -> A

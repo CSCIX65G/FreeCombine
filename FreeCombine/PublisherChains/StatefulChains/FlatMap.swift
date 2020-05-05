@@ -37,9 +37,7 @@ public extension Publisher {
                     var first: Supply<T, Failure>?
                     let subscription = publisher.sink { first = $0 }
                     subscription(.max(1))
-                    guard let current = first else {
-                        fatalError("Add asynchrony")
-                    }
+                    guard let current = first else { fatalError("Add asynchrony") }
                     return current
                 case .none: return .none
                 case .failure(let failure): return .failure(failure)

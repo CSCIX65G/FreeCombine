@@ -37,7 +37,7 @@ public enum Demand {
  type, a failure to produce a value, or a notification
  that no future values can be forthcoming.
  
- Since Supply is a generic parameterized by
+ Since Supply is a generic value parameterized by
  two other types, you expect it to have two
  map functions (and it does, in another file).
 */
@@ -50,11 +50,12 @@ public enum Supply<Value, Failure: Error> {
 
 /*:
  These are our 2 basic types.  Everything we do in this package
- is simply writing functions that manipulate these supply and demand.
+ is simply writing functions that manipulate supply and demand instances.
  Best of all, the manipulations that we want to do themselves
  come in only 4 basic types of functions which can then be composed
- using the 5 standard functions on Func.  So you _must_ understand
- how those function-returning-functions do their work.
+ using only 3 of the 5 standard functions on Func.
+ So you _must_ understand how those function-returning-functions
+ do their work.
  
  So diving into our function types...
  
@@ -146,9 +147,9 @@ public struct Subscription {
  
      (Producer) -> (Subscriber) -> Subscription
 
- It can be initialized with a Producer (the first init below)
- or with a function (Subscriber) -> Subscription (the second
- init below) where the Producer has already been partially
+ It can be initialized with a Producer (a separate init below)
+ or with a function (Subscriber) -> Subscription
+ where the Producer has already been partially
  applied to the function.
  
  And as always, because Publisher is parameterized by multiple
@@ -186,15 +187,55 @@ public struct Publisher<Output, Failure: Error> {
  programming elements of:
  
      map
-     flatMap
-     contraMap
      contraFlatMap
      dimap
  
  which are all the functions we defined on our Func struct.
- */
 
-// The produce/consume loop
+ To do anything we need to connect our Producer type to our
+ Subscriber type.  Subscriber is a function:
+ 
+     (Supply) -> Demand
+ 
+ Producer is a function:
+    
+     (Demand) -> Supply
+ 
+ Clearly the two functions compose, the question is which way,
+ do I want to end up with a function of (Demand) -> Demand
+ or of (Supply) -> Supply.
+ 
+ In this, as in economics, Demand precedes Supply, so
+ we want to prepend our Producer function to our Subscriber
+ function. Prepending says immediately that we will need
+ to contraMap the Producer function onto the Subscriber
+ function.
+ 
+ There's one added wrinkle: we want to repeatedly
+ call producer, feeding its output to the subscriber until
+ either the producer can't produce anymore or the subscriber
+ responds with no further demand.  Making multiple calls
+ is precisely why `contraFlatMap` exists.
+ 
+ Look closely at the signature of `contraFlatMap`
+ 
+     func contraFlatMap<C>(
+         _ join:  @escaping (Self) -> Self,
+         _ transform:@escaping (C) -> A
+     ) -> Func<C, B>
+ 
+ That join at the beginning is a little weird. `contraFlatMap`
+ allows us to wrap the subscriber function in another
+ function of the same signature which calls the inner
+ function as many times as necessary to deliver the values.
+ This is precisely what we want.
+ 
+ We will form an outer `join` function which when given
+ an initial value will repeatedly call the producer
+ and subscriber functions until one of them is exhausted.
+ 
+ Here's what such a join function looks like.
+ */
 extension Subscriber {
     static func producerJoin(
         _ producer: Producer<Value, Failure>
@@ -219,7 +260,29 @@ extension Subscriber {
         }
     }
 }
+/*:
+ Note that the inner function is kicked off with a Supply.
+ This supply is then provided to the downstreamSubscriber
+ to obtain more demand.  If there is positive demand,
+ we ask the producer for more supply. If there is any,
+ we in turn feed the supply to the downstream.  Lather,
+ rinse, repeat until one is exhausted.
+ 
+ Now we can call `contraFlatMap` on the subscriber, rolling
+ the producer up in our join function (remember the signature):
 
+     func contraFlatMap<Demand>(
+         _ join:  @escaping ((Supply) -> Demand) -> ((Supply) -> Demand),
+         _ transform:@escaping (Demand) -> Supply
+     ) -> Func<Demand, Demand>
+
+
+ and passing the producer itself as the transform function.
+ 
+ That one line produces a function (Subscriber) -> Subscription
+ that when kicked with a demand will repeatedly call the producer
+ and subscriber until one of them is exhausted
+ */
 extension Publisher {
     init(_ producer: Producer<Output, Failure>) {
         self.call = { subscriber in

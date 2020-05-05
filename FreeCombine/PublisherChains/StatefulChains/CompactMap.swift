@@ -10,15 +10,11 @@ public extension Publisher {
     func compactMap<T>(
         _ transform: @escaping (Output) -> T?
     ) -> Publisher<T, Failure> {
-        transformation(
-            transformSupply: Supply.map(transform)
-        )
+        transformation(transformSupply: Supply.map(transform))
         .transformation(
             joinSubscriber: Subscriber<T?, Failure>.filterJoin({ $0 != nil}),
             transformSupply: identity
         )
-        .transformation(
-            transformSupply: Supply.map(unwrap)
-        )
+        .transformation(transformSupply: Supply.map(unwrap))
     }
 }
