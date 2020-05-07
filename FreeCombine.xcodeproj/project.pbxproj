@@ -63,7 +63,6 @@
 		FBCE1B482443EDDA001872C0 /* Producer+Statics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Producer+Statics.swift"; sourceTree = "<group>"; };
 		FBCE1B4A2444D7EC001872C0 /* Map.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Map.swift; sourceTree = "<group>"; };
 		FBCE1B4C2444DF9B001872C0 /* MapTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapTests.swift; sourceTree = "<group>"; };
-		FBCE1B7E24474160001872C0 /* FreeCombine.playground */ = {isa = PBXFileReference; lastKnownFileType = file.playground; path = FreeCombine.playground; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.swift; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -146,7 +145,6 @@
 		FBC21A74243BD4EA00EFD588 = {
 			isa = PBXGroup;
 			children = (
-				FBCE1B7E24474160001872C0 /* FreeCombine.playground */,
 				FBC21A80243BD4EA00EFD588 /* FreeCombine */,
 				FBC21A8B243BD4EA00EFD588 /* FreeCombineTests */,
 				FBC21A7F243BD4EA00EFD588 /* Products */,

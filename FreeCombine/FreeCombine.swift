@@ -294,7 +294,7 @@ extension Subscriber {
  that when kicked with a demand will repeatedly call the producer
  and subscriber until one of them is exhausted
  */
-extension Publisher {
+public extension Publisher {
     init(_ producer: Producer<Output, Failure>) {
         self.call = { subscriber in
             .init(subscriber.contraFlatMap(Subscriber.join(producer), producer.call))

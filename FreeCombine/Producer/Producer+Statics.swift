@@ -6,7 +6,7 @@
 //  Copyright © 2020 ComputeCycles, LLC. All rights reserved.
 //
 
-extension Producer where Failure == Never {
+public extension Producer where Failure == Never {
     static func empty() -> Producer<Value, Never> {
         return Producer({ _ in .finished })
     }
