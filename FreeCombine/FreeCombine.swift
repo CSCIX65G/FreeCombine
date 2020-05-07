@@ -53,7 +53,6 @@ public enum Supply<Value, Failure: Error> {
     case failure(Failure)
     case finished
 }
-
 /*:
  These are our 2 basic types.  Everything we do in this package
  is simply writing functions that manipulate supply and demand instances.
@@ -80,8 +79,8 @@ public struct Producer<Value, Failure: Error> {
  response to Demand, there must also be a function which
  consumes a Supply to satisfy a Demand.  We call
  such a function a Subscriber because it will not consume
- just one supply, but an entire series of them if supply
- is available.
+ just one value of the supply, but an entire series of them
+ until the demand is sated, as long as supply is available.
  
  In a very human manner a Subscriber consuming some Supply
  can induce even more Demand which it provides as its function
@@ -94,7 +93,9 @@ public struct Producer<Value, Failure: Error> {
  
  But... You can only form a Subscriber AFTER you have a Producer,
  so the composition of the two functions must be a `contraMap`
- or `contraFlatMap` (i.e. you prepend the Producer to the Subscriber).
+ or `contraFlatMap` (i.e. you have to prepend the Producer
+ to the Subscriber).
+ 
  In particular, since we can produce Supply in batches, we are
  going to want to use `contraFlatMap`, which means that
  we are going to need at least one `join` function on
@@ -109,6 +110,9 @@ public struct Producer<Value, Failure: Error> {
      (Subscriber.contraFlatMap(Producer)) -> (Demand) -> Demand
 
  Note that this operation erases the Supply type in the process.
+ 
+ So here's what Subscriber looks like, it's just the
+ inverse of Producer:
  */
 public struct Subscriber<Value, Failure: Error> {
     public let call: (Supply<Value, Failure>) -> Demand
@@ -144,23 +148,30 @@ extension Subscriber {
     }
 }
 /*:
- Essentially we construct a subscriber which is provided
- with a producer and another subscriber.  This "outer"
- subscriber receives a supply and calls the inner subscriber
- and the producer repeatedly until either the inner subscriber is
- satiated or the producer is exhausted.  We need the outer
- subscriber so that we can iterate on the inner one,
- that is the key insight of contraFlatMap.
+ Here we construct a subscriber from a
+ producer and another subscriber.  This "outer"
+ subscriber receives a supply to kick things off
+ and calls the inner subscriber
+ and the producer repeatedly until either:
+
+ 1.  the inner subscriber is satiated or
+ 2. the producer is exhausted.
  
- It is very interesting to look at the signature of the
- satiate func though.  If we curry it, it looks like this:
+ We need the outer
+ subscriber so that we can iterate on the inner one.
+ And _that_ is the key insight of contraFlatMap, not
+ just in this case, but in all cases.
+ 
+ So lets look closely at the signature of the
+ satiate function.  If we curry it, it looks like this:
  
   (Producer) -> (Subscriber) -> Subscriber
  
- That last bit is the signature of a contraFlatMap join
+ That last bit is telling.  It is precisely
+ the signature of a contraFlatMap join
  on Subscriber. And that's something we'll be taking
- advantage of repeatedly.  Let's move on to
- Subscriptions.
+ advantage of repeatedly below so keep it in minde.
+ Let's move on to Subscriptions.
  
  A Subscription is a function which is its own independent source
  of Demand, so it doesn't care about the demand returned from
@@ -189,24 +200,30 @@ public struct Subscription {
  Subscriber and creating a Subscription.
  
  A Publisher is a curried function which combines a Producer
- and a Subscriber to yield a Subscription in the manner
+ and a Subscriber to yield a Subscription in precisely the manner
  shown above.  I.e. it has the form:
  
      (Producer) -> (Subscriber) -> Subscription
 
  It can be initialized with a Producer (a separate init below)
- or with a function (Subscriber) -> Subscription
- where the Producer has already been partially
- applied to the function.
+ or directly with a function (Subscriber) -> Subscription.
+ This is a critical point.  There are several ways of preparing
+ a Publisher, but the all _must_ end at:
+ 
+     (Subscriber) -> Subscription
+ 
+ In fact, most of this library is actually composed of functions
+ of the form:
+ 
+     (Publisher) -> (Subscriber) -> Subscription
+ 
+ where a Publisher is created by "chaining" it onto another
+ Publisher.  The forms that this can take are what make
+ this technique so powerful.
  
  And as always, because Publisher is parameterized by multiple
- generic types, it too, has multiple forms of map.  Indeed
- it has a lot of functionality which
- allows us to chain Publishers together in all sorts of
- interesting ways.
- 
- The majority of this library is given over to chaining
- Publishers in fact.
+ generic types, it too, has multiple forms of map.  Which
+ we will explore in detail.
 */
 public struct Publisher<Output, Failure: Error> {
     public let call: (Subscriber<Output, Failure>) -> Subscription
@@ -216,11 +233,13 @@ public struct Publisher<Output, Failure: Error> {
     }
 }
 /*:
- All of FreeCombine is implemented as composition of the 2 basic value types
- using the 4 basic function types.  To reiterate, the value types are:
+ Summarizing, all of FreeCombine is implemented
+ as composition of the 2 basic value types
+ using the 4 basic function types.  To reiterate,
+ the value types are:
  
      Demand
-     Supply (which as a genereric has map functions on it)
+     Supply
  
  and the function types (all represented as "call-as-function"
  Swift structs) are:
@@ -231,7 +250,7 @@ public struct Publisher<Output, Failure: Error> {
      Publisher: (Producer) -> (Subscriber) -> Subscription
  
  and we "combine" these elements using the basic functional
- programming elements of:
+ programming elements as follows:
  
    On Supply we use:
      map
@@ -242,6 +261,9 @@ public struct Publisher<Output, Failure: Error> {
      dimap
  
  which are all the functions we defined on our Func struct.
+ 
+ And this is _all_ we need to create something like
+ Combine or RxSwift.
 
  ### More explanation
  
@@ -255,7 +277,7 @@ public struct Publisher<Output, Failure: Error> {
      (Demand) -> Supply
  
  Clearly the two functions compose, the question is which way?
- Do I want to end up with a function of (Demand) -> Demand
+ I.e. do I want to end up with a function of (Demand) -> Demand
  or of (Supply) -> Supply.
  
  In this, as in economics, Demand precedes Supply, so
@@ -297,7 +319,27 @@ extension Subscriber {
     }
 }
 /*:
+ This is the curried form I described above:
+ 
+     (Producer) -> (Subscriber) -> Subscriber
+ 
+ Where the meaning of this particular `join` is described
+ by the `satiate` function.  This is the pattern we will
+ adopt throughout.  We'll name a `join` and then see what
+ we can do with it in the context of Publisher chaining.
+ 
  Note that the inner function is kicked off with a Supply.
+ In FreeCombine this will always be the case.  Subscribers
+ are functions (Supply) -> Demand, so `contraFlatMap`ping them
+ will always require us to preserve that signature and
+ our joins will have the form:
+ 
+     (Subscriber) -> Subscriber
+ 
+ or in detail:
+ 
+     ((Supply) -> Demand) -> ((Supply) -> Demand)
+ 
  This supply is then provided to the downstreamSubscriber
  to obtain more demand.  If there is positive demand,
  we ask the producer for more supply. If there is any,
