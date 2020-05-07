@@ -27,14 +27,17 @@ extension Producer where Failure == Never {
         var slice = ArraySlice(values)
         return .init(
             .init { demand in
-                guard case .cancel = demand else {
+                switch demand {
+                case .none:
+                    return .none
+                case .cancel:
                     slice = ArraySlice()
                     return .finished
+                case .max, .unlimited:
+                    guard let value = slice.first else { return .finished }
+                    slice = slice.dropFirst()
+                    return .value(value)
                 }
-                guard demand.unsatisfied else { return .none }
-                guard let value = slice.first else { return .finished }
-                slice = slice.dropFirst()
-                return .value(value)
             }
         )
     }
