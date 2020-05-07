@@ -97,7 +97,7 @@ public struct Producer<Value, Failure: Error> {
  or `contraFlatMap` (i.e. you prepend the Producer to the Subscriber).
  In particular, since we can produce Supply in batches, we are
  going to want to use `contraFlatMap`, which means that
- we are going to need at least a `join` function on
+ we are going to need at least one `join` function on
  Subscriber as well.
  
  This last point is _very_ important to understand, it reveals
@@ -117,6 +117,51 @@ public struct Subscriber<Value, Failure: Error> {
     }
 }
 /*:
+ To get a feel for why this is a contraFlatMap,
+ let's see what a function which would satiate
+ a subscriber from a publisher might look like:
+ */
+extension Subscriber {
+    static func satiate(
+        from producer: Producer<Value, Failure>,
+        into subscriber: Subscriber<Value, Failure>
+    ) -> Subscriber<Value, Failure> {
+        .init { supply in
+            var demand = subscriber(supply)
+            while demand.unsatisfied {
+                let nextSupply = producer(demand)
+                switch nextSupply {
+                case .none:
+                    return demand
+                case .value:
+                    demand = subscriber(nextSupply)
+                case .failure, .finished:
+                    return subscriber(nextSupply)
+                }
+            }
+            return demand
+        }
+    }
+}
+/*:
+ Essentially we construct a subscriber which is provided
+ with a producer and another subscriber.  This "outer"
+ subscriber receives a supply and calls the inner subscriber
+ and the producer repeatedly until either the inner subscriber is
+ satiated or the producer is exhausted.  We need the outer
+ subscriber so that we can iterate on the inner one,
+ that is the key insight of contraFlatMap.
+ 
+ It is very interesting to look at the signature of the
+ satiate func though.  If we curry it, it looks like this:
+ 
+  (Producer) -> (Subscriber) -> Subscriber
+ 
+ That last bit is the signature of a contraFlatMap join
+ on Subscriber. And that's something we'll be taking
+ advantage of repeatedly.  Let's move on to
+ Subscriptions.
+ 
  A Subscription is a function which is its own independent source
  of Demand, so it doesn't care about the demand returned from
  a Subscriber.  Hence a Subscription is a function
@@ -188,13 +233,16 @@ public struct Publisher<Output, Failure: Error> {
  and we "combine" these elements using the basic functional
  programming elements of:
  
+   On Supply we use:
      map
+ 
+   And on Subscriber and Subscription we use:
+     contraMap
      contraFlatMap
      dimap
  
  which are all the functions we defined on our Func struct.
 
- 
  ### More explanation
  
  To do anything we need to connect our Producer type to our
@@ -241,29 +289,6 @@ public struct Publisher<Output, Failure: Error> {
  
  Here's what such a join function looks like.
  */
-extension Subscriber {
-    static func satiate(
-        from producer: Producer<Value, Failure>,
-        into subscriber: Subscriber<Value, Failure>
-    ) -> Subscriber<Value, Failure> {
-        .init { supply in
-            var demand = subscriber(supply)
-            while demand.unsatisfied {
-                let nextSupply = producer(demand)
-                switch nextSupply {
-                case .none:
-                    return demand
-                case .value:
-                    demand = subscriber(nextSupply)
-                case .failure, .finished:
-                    return subscriber(nextSupply)
-                }
-            }
-            return demand
-        }
-    }
-}
-
 extension Subscriber {
     static func join(
         _ producer: Producer<Value, Failure>
