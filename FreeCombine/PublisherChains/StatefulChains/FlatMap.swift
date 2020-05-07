@@ -7,7 +7,7 @@
 //
 
 extension Subscriber {
-    static var substitutionJoin: (Self) -> (Self) {
+    static var join: (Self) -> (Self) {
         let ref = Reference<Demand>(.max(1))
         return { downstream in
             .init { supply in
@@ -29,7 +29,7 @@ public extension Publisher {
         _ transform: @escaping (Output) -> Publisher<T, Failure>
     ) -> Publisher<T, Failure> {
         transformation(
-            joinSubscriber: Subscriber<T, Failure>.substitutionJoin,
+            joinSubscriber: Subscriber<T, Failure>.join,
             transformSupply: { supply in
                 switch supply {
                 case .value(let value):

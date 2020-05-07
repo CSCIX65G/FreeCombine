@@ -9,7 +9,7 @@
 import Foundation
 
 extension Subscription {
-    static func subscribeOnJoin(
+    static func join(
         _ opQueue: OperationQueue
     ) -> (Self) -> (Self) {
         return { upstream in
@@ -28,7 +28,7 @@ public extension Publisher {
     ) -> Publisher<Output, Failure> {
         transformation(
             transformSupply: identity,
-            joinSubscription: Subscription.subscribeOnJoin(opQueue)
+            joinSubscription: Subscription.join(opQueue)
         )
     }
 }

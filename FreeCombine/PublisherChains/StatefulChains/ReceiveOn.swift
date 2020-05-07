@@ -9,16 +9,14 @@
 import Foundation
 
 extension Subscriber {
-    static func receiveOnJoin(
+    static func join(
         _ opQueue: OperationQueue
     ) -> (Self) -> (Self) {
         let ref = Reference<Demand>(.max(1))
         return { downstream in
             .init { supply in
-                ref.value = .max(ref.value.quantity - 1)
-                opQueue.addOperation {
-                    _ = ref.set(downstream(supply))
-                }
+                ref.value = ref.value.decremented
+                opQueue.addOperation { ref.value = downstream(supply) }
                 return ref.value
             }
         }
@@ -30,7 +28,7 @@ public extension Publisher {
         _ opQueue: OperationQueue
     ) -> Publisher<Output, Failure> {
         transformation(
-            joinSubscriber: Subscriber<Output, Failure>.receiveOnJoin(opQueue),
+            joinSubscriber: Subscriber<Output, Failure>.join(opQueue),
             transformSupply: identity
         )
     }

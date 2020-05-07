@@ -7,7 +7,7 @@
 //
 
 extension Subscriber {
-    static func filterJoin(
+    static func join(
         _ test: @escaping (Value) -> Bool
     ) -> (Self) -> (Self) {
         let ref = Reference<Demand>(.max(1))
@@ -32,8 +32,8 @@ public extension Publisher {
     func filter(
         _ isIncluded: @escaping (Output) -> Bool
     ) -> Publisher<Output, Failure> {
-        return transformation(
-            joinSubscriber: Subscriber<Output, Failure>.filterJoin(isIncluded),
+        transformation(
+            joinSubscriber: Subscriber<Output, Failure>.join(isIncluded),
             transformSupply: identity
         )
     }

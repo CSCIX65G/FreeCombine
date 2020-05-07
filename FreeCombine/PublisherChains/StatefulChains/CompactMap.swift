@@ -12,7 +12,7 @@ public extension Publisher {
     ) -> Publisher<T, Failure> {
         transformation(transformSupply: Supply.map(transform))
         .transformation(
-            joinSubscriber: Subscriber<T?, Failure>.filterJoin({ $0 != nil}),
+            joinSubscriber: Subscriber<T?, Failure>.join({ $0 != nil}),
             transformSupply: identity
         )
         .transformation(transformSupply: Supply.map(unwrap))

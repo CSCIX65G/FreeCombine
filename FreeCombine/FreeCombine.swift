@@ -21,12 +21,18 @@ public enum Demand {
     case unlimited
     case cancel
 
-    var quantity: Int {
+    var decremented: Demand {
+        guard case .max(let value) = self else { return self }
+        return value > 1 ? .max(value - 1) : .none
+    }
+    
+    var unsatisfied: Bool {
         switch self {
-        case .none: return 0
-        case .max(let val): return val
-        case .unlimited: return Int.max
-        case .cancel: return 0
+        case .none: return false
+        case .max(let val) where val > 0: return true
+        case .max: return false
+        case .unlimited: return true
+        case .cancel: return false
         }
     }
 }
@@ -224,9 +230,9 @@ public struct Publisher<Output, Failure: Error> {
      ) -> Func<C, B>
  
  That join at the beginning is a little weird. `contraFlatMap`
- allows us to wrap the subscriber function in another
- function of the same signature which calls the inner
- function as many times as necessary to deliver the values.
+ allows us to wrap self (the subscriber function) in another
+ function of the same signature which calls the self (inner
+ function) as many times as necessary to deliver the values.
  This is precisely what we want.
  
  We will form an outer `join` function which when given
@@ -236,27 +242,33 @@ public struct Publisher<Output, Failure: Error> {
  Here's what such a join function looks like.
  */
 extension Subscriber {
-    static func producerJoin(
+    static func satiate(
+        from producer: Producer<Value, Failure>,
+        into subscriber: Subscriber<Value, Failure>
+    ) -> Subscriber<Value, Failure> {
+        .init { supply in
+            var demand = subscriber(supply)
+            while demand.unsatisfied {
+                let nextSupply = producer(demand)
+                switch nextSupply {
+                case .none:
+                    return demand
+                case .value:
+                    demand = subscriber(nextSupply)
+                case .failure, .finished:
+                    return subscriber(nextSupply)
+                }
+            }
+            return demand
+        }
+    }
+}
+
+extension Subscriber {
+    static func join(
         _ producer: Producer<Value, Failure>
     ) -> (Self) -> Self {
-        let demandRef = Reference<Demand>(.max(1))
-        return { downstreamSubscriber in
-            return .init { supply in
-                demandRef.value = downstreamSubscriber(supply)
-                while demandRef.value.quantity > 0 {
-                    let nextSupply = producer(demandRef.value)
-                    switch nextSupply {
-                    case .none:
-                        return demandRef.value
-                    case .value, .failure:
-                        demandRef.value = downstreamSubscriber(nextSupply)
-                    case .finished:
-                        return downstreamSubscriber(nextSupply)
-                    }
-                }
-                return demandRef.value
-            }
-        }
+        return { subscriber in .init(satiate(from: producer, into: subscriber).call) }
     }
 }
 /*:
@@ -285,7 +297,7 @@ extension Subscriber {
 extension Publisher {
     init(_ producer: Producer<Output, Failure>) {
         self.call = { subscriber in
-            .init(subscriber.contraFlatMap(Subscriber.producerJoin(producer), producer.call))
+            .init(subscriber.contraFlatMap(Subscriber.join(producer), producer.call))
         }
     }
 }

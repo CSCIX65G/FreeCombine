@@ -7,7 +7,7 @@
 //
 
 extension Subscriber {
-    static func reducerJoin(
+    static func join(
         _ initial: Value,
         _ next: @escaping (Value, Value) -> Value
     ) -> (Self) -> (Self) {
@@ -35,7 +35,7 @@ public extension Publisher {
         _ reduce: @escaping (Output, Output) -> Output
     ) -> Publisher<Output, Failure> {
         transformation(
-            joinSubscriber: Subscriber<Output, Failure>.reducerJoin(initial, reduce),
+            joinSubscriber: Subscriber<Output, Failure>.join(initial, reduce),
             transformSupply: identity,
             transformDemand: {
                 switch $0 {

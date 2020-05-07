@@ -15,7 +15,7 @@ extension Producer where Failure == Never {
         var hasPublished = false
         return Producer { demand in
             guard !hasPublished else { return .finished }
-            guard demand.quantity > 0 else { return .none }
+            guard demand.unsatisfied else { return .none }
             hasPublished = true
             return .value(value)
         }
@@ -31,7 +31,7 @@ extension Producer where Failure == Never {
                     slice = ArraySlice()
                     return .finished
                 }
-                guard demand.quantity > 0 else { return .none }
+                guard demand.unsatisfied else { return .none }
                 guard let value = slice.first else { return .finished }
                 slice = slice.dropFirst()
                 return .value(value)
