@@ -35,6 +35,8 @@ public enum Demand {
         case .cancel: return false
         }
     }
+    
+    var satisfied: Bool { !unsatisfied }
 }
 
 /*:
@@ -56,11 +58,11 @@ public enum Supply<Value, Failure: Error> {
 /*:
  These are our 2 basic types.  Everything we do in this package
  is simply writing functions that manipulate supply and demand instances.
- Best of all, the manipulations that we want to do themselves
+ Best of all, the manipulations that we want to do
  come in only 4 basic types of functions which can then be composed
- using only 3 of the 5 standard functions on Func.
- So you _must_ understand how those function-returning-functions
- do their work.
+ using only the standard functions on Func.
+ So if you understand how to combine all these function-returning-functions
+ you understand how Combine does its work.
  
  So diving into our function types...
  
@@ -91,6 +93,14 @@ public struct Producer<Value, Failure: Error> {
  with Producers. This should be very intuitive since it is
  how all of economics actually works as well.
  
+ Composing a producer with a subscriber looks like this:
+ 
+     (Demand) -> Supply >>> (Supply) -> Demand
+ 
+ to yield:
+ 
+     (Demand) -> Demand
+ 
  But... You can only form a Subscriber AFTER you have a Producer,
  so the composition of the two functions must be a `contraMap`
  or `contraFlatMap` (i.e. you have to prepend the Producer
@@ -105,9 +115,12 @@ public struct Producer<Value, Failure: Error> {
  a huge amount about what `contraFlatMap` actually _means_
  
  `contraFlatMap`ping a Subscriber with a Producer yields a
- function from Demand to Demand as you can verify:
+ function from Demand to Demand as above:
 
      (Subscriber.contraFlatMap(Producer)) -> (Demand) -> Demand
+ 
+ with the output function looping until either
+ demand is sated or supply is exhausted.
 
  Note that this operation erases the Supply type in the process.
  
@@ -122,11 +135,13 @@ public struct Subscriber<Value, Failure: Error> {
 }
 /*:
  To get a feel for why this is a contraFlatMap,
- let's see what a function which would satiate
- a subscriber from a publisher might look like:
+ let's see what a function which would implement
+ the satiate/exhaust loop for a subscriber/producer
+ pair might look like.  Note that the Supply<Value, Failure>
+ types have to match for the pairing to work.
  */
 extension Subscriber {
-    static func satiate(
+    static func satiateOrExhaust(
         from producer: Producer<Value, Failure>,
         into subscriber: Subscriber<Value, Failure>
     ) -> Subscriber<Value, Failure> {
@@ -148,19 +163,34 @@ extension Subscriber {
     }
 }
 /*:
- Here we construct a subscriber from a
- producer and another subscriber.  This "outer"
- subscriber receives a supply to kick things off
+ Here we've constructed a new subscriber from the
+ pairing of a producer and another subscriber.
+ This "outer" subscriber receives a supply to kick things off
  and calls the inner subscriber and the producer repeatedly
  until either:
 
  1. the inner subscriber is satiated or
  2. the producer is exhausted.
  
- We need the outer
- subscriber so that we can iterate on the inner one.
- And _that_ is the key insight of contraFlatMap, not
- just in this case, but in all cases.
+ We need the outer subscriber so that we can iterate on the
+ inner one. And _that_ is the key insight of contraFlatMap,
+ not just in this case, but in all cases.  ContraFlatMap
+ allows you to call a function (A) -> B multiple times while
+ wrapped in context that also has signature (A) -> B, you
+ just need an A to kick things off.
+ 
+ Note that this is the dual of flatMap on a function.  In
+ that case however we are given a function (B) -> C which
+ already wraps another function (B) -> C which it can call
+ multiple times.  This outer function just needs a B to
+ kick things off.
+ 
+ This sort of contraMap action is at the heart of
+ Functional Reactive Programming (FRP).  In that model
+ of writing applications, the values being passed
+ through the functions are events which represent
+ things that have occurred and data moves through
+ applications in chains composed by contraMapping.
  
  So lets look closely at the signature of the
  satiate function.  If we curry it, it looks like this:
@@ -205,7 +235,13 @@ public struct Subscription {
  
      (Producer) -> (Subscriber) -> Subscription
 
- It can be initialized with a Producer (a separate init below)
+ That is to say that unlike Producer and Subscriber,
+ Publisher is a higher-order function.  It accepts functions
+ as input and produces functions as output.  (Remember,
+ Producer, Subscriber and Subscription are themselves all
+ functions).
+ 
+ A Publisher can be initialized with a Producer (i a separate init below)
  or directly with a function (Subscriber) -> Subscription.
  This is a critical point.  There are several ways of preparing
  a Publisher, but the all _must_ end at:
@@ -221,7 +257,7 @@ public struct Subscription {
  Publisher.  The forms that this can take are what make
  this technique so powerful.
  
- And as always, because Publisher is parameterized by multiple
+ And as always, because Publisher is parameterized by
  generic types, it too, has multiple forms of map.  Which
  we will explore in detail.
 */
@@ -233,23 +269,39 @@ public struct Publisher<Output, Failure: Error> {
     }
 }
 /*:
- Summarizing, all of FreeCombine is implemented
+ Summarizing:
+ 
+ All of FreeCombine is implemented
  as composition of the 2 basic value types
- using the 4 basic function types.  To reiterate,
- the value types are:
+ using the 3 basic function types
+ and one higher-order function type.
+ 
+ To reiterate, the value types are:
  
      Demand
      Supply
  
- and the function types (all represented as "call-as-function"
+ and the base function types (all represented as "call-as-function"
  Swift structs) are:
  
      Producer: (Demand) -> Supply
      Subscriber: (Supply) -> Demand
      Subscription: (Demand) -> Void
-     Publisher: (Producer) -> (Subscriber) -> Subscription
  
- and we "combine" these elements using the basic functional
+ The higher-order function type is Publisher:
+ 
+     Publisher: (Subscriber) -> Subscription
+ 
+ which takes on two even higher higher-order forms when curried
+ as:
+ 
+    (Producer)  -> (Subscriber) -> Subscription  and
+    (Publisher) -> (Subscriber) -> Subscription
+ 
+ these forms are not given names but much of the library is
+ given over to them.
+ 
+ We "Combine" these elements using the basic functional
  programming elements as follows:
  
    On Supply we use:
@@ -258,14 +310,18 @@ public struct Publisher<Output, Failure: Error> {
    And on Subscriber and Subscription we use:
      contraMap
      contraFlatMap
+ 
+   And on Publisher we use:
      dimap
  
- which are all the functions we defined on our Func struct.
+   to form a plethora of more complex forms
+ 
+ These are all functions we defined on our Func struct.
  
  And this is _all_ we need to create something like
  Combine or RxSwift.
 
- ### More explanation
+ ### A little philosophy
  
  To do anything we need to connect our Producer type to our
  Subscriber type.  Subscriber is a function:
@@ -278,9 +334,11 @@ public struct Publisher<Output, Failure: Error> {
  
  Clearly the two functions compose, the question is which way?
  I.e. do I want to end up with a function of (Demand) -> Demand
- or of (Supply) -> Supply.
+ or of (Supply) -> Supply.  Which comes first the chicken or the
+ egg?
  
- In this, as in economics, Demand precedes Supply, so
+ In this, as in economics, Demand precedes Supply and
+ is fed Supply which arises to satiate it, so
  we want to prepend our Producer function to our Subscriber
  function. Prepending says immediately that we will need
  to contraMap the Producer function onto the Subscriber
@@ -315,7 +373,7 @@ extension Subscriber {
     static func join(
         _ producer: Producer<Value, Failure>
     ) -> (Self) -> Self {
-        return { subscriber in .init(satiate(from: producer, into: subscriber).call) }
+        return { subscriber in .init(satiateOrExhaust(from: producer, into: subscriber).call) }
     }
 }
 /*:
@@ -359,7 +417,9 @@ extension Subscriber {
  
  That one line produces a function (Subscriber) -> Subscription
  that when kicked with a demand will repeatedly call the producer
- and subscriber until one of them is exhausted
+ and subscriber until one of them is exhausted.
+ 
+ Here's how that looks:
  */
 public extension Publisher {
     init(_ producer: Producer<Output, Failure>) {
