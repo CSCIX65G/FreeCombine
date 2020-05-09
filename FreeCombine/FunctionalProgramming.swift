@@ -68,6 +68,7 @@ public protocol CallableAsFunction {
     associatedtype A
     associatedtype B
     var call: (A) -> B { get }
+    var function: Func<A, B> { get }
     
     init(_ call: @escaping (A) -> B)
     init(_ f: Func<A, B>)
@@ -78,19 +79,41 @@ public protocol CallableAsFunction {
         _ f: @escaping (B) -> C
     ) -> Func<A, C>
     
+    func map<C>(
+        _ f: Func<B, C>
+    ) -> Func<A, C>
+    
     func contraMap<C>(
         _ f:  @escaping (C) -> A
     ) -> Func<C, B>
-    
+
+    func contraMap<C>(
+        _ f: Func<C, A>
+    ) -> Func<C, B>
+
     func flatMap<C>(
         _ f:  @escaping (B) -> (A) -> C
     ) -> Func<A, C>
     
+    func flatMap<C>(
+        _ f:  Func<B, Func<A,C>>
+    ) -> Func<A, C>
+
+    func contraFlatMap<C>(
+        _ join:  @escaping ((A) -> B) -> (A) -> B,
+        _ transform:  @escaping (C) -> A
+    ) -> Func<C, B>
+
     func contraFlatMap<C>(
         _ join:  @escaping (Self) -> Self,
         _ transform:  @escaping (C) -> A
     ) -> Func<C, B>
     
+    func contraFlatMap<C>(
+        _ join:  @escaping ((A) -> B) -> (A) -> B,
+        _ transform:  Func<C, A>
+    ) -> Func<C, B>
+
     func contraFlatMap<C>(
         _ join:  Func<Self, Self>,
         _ transform:  Func<C, A>
@@ -100,9 +123,27 @@ public protocol CallableAsFunction {
         _ f:  @escaping (C) -> A,
         _ g:  @escaping (B) -> D
     ) -> Func<C, D>
+
+    func dimap<C, D>(
+        _ f:  Func<C, A>,
+        _ g:  @escaping (B) -> D
+    ) -> Func<C, D>
+
+    func dimap<C, D>(
+        _ f:  @escaping (C) -> A,
+        _ g:  Func<B, D>
+    ) -> Func<C, D>
+
+    func dimap<C, D>(
+        _ f:  Func<C, A>,
+        _ g:  Func<B, D>
+    ) -> Func<C, D>
+
 }
 
 public extension CallableAsFunction {
+    var function: Func<A, B> { .init(call) }
+    
     func callAsFunction(_ a: A) -> B {
         call(a)
     }
@@ -113,8 +154,20 @@ public extension CallableAsFunction {
         self >>> f
     }
 
+    func map<C>(
+        _ f: Func<B, C>
+    ) -> Func<A, C> {
+        self >>> f
+    }
+
     func contraMap<C>(
         _ f: @escaping (C) -> A
+    ) -> Func<C, B> {
+        f >>> self
+    }
+    
+    func contraMap<C>(
+        _ f: Func<C, A>
     ) -> Func<C, B> {
         f >>> self
     }
@@ -127,6 +180,24 @@ public extension CallableAsFunction {
         .init { (a: A) in  a |> (a |> (self >>> f)) }
     }
 
+    func flatMap<C>(
+        _ f: Func<B, Func<A, C>>
+    ) -> Func<A, C> {
+        // self >>> f = ((A) -> B) >>> (B) -> (A) -> C = (A) -> (A) -> C
+        // a |> (self >>> f) = (A) -> C
+        .init { (a: A) in  a |> (a |> (self >>> f)) }
+    }
+
+    func contraFlatMap<C>(
+        _ join:  @escaping ((A) -> B) -> (A) -> B,
+        _ transform:@escaping (C) -> A
+    ) -> Func<C, B> {
+        // self |> join = (A -> B) |> ((A) -> B) -> (A) -> B) = A -> B
+        // transform >>> (self |> join)
+        // = (C -> A) >>> (A -> B) = C -> B
+        .init(transform >>> (self.call |> join))
+    }
+    
     func contraFlatMap<C>(
         _ join:  @escaping (Self) -> Self,
         _ transform:@escaping (C) -> A
@@ -135,6 +206,16 @@ public extension CallableAsFunction {
         // transform >>> (self |> join)
         // = (C -> A) >>> (A -> B) = C -> B
         transform >>> (self |> join)
+    }
+    
+    func contraFlatMap<C>(
+        _ join:  @escaping ((A) -> B) -> (A) -> B,
+        _ transform: Func<C, A>
+    ) -> Func<C, B> {
+        // self |> join = (A -> B) |> ((A) -> B) -> (A) -> B) = A -> B
+        // transform >>> (self |> join)
+        // = (C -> A) >>> (A -> B) = C -> B
+        transform >>> (self.call |> join)
     }
     
     func contraFlatMap<C>(
@@ -150,6 +231,30 @@ public extension CallableAsFunction {
     func dimap<C, D>(
         _ hoist: @escaping (C) -> A,
         _ lower: @escaping (B) -> D
+    ) -> Func<C, D> {
+        // C -> A >>> A -> B >>> B -> D = C -> D
+        hoist >>> self >>> lower
+    }
+
+    func dimap<C, D>(
+        _ hoist: Func<C, A>,
+        _ lower: @escaping (B) -> D
+    ) -> Func<C, D> {
+        // C -> A >>> A -> B >>> B -> D = C -> D
+        hoist >>> self >>> lower
+    }
+
+    func dimap<C, D>(
+        _ hoist: @escaping (C) -> A,
+        _ lower: Func<B, D>
+    ) -> Func<C, D> {
+        // C -> A >>> A -> B >>> B -> D = C -> D
+        hoist >>> self >>> lower
+    }
+
+    func dimap<C, D>(
+        _ hoist: Func<C, A>,
+        _ lower: Func<B, D>
     ) -> Func<C, D> {
         // C -> A >>> A -> B >>> B -> D = C -> D
         hoist >>> self >>> lower
