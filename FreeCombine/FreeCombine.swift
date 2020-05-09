@@ -151,10 +151,10 @@ extension Subscriber {
  Here we construct a subscriber from a
  producer and another subscriber.  This "outer"
  subscriber receives a supply to kick things off
- and calls the inner subscriber
- and the producer repeatedly until either:
+ and calls the inner subscriber and the producer repeatedly
+ until either:
 
- 1.  the inner subscriber is satiated or
+ 1. the inner subscriber is satiated or
  2. the producer is exhausted.
  
  We need the outer
@@ -168,13 +168,13 @@ extension Subscriber {
   (Producer) -> (Subscriber) -> Subscriber
  
  That last bit is telling.  It is precisely
- the signature of a contraFlatMap join
- on Subscriber. And that's something we'll be taking
- advantage of repeatedly below so keep it in minde.
+ the signature of a `join` as used in a `contraFlatMap`
+ of Subscriber. And that's something we'll be taking
+ advantage of repeatedly below so keep it in mind.
  Let's move on to Subscriptions.
  
  A Subscription is a function which is its own independent source
- of Demand, so it doesn't care about the demand returned from
+ of demand, so it doesn't care about the demand returned from
  a Subscriber.  Hence a Subscription is a function
  (Demand) -> Void which can be derived as follows:
  
@@ -192,7 +192,7 @@ public struct Subscription {
     }
     
     public init(_ f: Func<Demand, Demand>) {
-        self.init(f.map(void).call)
+        self.init(f.map(void))
     }
 }
 /*:

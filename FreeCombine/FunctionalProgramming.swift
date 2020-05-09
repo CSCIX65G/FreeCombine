@@ -91,6 +91,11 @@ public protocol CallableAsFunction {
         _ transform:  @escaping (C) -> A
     ) -> Func<C, B>
     
+    func contraFlatMap<C>(
+        _ join:  Func<Self, Self>,
+        _ transform:  Func<C, A>
+    ) -> Func<C, B>
+
     func dimap<C, D>(
         _ f:  @escaping (C) -> A,
         _ g:  @escaping (B) -> D
@@ -125,6 +130,16 @@ public extension CallableAsFunction {
     func contraFlatMap<C>(
         _ join:  @escaping (Self) -> Self,
         _ transform:@escaping (C) -> A
+    ) -> Func<C, B> {
+        // self |> join = (A -> B) |> ((A) -> B) -> (A) -> B) = A -> B
+        // transform >>> (self |> join)
+        // = (C -> A) >>> (A -> B) = C -> B
+        transform >>> (self |> join)
+    }
+    
+    func contraFlatMap<C>(
+        _ join:  Func<Self, Self>,
+        _ transform: Func<C, A>
     ) -> Func<C, B> {
         // self |> join = (A -> B) |> ((A) -> B) -> (A) -> B) = A -> B
         // transform >>> (self |> join)
@@ -194,3 +209,4 @@ public func |> <A, B, C: CallableAsFunction> (a: A, f: C) -> B
     where A == C.A, B == C.B {
     f(a)
 }
+
