@@ -25,20 +25,18 @@ public extension Producer where Failure == Never {
         where S.Element == Value
     {
         var slice = ArraySlice(values)
-        return .init(
-            .init { demand in
-                switch demand {
-                case .none:
-                    return .none
-                case .cancel:
-                    slice = ArraySlice()
-                    return .finished
-                case .max, .unlimited:
-                    guard let value = slice.first else { return .finished }
-                    slice = slice.dropFirst()
-                    return .value(value)
-                }
+        return .init { demand in
+            switch demand {
+            case .none:
+                return .none
+            case .cancel:
+                slice = ArraySlice()
+                return .finished
+            case .max, .unlimited:
+                guard let value = slice.first else { return .finished }
+                slice = slice.dropFirst()
+                return .value(value)
             }
-        )
+        }
     }
 }

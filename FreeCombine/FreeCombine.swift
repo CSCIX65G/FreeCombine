@@ -222,7 +222,7 @@ public struct Subscription {
     }
     
     public init(_ f: Func<Demand, Demand>) {
-        self.init(f.map(void))
+        self.init(f.map(void).call)
     }
 }
 /*:

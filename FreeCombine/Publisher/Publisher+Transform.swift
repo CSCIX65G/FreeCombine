@@ -18,16 +18,13 @@ extension Publisher {
     ) -> Publisher<DI, DF> {
 
         let hoist = { (downstream: Subscriber<DI, DF>) -> Subscriber<Output, Failure> in
-            .init(downstream.contraFlatMap(joinSubscriber, transformSupply))
+            .init(downstream.contraFlatMap(joinSubscriber, transformSupply).call)
         }
         
         let lower = { (mySubscription: Subscription) -> Subscription in
-            .init(mySubscription.contraFlatMap(joinSubscription, transformDemand))
+            .init(mySubscription.contraFlatMap(joinSubscription, transformDemand).call)
         }
 
-//        (DownstreamSubscriber) -> MySubscriber
-//            MySubscriber -> MySubscription
-//                MySubscription -> DownstreamSubscription
-        return .init(dimap(hoist, lower))
+        return .init(dimap(hoist, lower).call)
     }
 }
