@@ -8,16 +8,17 @@
 
 extension Subscriber {
     static var join: (Self) -> (Self) {
-        let ref = Reference<Demand>(.max(1))
+        var ref = Demand.max(1)
         return { downstream in
             .init { supply in
                 switch supply {
                 case .value:
-                    return ref.set(downstream(supply))
+                    ref = downstream(supply)
+                    return ref
                 case .failure:
                     return downstream(supply)
                 case .none, .finished:
-                    return ref.value
+                    return ref
                 }
             }
         }

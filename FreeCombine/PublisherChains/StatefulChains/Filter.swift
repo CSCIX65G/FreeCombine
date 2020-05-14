@@ -10,18 +10,17 @@ extension Subscriber {
     static func join(
         _ test: @escaping (Value) -> Bool
     ) -> (Self) -> (Self) {
-        let ref = Reference<Demand>(.max(1))
+        var ref = Demand.max(1)
         return { downstream in
             .init { supply in
                 switch supply {
                 case .value(let value):
-                    return test(value)
-                        ? ref.set(downstream(supply))
-                        : ref.value
+                    ref = test(value) ? downstream(supply) : ref
+                    return ref
                 case .none, .failure:
                     return downstream(supply)
                 case .finished:
-                    return ref.value
+                    return ref
                 }
             }
         }

@@ -12,12 +12,12 @@ extension Subscriber {
     static func join(
         _ opQueue: OperationQueue
     ) -> (Self) -> (Self) {
-        let ref = Reference<Demand>(.max(1))
+        var ref = Demand.max(1)
         return { downstream in
             .init { supply in
-                ref.value = ref.value.decremented
-                opQueue.addOperation { ref.value = downstream(supply) }
-                return ref.value
+                ref = ref.decremented
+                opQueue.addOperation { ref = downstream(supply) }
+                return ref
             }
         }
     }

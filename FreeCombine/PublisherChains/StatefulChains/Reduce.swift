@@ -8,20 +8,19 @@
 
 extension Subscriber {
     static func join(
-        _ initial: Value,
-        _ next: @escaping (Value, Value) -> Value
+        _ initial: Value
     ) -> (Self) -> (Self) {
-        let ref = Reference<Value>(initial)
+        var ref = initial
         return { downstream in
             .init { supply in
                 switch supply {
                 case .value(let value):
-                    ref.value = next(ref.value, value)
+                    ref = value
                     return .unlimited
                 case .none, .failure:
                     return downstream(supply)
                 case .finished:
-                    _ = downstream(.value(ref.value))
+                    _ = downstream(.value(ref))
                     return downstream(.finished)
                 }
             }
@@ -30,13 +29,14 @@ extension Subscriber {
 }
 
 public extension Publisher {
-    func reduce(
-        _ initial: Output,
-        _ reduce: @escaping (Output, Output) -> Output
-    ) -> Publisher<Output, Failure> {
-        transformation(
-            joinSubscriber: Subscriber<Output, Failure>.join(initial, reduce),
-            transformSupply: identity,
+    func reduce<Accum>(
+        _ initial: Accum,
+        _ reduce: @escaping (Accum) -> (Output) -> Accum
+    ) -> Publisher<Accum, Failure> {
+        let accum: Accum = initial
+        return transformation(
+            joinSubscriber: Subscriber<Accum, Failure>.join(initial),
+            transformSupply: Supply.map(reduce(accum)),
             transformDemand: {
                 switch $0 {
                 case .cancel: return .cancel
