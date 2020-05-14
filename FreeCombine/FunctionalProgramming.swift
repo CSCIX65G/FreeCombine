@@ -65,6 +65,7 @@ public extension CallableAsFunction {
    
 // Map
 public extension CallableAsFunction {
+    // f >>> self = ((A) -> B) >>> ((B) -> C) = (A) -> C
     func map<C>(
         _ f: @escaping (B) -> C
     ) -> Func<A, C> {
@@ -80,6 +81,7 @@ public extension CallableAsFunction {
 
 // ContraMap
 public extension CallableAsFunction {
+    // f >>> self = ((C) -> A) >>> ((A) -> B) = (C) -> B
     func contraMap<C>(
         _ f: Func<C, A>
     ) -> Func<C, B> {
@@ -95,25 +97,28 @@ public extension CallableAsFunction {
  
 // FlatMap
 public extension CallableAsFunction {
-    // self >>> f = ((A) -> B) >>> (B) -> (A) -> C = (A) -> (A) -> C
+    // self >>> f = ((A) -> B) >>> (B) -> (A) -> C
+    //            = (A) -> (A) -> C
     // a |> (self >>> f) = (A) -> C
     func flatMap<C>(
         _ f: @escaping (B) -> (A) -> C
     ) -> Func<A, C> {
-        .init { (a: A) in  a |> (a |> (self >>> f)) }
+        .init { (a: A) in  a |> a |> (self >>> f) }
     }
 
     func flatMap<C>(
         _ f: Func<B, Func<A, C>>
     ) -> Func<A, C> {
-        .init { (a: A) in  a |> (a |> (self >>> f)) }
+        .init { (a: A) in  a |> a |> (self >>> f) }
     }
 }
 
 // ContraFlatMap
 public extension CallableAsFunction {
-    // self |> join = (A -> B) |> ((A) -> B) -> (A) -> B) = A -> B
-    // transform >>> (self |> join) = (C -> A) >>> (A -> B) = C -> B
+    // self |> join = (A -> B) |> ((A) -> B) -> (A) -> B)
+    //              = A -> B
+    // transform >>> (self |> join) = (C -> A) >>> (A -> B)
+    //                              = C -> B
     func contraFlatMap<C>(
         _ join:  @escaping ((A) -> B) -> (A) -> B,
         _ transform:@escaping (C) -> A
@@ -145,7 +150,8 @@ public extension CallableAsFunction {
 
 // DiMap
 public extension CallableAsFunction {
-    // C -> A >>> A -> B >>> B -> D = C -> D
+    // C -> A >>> A -> B >>> B -> D = C -> B >>> B -> D
+    //                              = C -> D
     func dimap<C, D>(
         _ hoist: @escaping (C) -> A,
         _ lower: @escaping (B) -> D

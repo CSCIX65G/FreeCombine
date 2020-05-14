@@ -59,18 +59,17 @@ class FreeCombineTests: XCTestCase {
     
     func testSubscribing() throws {
         var count = 0, total = 0
-        let subscriber = Subscriber<Int, Never>(
-            .init { input in
-                switch input {
-                case .value(let value):
-                    print(value)
-                    count += 1
-                    total += value
-                default: ()
-                }
-                return .none
+        let subscriber = Subscriber<Int, Never> { input in
+            switch input {
+            case .value(let value):
+                print(value)
+                count += 1
+                total += value
+            default: ()
             }
-        )
+            return .none
+        }
+
         let subscription = [1, 2, 3, 4].publisher(subscriber)
         subscription(.max(1))
         subscription(.max(1))
@@ -84,18 +83,17 @@ class FreeCombineTests: XCTestCase {
     func testEarlyHalt() throws {
         var count = 0
         var total = 0
-        let subscriber = Subscriber<Int, Never>(
-            .init { input in
-                switch input {
-                case .value(let value):
-                    print(value)
-                    count += 1
-                    total += value
-                default: ()
-                }
-                return .none
+        let subscriber = Subscriber<Int, Never>{ input in
+            switch input {
+            case .value(let value):
+                print(value)
+                count += 1
+                total += value
+            default: ()
             }
-        )
+            return .none
+        }
+
         let publisher = [1, 2, 3, 4].publisher
         let subscription = publisher(subscriber)
         subscription(.max(1))
