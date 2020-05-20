@@ -215,10 +215,6 @@ public struct Subscription {
     public init(_ call: @escaping (Demand) -> Void) {
         self.call = call
     }
-    
-    public init(_ f: Func<Demand, Void>) {
-        self.call = f.call
-    }
 }
 /*:
  Finally, we need some way of taking a Producer and a

@@ -14,11 +14,17 @@ extension Publisher: CallableAsFunction {
 extension Subscriber: CallableAsFunction {
     public typealias A = Supply<Value, Failure>
     public typealias B = Demand
+    public init(_ f: Func<Supply<Value, Failure>, Demand>) {
+        self.call = f.call
+    }
 }
 
 extension Subscription: CallableAsFunction {
     public typealias A = Demand
-    public typealias B = Void
+    public typealias B = Void    
+    public init(_ f: Func<Demand, Void>) {
+        self.call = f.call
+    }
 }
 
 extension Producer: CallableAsFunction {
