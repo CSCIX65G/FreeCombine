@@ -8,6 +8,16 @@
 
 import Foundation
 
+
+extension Demand {
+    var decremented: Demand {
+        guard case .max(let num) = self else {
+            return self
+        }
+        return num > 1 ? .max(num - 1) : .none
+    }
+}
+
 extension Subscriber {
     static func join(
         _ opQueue: OperationQueue

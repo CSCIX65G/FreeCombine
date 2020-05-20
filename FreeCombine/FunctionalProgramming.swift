@@ -6,6 +6,24 @@
 //  Copyright © 2020 ComputeCycles, LLC. All rights reserved.
 //
 
+/*:
+ Handy functions for composition
+ */
+public func identity<T>(_ t: T) -> T { t }
+public func void<T>(_ t: T) -> Void { }
+public func cons<T>(_ t: T) -> () -> T { { t } }
+public func unwrap<T>(_ t: T?) -> T { t! }
+
+public func curry<A, B, C>(
+    _ function: @escaping (A, B) -> C
+) -> (A) -> (B) -> C {
+    { (a: A) -> (B) -> C in
+        { (b: B) -> C in
+            function(a, b)
+        }
+    }
+}
+
 precedencegroup CompositionPrecedence {
   associativity: right
   higherThan: AssignmentPrecedence
@@ -20,8 +38,67 @@ infix operator >>>: CompositionPrecedence
 public func >>> <A, B, C>(
     _ f: @escaping (A) -> B,
     _ g: @escaping (B) -> C
-) -> (A) -> C {
-    { (a: A) -> C in g(f(a)) }
+) -> Func<A, C> {
+    .init { (a: A) -> C in g(f(a)) }
+}
+
+/*:
+ Various forms of mixing plain functions with Funcs
+ */
+public func >>> <A, B, C>(
+    _ f: @escaping (A) -> B,
+    _ g: Func<B, C>
+) -> Func<A, C> {
+    .init { (a: A) -> C in g(f(a)) }
+}
+
+func >>> <A, B, C, D: CallableAsFunction> (
+    _ f: @escaping (A) -> B,
+    _ g: D
+) -> Func<A,C> where D.A == B, D.B == C {
+    f >>> g.call
+}
+
+func >>> <A, B, C> (
+    _ f: Func<A, B>,
+    _ g: @escaping (B) -> C
+) -> Func<A,C> {
+    f.call >>> g
+}
+
+func >>> <A, B, C> (
+    _ f: Func<A, B>,
+    _ g: Func<B, C>
+) -> Func<A,C> {
+    f.call >>> g.call
+}
+
+func >>> <A, B, C, D: CallableAsFunction> (
+    _ f: Func<A, B>,
+    _ g: D
+) -> Func<A,C> where D.A == B, D.B == C {
+    f.call >>> g.call
+}
+
+func >>> <A, B, C, D: CallableAsFunction>(
+    _ f: D,
+    _ g: @escaping (B) -> C
+) -> Func<A,C> where D.A == A, D.B == B {
+    f.call >>> g
+}
+
+func >>> <A, B, C, D: CallableAsFunction>(
+    _ f: D,
+    _ g: Func<B, C>
+) -> Func<A,C> where D.A == A, D.B == B {
+    f.call >>> g.call
+}
+
+func >>> <A, B, C, D: CallableAsFunction, E: CallableAsFunction> (
+    _ f: D,
+    _ g: E
+) -> Func<A,C> where D.A == A, D.B == B, E.A == B, E.B == C{
+    f.call >>> g.call
 }
 
 /*:
@@ -32,15 +109,65 @@ infix operator |>: CompositionPrecedence
 public func |> <A, B> (
     a: A,
     f: (A) -> B
-) -> B { f(a) }
+) -> B {
+    f(a)
+}
 
-/*:
- Handy functions for composition
- */
-public func identity<T>(_ t: T) -> T { t }
-public func void<T>(_ t: T) -> Void { }
-public func cons<T>(_ t: T) -> () -> T { { t } }
-public func unwrap<T>(_ t: T?) -> T { t! }
+public func |> <A, B> (
+    a: A,
+    f: Func<A, B>
+) -> B {
+    f(a)
+}
+
+public func |> <A, B, C: CallableAsFunction> (
+    a: A,
+    f: C
+) -> B where A == C.A, B == C.B {
+    f(a)
+}
+
+public func |> <A, B, C, D> (
+    a: @escaping (A) -> B,
+    f: ((A) -> (B)) -> (C) -> D
+) -> (C) -> D {
+    f(a)
+}
+
+public func |> <A, B, C, D> (
+    a: Func<A, B>,
+    f: ((A) -> (B)) -> (C) -> D
+) -> (C) -> D {
+    f(a.call)
+}
+
+public func |> <A, B, C, D, E: CallableAsFunction> (
+    a: E,
+    f: ((A) -> (B)) -> (C) -> D
+) -> (C) -> D where E.A == A, E.B == B {
+    f(a.call)
+}
+
+public func |> <A, B, C, D> (
+    a: Func<A, B>,
+    f: (Func<A, B>) -> Func<C, D>
+) -> Func<C, D> {
+    f(a)
+}
+
+public func |> <A: CallableAsFunction, B:CallableAsFunction> (
+    a: A,
+    f: (A) -> B
+) -> B {
+    f(a)
+}
+
+public func |> <A: CallableAsFunction, B:CallableAsFunction> (
+    a: A,
+    f: Func<A, B>
+) -> B {
+    f(a)
+}
 
 /*:
  Allow structs which are callable as functions
@@ -56,7 +183,7 @@ public protocol CallableAsFunction {
 }
 
 public extension CallableAsFunction {
-    var function: Func<A, B> { .init(call) }
+    var callable: Func<A, B> { .init(call) }
     
     func callAsFunction(_ a: A) -> B {
         call(a)
@@ -77,39 +204,57 @@ public extension CallableAsFunction {
     ) -> Func<A, C> {
         self >>> f
     }
+
+    func map<C: CallableAsFunction>(
+        _ f: C
+    ) -> Func<A, C.B> where B == C.A {
+        self >>> f
+    }
 }
 
 // ContraMap
 public extension CallableAsFunction {
     // f >>> self = ((C) -> A) >>> ((A) -> B) = (C) -> B
     func contraMap<C>(
+        _ f: @escaping (C) -> A
+    ) -> Func<C, B> {
+        f >>> self
+    }
+
+    func contraMap<C>(
         _ f: Func<C, A>
     ) -> Func<C, B> {
         f >>> self
     }
     
-    func contraMap<C>(
-        _ f: @escaping (C) -> A
-    ) -> Func<C, B> {
+    func contraMap<C: CallableAsFunction>(
+        _ f: C
+    ) -> Func<C.A, B> where C.B == A{
         f >>> self
     }
 }
  
 // FlatMap
 public extension CallableAsFunction {
-    // self >>> f = ((A) -> B) >>> (B) -> (A) -> C
-    //            = (A) -> (A) -> C
-    // a |> (self >>> f) = (A) -> C
+    //        self >>> f = ((A) ->  B) >>> (B) -> (A) -> C
+    //                   =  (A) -> (A) -> C
+    // a |> (self >>> f) =  (A) ->  C
     func flatMap<C>(
         _ f: @escaping (B) -> (A) -> C
     ) -> Func<A, C> {
-        .init { (a: A) in  a |> a |> (self >>> f) }
+        .init { (a: A) in  a |> a |> self >>> f }
     }
 
     func flatMap<C>(
         _ f: Func<B, Func<A, C>>
     ) -> Func<A, C> {
-        .init { (a: A) in  a |> a |> (self >>> f) }
+        .init { (a: A) in  a |> a |> self >>> f }
+    }
+
+    func flatMap<C, D: CallableAsFunction>(
+        _ f: D
+    ) -> Func<A, C> where D.A == B, D.B == Func<A, C> {
+        .init { (a: A) in  a |> a |> self >>> f }
     }
 }
 
@@ -118,33 +263,68 @@ public extension CallableAsFunction {
     // self |> join = (A -> B) |> ((A) -> B) -> (A) -> B)
     //              = A -> B
     // transform >>> (self |> join) = (C -> A) >>> (A -> B)
-    //                              = C -> B
+    //                              =  C -> B
     func contraFlatMap<C>(
         _ join:  @escaping ((A) -> B) -> (A) -> B,
         _ transform:@escaping (C) -> A
     ) -> Func<C, B> {
-        transform >>> Func(self |> join)
+        transform >>> self |> join
     }
     
-    func contraFlatMap<C>(
-        _ join:  @escaping (Self) -> Self,
-        _ transform:@escaping (C) -> A
-    ) -> Func<C, B> {
-        transform >>> (self |> join)
+    func contraFlatMap<D: CallableAsFunction>(
+        _ join:  @escaping ((A) -> B) -> (A) -> B,
+        _ transform: D
+    ) -> Func<D.A, B> where D.B == Self.A {
+        transform >>> self |> join
     }
-    
+
     func contraFlatMap<C>(
         _ join:  @escaping ((A) -> B) -> (A) -> B,
         _ transform: Func<C, A>
     ) -> Func<C, B> {
-        transform >>> Func(self |> join)
+        transform >>> self |> join
+    }
+    
+    func contraFlatMap<C>(
+        _ join:  @escaping (Self) -> Self,
+        _ transform: @escaping (C) -> A
+    ) -> Func<C, B> {
+        transform >>> self |> join
+    }
+    
+    func contraFlatMap<C>(
+        _ join:  @escaping (Self) -> Self,
+        _ transform: Func<C, A>
+    ) -> Func<C, B> {
+        transform >>> self |> join
+    }
+
+    func contraFlatMap<C, D: CallableAsFunction>(
+        _ join:  @escaping (Self) -> Self,
+        _ transform: D
+    ) -> Func<C, B> where D.A == C, D.B == Self.A {
+        transform >>> self |> join
+    }
+
+    func contraFlatMap<C>(
+        _ join:  Func<Self, Self>,
+        _ transform: @escaping (C) -> A
+    ) -> Func<C, B> {
+        transform >>> self |> join
     }
     
     func contraFlatMap<C>(
         _ join:  Func<Self, Self>,
         _ transform: Func<C, A>
     ) -> Func<C, B> {
-        transform >>> (self |> join)
+        transform >>> self |> join
+    }
+
+    func contraFlatMap<C, D: CallableAsFunction>(
+        _ join:  Func<Self, Self>,
+        _ transform: D
+    ) -> Func<C, B> where D.A == C, D.B == Self.A {
+        transform >>> self |> join
     }
 }
 
@@ -160,6 +340,20 @@ public extension CallableAsFunction {
     }
 
     func dimap<C, D>(
+        _ hoist: @escaping (C) -> A,
+        _ lower: Func<B, D>
+    ) -> Func<C, D> {
+        hoist >>> self >>> lower
+    }
+
+    func dimap<C, D: CallableAsFunction>(
+        _ hoist: @escaping (C) -> A,
+        _ lower: D
+    ) -> Func<C, D.B> where D.A == B {
+        hoist >>> self >>> lower
+    }
+
+    func dimap<C, D>(
         _ hoist: Func<C, A>,
         _ lower: @escaping (B) -> D
     ) -> Func<C, D> {
@@ -167,16 +361,39 @@ public extension CallableAsFunction {
     }
 
     func dimap<C, D>(
-        _ hoist: @escaping (C) -> A,
+        _ hoist: Func<C, A>,
         _ lower: Func<B, D>
     ) -> Func<C, D> {
         hoist >>> self >>> lower
     }
 
-    func dimap<C, D>(
+    func dimap<C, D: CallableAsFunction>(
         _ hoist: Func<C, A>,
+        _ lower: D
+    ) -> Func<C, D.B> where D.A == B {
+        hoist >>> self >>> lower
+    }
+
+    func dimap<C: CallableAsFunction, D>(
+        _ hoist: C,
+        _ lower: @escaping (B) -> D
+    ) -> Func<C.A, D> where C.B == A
+    {
+        hoist >>> self >>> lower
+    }
+
+    func dimap<C: CallableAsFunction, D>(
+        _ hoist: C,
         _ lower: Func<B, D>
-    ) -> Func<C, D> {
+    ) -> Func<C.A, D> where C.B == A
+    {
+        hoist >>> self >>> lower
+    }
+
+    func dimap<C: CallableAsFunction, D: CallableAsFunction>(
+        _ hoist: C,
+        _ lower: D
+    ) -> Func<C.A, D.B> where D.A == B, C.B == A {
         hoist >>> self >>> lower
     }
 }
@@ -204,62 +421,4 @@ public struct Func<FA, FB>: CallableAsFunction {
             catch { return .failure(error) }
         }
     }
-}
-
-/*:
- Various forms of mixing plain functions with Funcs
- */
-func >>> <A, B, C, D: CallableAsFunction> (
-    _ f: @escaping (A) -> B,
-    _ g: D
-) -> Func<A,C> where D.A == B, D.B == C {
-    .init(f >>> g.call)
-}
-
-func >>> <A, B, C, D: CallableAsFunction>(
-    _ f: D,
-    _ g: @escaping (B) -> C
-) -> Func<A,C> where D.A == A, D.B == B {
-    .init(f.call >>> g)
-}
-
-func >>> <A, B, C, D: CallableAsFunction, E: CallableAsFunction> (
-    _ f: D,
-    _ g: E
-) -> Func<A,C> where D.A == A, D.B == B, E.A == B, E.B == C{
-    .init(f.call >>> g.call)
-}
-
-public func |> <A, B, C: CallableAsFunction> (a: A, f: C) -> B
-    where A == C.A, B == C.B {
-    f(a)
-}
-
-public func |> <A, B: CallableAsFunction, C: CallableAsFunction> (a: A, f: C) -> B
-    where A == C.A, B == C.B {
-    f(a)
-}
-
-public func |> <A: CallableAsFunction, B: CallableAsFunction, C: CallableAsFunction> (a: A, f: C) -> B
-    where A == C.A, B == C.B {
-    f(a)
-}
-
-public func |> <A: CallableAsFunction, B, C: CallableAsFunction> (a: A, f: C) -> B
-    where A == C.A, B == C.B {
-    f(a)
-}
-
-public func |> <A: CallableAsFunction, B: CallableAsFunction> (
-    a: A,
-    f: ((A.A) -> A.B) -> (B.A) -> B.B
-) -> B {
-    .init(f(a.call))
-}
-
-public func |> <A, B: CallableAsFunction> (
-    a: @escaping (A) -> B,
-    f: @escaping ((A) -> B) -> (B.A) -> B.B
-) -> B {
-    .init(f(a))
 }

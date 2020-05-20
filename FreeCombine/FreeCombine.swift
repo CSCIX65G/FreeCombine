@@ -12,31 +12,13 @@
  In the beginning is Demand for some values.
  You only have to say how much you want
  not what kind of thing you want. You can
- cancel anytime you want, which consists of indicating
- that you will never generate additional demand.
+ cancel anytime you want.
 */
 public enum Demand {
     case none
     case max(Int)
     case unlimited
     case cancel
-
-    var decremented: Demand {
-        guard case .max(let value) = self else { return self }
-        return value > 1 ? .max(value - 1) : .none
-    }
-    
-    var unsatisfied: Bool {
-        switch self {
-        case .none: return false
-        case .max(let val) where val > 0: return true
-        case .max: return false
-        case .unlimited: return true
-        case .cancel: return false
-        }
-    }
-    
-    var satisfied: Bool { !unsatisfied }
 }
 
 /*:
@@ -47,7 +29,7 @@ public enum Demand {
  
  Since Supply is a generic value parameterized by
  two other types, you expect it to have two
- map functions (and it does, in another file).
+ map functions (and it does, elsewhere).
 */
 public enum Supply<Value, Failure: Error> {
     case none
@@ -75,7 +57,6 @@ public struct Producer<Value, Failure: Error> {
         self.call = call
     }
 }
-
 /*:
  Since we have a function which can produce Supply in
  response to Demand, there must also be a function which
@@ -139,27 +120,40 @@ public struct Subscriber<Value, Failure: Error> {
  the satiate/exhaust loop for a subscriber/producer
  pair might look like.  Note that the Supply<Value, Failure>
  types have to match for the pairing to work.
+ 
+ First, we need to quanity demand fairly precisely.
+ */
+extension Demand{
+    var unsatisfied: Bool {
+        switch self {
+        case .none: return false
+        case .max(let val) where val > 0: return true
+        case .max: return false
+        case .unlimited: return true
+        case .cancel: return false
+        }
+    }
+}
+/*:
+ Then we need to either satiate the demand
+ or exhaust the supply.
  */
 extension Subscriber {
     static func satiateOrExhaust(
         from producer: Producer<Value, Failure>,
         into subscriber: Subscriber<Value, Failure>
     ) -> Subscriber<Value, Failure> {
-        .init { supply in
-            var demand = subscriber(supply)
-            while demand.unsatisfied {
-                let nextSupply = producer(demand)
-                switch nextSupply {
-                case .none:
-                    return demand
-                case .value:
-                    demand = subscriber(nextSupply)
-                case .failure, .finished:
-                    return subscriber(nextSupply)
-                }
+        func consume(supply: Supply<Value, Failure>) -> Demand {
+            let demand = subscriber(supply)
+            guard demand.unsatisfied else { return demand }
+            let nextSupply = producer(demand)
+            switch nextSupply {
+            case .none: return demand
+            case .failure, .finished: return subscriber(nextSupply)
+            case .value: return consume(supply: nextSupply)
             }
-            return demand
         }
+        return .init(consume)
     }
 }
 /*:
@@ -217,12 +211,13 @@ extension Subscriber {
  */
 public struct Subscription {
     public let call: (Demand) -> Void
+    
     public init(_ call: @escaping (Demand) -> Void) {
         self.call = call
     }
     
     public init(_ f: Func<Demand, Demand>) {
-        self.init(f.map(void).call)
+        self.call = f.map(void).call
     }
 }
 /*:
@@ -264,8 +259,16 @@ public struct Subscription {
 public struct Publisher<Output, Failure: Error> {
     public let call: (Subscriber<Output, Failure>) -> Subscription
     
-    public init(_ call: @escaping (Subscriber<Output, Failure>) -> Subscription) {
+    public init(
+        _ call: @escaping (Subscriber<Output, Failure>) -> Subscription
+    ) {
         self.call = call
+    }
+
+    public init(
+        _ f: Func<Subscriber<Output, Failure>, Subscription>
+    ) {
+        self.call = f.call
     }
 }
 /*:
@@ -290,13 +293,13 @@ public struct Publisher<Output, Failure: Error> {
  
  The higher-order function type is Publisher:
  
-     Publisher: (Subscriber) -> Subscription
+     Publisher: (Subscriber) -> Subscription = ((Supply) -> Demand) -> (Demand) -> Void
  
  which takes on two even higher higher-order forms when curried
  as:
  
     (Producer)  -> (Subscriber) -> Subscription  and
-    (Publisher) -> (Subscriber) -> Subscription
+    (Publisher) -> (Variety of other stuff) -> (Subscriber) -> Subscription
  
  these forms are not given names but much of the library is
  given over to them.
@@ -308,7 +311,6 @@ public struct Publisher<Output, Failure: Error> {
      map
  
    And on Subscriber and Subscription we use:
-     contraMap
      contraFlatMap
  
    And on Publisher we use:
@@ -373,7 +375,7 @@ extension Subscriber {
     static func join(
         _ producer: Producer<Value, Failure>
     ) -> (Self) -> Self {
-        return { subscriber in .init(satiateOrExhaust(from: producer, into: subscriber).call) }
+        curry(satiateOrExhaust)(producer)
     }
 }
 /*:
@@ -424,7 +426,7 @@ extension Subscriber {
 public extension Publisher {
     init(_ producer: Producer<Output, Failure>) {
         self.call = { subscriber in
-            .init(subscriber.contraFlatMap(Subscriber.join(producer), producer.call))
+            .init(subscriber.contraFlatMap(Subscriber.join(producer), producer))
         }
     }
 }
