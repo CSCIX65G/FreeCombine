@@ -143,14 +143,14 @@ extension Subscriber {
         from producer: Producer<Value, Failure>,
         into subscriber: Subscriber<Value, Failure>
     ) -> Subscriber<Value, Failure> {
-        func consume(supply: Supply<Value, Failure>) -> Demand {
+        func consume(_ supply: Supply<Value, Failure>) -> Demand {
             let demand = subscriber(supply)
             guard demand.unsatisfied else { return demand }
             let nextSupply = producer(demand)
             switch nextSupply {
             case .none: return demand
             case .failure, .finished: return subscriber(nextSupply)
-            case .value: return consume(supply: nextSupply)
+            case .value: return consume(nextSupply)
             }
         }
         return .init(consume)
@@ -216,8 +216,8 @@ public struct Subscription {
         self.call = call
     }
     
-    public init(_ f: Func<Demand, Demand>) {
-        self.call = f.map(void).call
+    public init(_ f: Func<Demand, Void>) {
+        self.call = f.call
     }
 }
 /*:
@@ -384,7 +384,7 @@ extension Subscriber {
      (Producer) -> (Subscriber) -> Subscriber
  
  Where the meaning of this particular `join` is described
- by the `satiate` function.  This is the pattern we will
+ by the `satiateOrExhaust` function.  This is the pattern we will
  adopt throughout.  We'll name a `join` and then see what
  we can do with it in the context of Publisher chaining.
  
@@ -426,7 +426,7 @@ extension Subscriber {
 public extension Publisher {
     init(_ producer: Producer<Output, Failure>) {
         self.call = { subscriber in
-            .init(subscriber.contraFlatMap(Subscriber.join(producer), producer))
+            .init(subscriber.contraFlatMap(Subscriber.join(producer), producer).map(void))
         }
     }
 }
