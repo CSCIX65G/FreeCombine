@@ -260,12 +260,6 @@ public struct Publisher<Output, Failure: Error> {
     ) {
         self.call = call
     }
-
-    public init(
-        _ f: Func<Subscriber<Output, Failure>, Subscription>
-    ) {
-        self.call = f.call
-    }
 }
 /*:
  Summarizing:
@@ -289,13 +283,13 @@ public struct Publisher<Output, Failure: Error> {
  
  The higher-order function type is Publisher:
  
-     Publisher: (Subscriber) -> Subscription = ((Supply) -> Demand) -> (Demand) -> Void
+     Publisher: (Subscriber) -> Subscription = ((Supply) -> Demand) -> ((Demand) -> Void)
  
  which takes on two even higher higher-order forms when curried
  as:
  
     (Producer)  -> (Subscriber) -> Subscription  and
-    (Publisher) -> (Variety of other stuff) -> (Subscriber) -> Subscription
+    (Subscriber contraFlatMap) -> (Publisher) -> (Subscription contraFlatMap) -> (Subscriber) -> Subscription
  
  these forms are not given names but much of the library is
  given over to them.

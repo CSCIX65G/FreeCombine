@@ -42,9 +42,6 @@ public func >>> <A, B, C>(
     .init { (a: A) -> C in g(f(a)) }
 }
 
-/*:
- Various forms of mixing plain functions with Funcs
- */
 public func >>> <A, B, C>(
     _ f: @escaping (A) -> B,
     _ g: Func<B, C>
@@ -127,6 +124,27 @@ public func |> <A, B, C: CallableAsFunction> (
     f(a)
 }
 
+public func |> <A: CallableAsFunction, B:CallableAsFunction> (
+    a: A,
+    f: (A) -> B
+) -> B {
+    f(a)
+}
+
+public func |> <A: CallableAsFunction, B:CallableAsFunction> (
+    a: A,
+    f: Func<A, B>
+) -> B {
+    f(a)
+}
+
+public func |> <A: CallableAsFunction, B:CallableAsFunction, C: CallableAsFunction> (
+    a: A,
+    f: B
+) -> C where A == B.A, C == B.B {
+    f(a)
+}
+
 public func |> <A, B, C, D> (
     a: @escaping (A) -> B,
     f: ((A) -> (B)) -> (C) -> D
@@ -150,24 +168,24 @@ public func |> <A, B, C, D, E: CallableAsFunction> (
 
 public func |> <A, B, C, D> (
     a: Func<A, B>,
+    f: ((A) -> B) -> (C) -> D
+) -> Func<C, D> {
+    .init(f(a.call))
+}
+
+public func |> <A, B, C, D> (
+    a: Func<A, B>,
     f: (Func<A, B>) -> Func<C, D>
 ) -> Func<C, D> {
     f(a)
 }
 
-public func |> <A: CallableAsFunction, B:CallableAsFunction> (
-    a: A,
-    f: (A) -> B
-) -> B {
-    f(a)
-}
-
-public func |> <A: CallableAsFunction, B:CallableAsFunction> (
-    a: A,
-    f: Func<A, B>
-) -> B {
-    f(a)
-}
+//public func |> <A, B, C: CallableAsFunction> (
+//    a: Func<A, B>,
+//    f: C
+//) -> Func<A, C.B> where C.A == (A) -> B {
+//    .init(f(a.call).call)
+//}
 
 /*:
  Allow structs which are callable as functions
@@ -179,6 +197,8 @@ public protocol CallableAsFunction {
     associatedtype B
     var call: (A) -> B { get }
     init(_ call: @escaping (A) -> B)
+    init(_ f: Func<A, B>)
+    init<C: CallableAsFunction>(_ c: C) where C.A == A, C.B == B
     func callAsFunction(_ a: A) -> B
 }
 
@@ -271,57 +291,57 @@ public extension CallableAsFunction {
         transform >>> self |> join
     }
     
+    func contraFlatMap<C>(
+        _ join:  @escaping ((A) -> B) -> (A) -> B,
+        _ transform: Func<C, A>
+    ) -> Func<C, B> {
+        transform >>> self |> join
+    }
+    
     func contraFlatMap<D: CallableAsFunction>(
         _ join:  @escaping ((A) -> B) -> (A) -> B,
         _ transform: D
     ) -> Func<D.A, B> where D.B == Self.A {
         transform >>> self |> join
     }
-
-    func contraFlatMap<C>(
-        _ join:  @escaping ((A) -> B) -> (A) -> B,
-        _ transform: Func<C, A>
-    ) -> Func<C, B> {
-        transform >>> self |> join
-    }
     
     func contraFlatMap<C>(
-        _ join:  @escaping (Self) -> Self,
+        _ join:  Func<Self, Self>,
         _ transform: @escaping (C) -> A
     ) -> Func<C, B> {
         transform >>> self |> join
     }
     
     func contraFlatMap<C>(
-        _ join:  @escaping (Self) -> Self,
+        _ join:  Func<Self, Self>,
         _ transform: Func<C, A>
     ) -> Func<C, B> {
         transform >>> self |> join
     }
 
     func contraFlatMap<C, D: CallableAsFunction>(
-        _ join:  @escaping (Self) -> Self,
+        _ join:  Func<Self, Self>,
         _ transform: D
     ) -> Func<C, B> where D.A == C, D.B == Self.A {
         transform >>> self |> join
     }
 
     func contraFlatMap<C>(
-        _ join:  Func<Self, Self>,
+        _ join:  @escaping (Self) -> Self,
         _ transform: @escaping (C) -> A
     ) -> Func<C, B> {
         transform >>> self |> join
     }
     
     func contraFlatMap<C>(
-        _ join:  Func<Self, Self>,
+        _ join:  @escaping (Self) -> Self,
         _ transform: Func<C, A>
     ) -> Func<C, B> {
         transform >>> self |> join
     }
 
     func contraFlatMap<C, D: CallableAsFunction>(
-        _ join:  Func<Self, Self>,
+        _ join:  @escaping (Self) -> Self,
         _ transform: D
     ) -> Func<C, B> where D.A == C, D.B == Self.A {
         transform >>> self |> join
@@ -413,6 +433,10 @@ public struct Func<FA, FB>: CallableAsFunction {
     
     public init(_ f: Func<A, B>) {
         self.call = f.call
+    }
+    
+    public init<C>(_ c: C) where C : CallableAsFunction, Self.A == C.A, Self.B == C.B {
+        self.call = c.call
     }
     
     public init<C>(_ f: @escaping (A) throws -> C) where B == Result<C, Error> {
