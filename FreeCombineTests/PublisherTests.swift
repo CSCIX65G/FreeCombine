@@ -30,31 +30,33 @@ class FreeCombineTests: XCTestCase {
 
     func testJustPublisher() throws {
         var count = 0
-        _ = Just(14).sink {
-            switch $0 {
-            case .value(let value):
-                guard value == 14 else { XCTFail("Received incorrect value"); return }
-                guard count == 0 else { XCTFail("Received more than one value"); return }
-                count += 1
-            default:
-                print("Completed")
+        _ = Just(14)
+            .sink {
+                switch $0 {
+                case .value(let value):
+                    guard value == 14 else { XCTFail("Received incorrect value"); return }
+                    guard count == 0 else { XCTFail("Received more than one value"); return }
+                    count += 1
+                default:
+                    print("Completed")
+                }
             }
-        }
     }
 
     func testSequencePublisher() throws {
         var count = 0, total = 0
-        _ = [1, 2, 3, 4].publisher.sink { input in
-            switch input {
-            case .value(let value):
-                guard count < 4 else { XCTFail("Received incorrect number of calls"); return }
-                guard total <= 10 else { XCTFail("Received wrong value"); return }
-                count += 1
-                total += value
-            default:
-                print("Completed")
+        _ = [1, 2, 3, 4].publisher
+            .sink { input in
+                switch input {
+                case .value(let value):
+                    guard count < 4 else { XCTFail("Received incorrect number of calls"); return }
+                    guard total <= 10 else { XCTFail("Received wrong value"); return }
+                    count += 1
+                    total += value
+                default:
+                    print("Completed")
+                }
             }
-        }
     }
     
     func testSubscribing() throws {

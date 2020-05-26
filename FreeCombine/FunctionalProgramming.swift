@@ -180,12 +180,12 @@ public func |> <A, B, C, D> (
     f(a)
 }
 
-//public func |> <A, B, C: CallableAsFunction> (
-//    a: Func<A, B>,
-//    f: C
-//) -> Func<A, C.B> where C.A == (A) -> B {
-//    .init(f(a.call).call)
-//}
+public func |> <A, B, C, D, E: CallableAsFunction> (
+    a: Func<A, B>,
+    f: E
+) -> Func<C, D> where E.A == (A) -> B, E.B == (C) -> D {
+    Func<C, D>.init(f(a.call))
+}
 
 /*:
  Allow structs which are callable as functions
@@ -196,18 +196,17 @@ public protocol CallableAsFunction {
     associatedtype A
     associatedtype B
     var call: (A) -> B { get }
+    
     init(_ call: @escaping (A) -> B)
     init(_ f: Func<A, B>)
     init<C: CallableAsFunction>(_ c: C) where C.A == A, C.B == B
+    
     func callAsFunction(_ a: A) -> B
 }
 
 public extension CallableAsFunction {
     var callable: Func<A, B> { .init(call) }
-    
-    func callAsFunction(_ a: A) -> B {
-        call(a)
-    }
+    func callAsFunction(_ a: A) -> B { call(a) }
 }
    
 // Map
@@ -234,7 +233,8 @@ public extension CallableAsFunction {
 
 // ContraMap
 public extension CallableAsFunction {
-    // f >>> self = ((C) -> A) >>> ((A) -> B) = (C) -> B
+    // f >>> self = ((C) -> A) >>> ((A) -> B)
+    //            =  (C) -> B
     func contraMap<C>(
         _ f: @escaping (C) -> A
     ) -> Func<C, B> {
@@ -258,6 +258,7 @@ public extension CallableAsFunction {
 public extension CallableAsFunction {
     //        self >>> f = ((A) ->  B) >>> (B) -> (A) -> C
     //                   =  (A) -> (A) -> C
+    //
     // a |> (self >>> f) =  (A) ->  C
     func flatMap<C>(
         _ f: @escaping (B) -> (A) -> C
