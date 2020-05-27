@@ -18,6 +18,8 @@
 		FBA11A422455BB200022A15B /* Filter.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBA11A412455BB200022A15B /* Filter.swift */; };
 		FBA11A4424564E130022A15B /* TryMap.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBA11A4324564E120022A15B /* TryMap.swift */; };
 		FBA11A482457038F0022A15B /* Publisher+Transform.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBA11A472457038F0022A15B /* Publisher+Transform.swift */; };
+		FBB6FD92247CB46700DB0D1B /* Demand+Helpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBB6FD91247CB46700DB0D1B /* Demand+Helpers.swift */; };
+		FBB6FD95247D397D00DB0D1B /* Subscriber+Join.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBB6FD94247D397D00DB0D1B /* Subscriber+Join.swift */; };
 		FBC21A88243BD4EA00EFD588 /* FreeCombine.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FBC21A7E243BD4EA00EFD588 /* FreeCombine.framework */; };
 		FBC21A8D243BD4EA00EFD588 /* PublisherTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBC21A8C243BD4EA00EFD588 /* PublisherTests.swift */; };
 		FBC21A99243BD52300EFD588 /* FreeCombine.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBC21A98243BD52300EFD588 /* FreeCombine.swift */; };
@@ -51,6 +53,8 @@
 		FBA11A412455BB200022A15B /* Filter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Filter.swift; sourceTree = "<group>"; };
 		FBA11A4324564E120022A15B /* TryMap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TryMap.swift; sourceTree = "<group>"; };
 		FBA11A472457038F0022A15B /* Publisher+Transform.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Publisher+Transform.swift"; sourceTree = "<group>"; };
+		FBB6FD91247CB46700DB0D1B /* Demand+Helpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Demand+Helpers.swift"; sourceTree = "<group>"; };
+		FBB6FD94247D397D00DB0D1B /* Subscriber+Join.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Subscriber+Join.swift"; sourceTree = "<group>"; };
 		FBC21A7E243BD4EA00EFD588 /* FreeCombine.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = FreeCombine.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		FBC21A82243BD4EA00EFD588 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		FBC21A87243BD4EA00EFD588 /* FreeCombineTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FreeCombineTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -142,6 +146,22 @@
 			path = PublisherChains;
 			sourceTree = "<group>";
 		};
+		FBB6FD90247CB44A00DB0D1B /* Demand */ = {
+			isa = PBXGroup;
+			children = (
+				FBB6FD91247CB46700DB0D1B /* Demand+Helpers.swift */,
+			);
+			path = Demand;
+			sourceTree = "<group>";
+		};
+		FBB6FD93247D395D00DB0D1B /* Subscriber */ = {
+			isa = PBXGroup;
+			children = (
+				FBB6FD94247D397D00DB0D1B /* Subscriber+Join.swift */,
+			);
+			path = Subscriber;
+			sourceTree = "<group>";
+		};
 		FBC21A74243BD4EA00EFD588 = {
 			isa = PBXGroup;
 			children = (
@@ -167,6 +187,8 @@
 				FBC21A98243BD52300EFD588 /* FreeCombine.swift */,
 				FB323523245DC141006B800C /* Callable.swift */,
 				FBA119D6244A0F520022A15B /* Publisher */,
+				FBB6FD93247D395D00DB0D1B /* Subscriber */,
+				FBB6FD90247CB44A00DB0D1B /* Demand */,
 				FBA11A2024523BBC0022A15B /* Supply */,
 				FBA119DF244B42FA0022A15B /* Producer */,
 				FBA11A322454BED00022A15B /* PublisherChains */,
@@ -306,7 +328,9 @@
 				FBA119DA244A81570022A15B /* FlatMap.swift in Sources */,
 				FBA11A422455BB200022A15B /* Filter.swift in Sources */,
 				FBCE1B492443EDDA001872C0 /* Producer+Statics.swift in Sources */,
+				FBB6FD92247CB46700DB0D1B /* Demand+Helpers.swift in Sources */,
 				FBA11A2224523BCF0022A15B /* Supply+Map.swift in Sources */,
+				FBB6FD95247D397D00DB0D1B /* Subscriber+Join.swift in Sources */,
 				FBA11A3A24551A860022A15B /* SubscribeOn.swift in Sources */,
 				FBA11A3E245521EC0022A15B /* CompactMap.swift in Sources */,
 				FBC21A99243BD52300EFD588 /* FreeCombine.swift in Sources */,

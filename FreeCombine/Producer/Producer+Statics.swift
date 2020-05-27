@@ -8,7 +8,7 @@
 
 public extension Producer where Failure == Never {
     static func empty() -> Producer<Value, Never> {
-        return Producer({ _ in .finished })
+        Producer { _ in .finished }
     }
     
     static func just(_ value: Value) -> Producer<Value, Never> {

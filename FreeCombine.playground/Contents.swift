@@ -16,14 +16,16 @@ let c1 = p1.sink {
     }
 }
 
-let p2 = PublishedSequence([1, 2, 3, 4, 5])
-    .map { $0  * 2 }
-
-let c2 = p2.sink {
-    switch $0 {
-    case .value(let value):
-        print("Value = \(value)")
-    default:
-        print("Completed")
+let c2 = [1, 2, 3]
+    .publisher
+    .map { $0 * 2 }
+    .map { Double($0) }
+    .map { "\($0)" }
+    .sink {
+        switch $0 {
+        case .value(let value):
+            print("Value = \(value)")
+        default:
+            print("Completed")
+        }
     }
-}
