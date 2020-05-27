@@ -183,8 +183,8 @@
 		FBC21A80243BD4EA00EFD588 /* FreeCombine */ = {
 			isa = PBXGroup;
 			children = (
-				FBCE1B4224420763001872C0 /* FunctionalProgramming.swift */,
 				FBC21A98243BD52300EFD588 /* FreeCombine.swift */,
+				FBCE1B4224420763001872C0 /* FunctionalProgramming.swift */,
 				FB323523245DC141006B800C /* Callable.swift */,
 				FBA119D6244A0F520022A15B /* Publisher */,
 				FBB6FD93247D395D00DB0D1B /* Subscriber */,
