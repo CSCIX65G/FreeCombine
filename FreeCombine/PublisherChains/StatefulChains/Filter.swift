@@ -14,13 +14,13 @@ extension Subscriber {
         return { downstream in
             .init { supply in
                 switch supply {
-                case .value(let value):
-                    ref = test(value) ? downstream(supply) : ref
-                    return ref
-                case .none, .failure:
-                    return downstream(supply)
-                case .finished:
-                    return ref
+                    case .value(let value):
+                        ref = test(value) ? downstream(supply) : ref
+                        return ref
+                    case .none, .failure:
+                        return downstream(supply)
+                    case .finished:
+                        return ref
                 }
             }
         }

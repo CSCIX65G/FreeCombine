@@ -14,9 +14,7 @@ extension Subscription {
     ) -> (Self) -> (Self) {
         return { upstream in
             .init { demand in
-                opQueue.addOperation {
-                    _ = upstream(demand)
-                }
+                opQueue.addOperation { upstream(demand) }
             }
         }
     }

@@ -9,11 +9,12 @@
 extension Demand{
     var unsatisfied: Bool {
         switch self {
-        case .none: return false
-        case .max(let val) where val > 0: return true
-        case .max: return false
-        case .unlimited: return true
-        case .cancel: return false
+            case .none: return false
+            case .max(let val) where val > 0: return true
+            case .max: return false
+            case .decrementPrevious: return false
+            case .unlimited: return true
+            case .cancel: return false
         }
     }
 }

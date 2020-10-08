@@ -21,21 +21,20 @@ public extension Producer where Failure == Never {
         }
     }
     
-    static func sequence<S: Sequence>(_ values: S) -> Producer<Value, Never>
-        where S.Element == Value
+    static func sequence<S: Sequence>(_ values: S) -> Producer<Value, Never> where S.Element == Value
     {
         var slice = ArraySlice(values)
         return .init { demand in
             switch demand {
-            case .none:
-                return .none
-            case .cancel:
-                slice = ArraySlice()
-                return .finished
-            case .max, .unlimited:
-                guard let value = slice.first else { return .finished }
-                slice = slice.dropFirst()
-                return .value(value)
+                case .none:
+                    return .none
+                case .cancel:
+                    slice = ArraySlice()
+                    return .finished
+                case .max, .unlimited, .decrementPrevious:
+                    guard let value = slice.first else { return .finished }
+                    slice = slice.dropFirst()
+                    return .value(value)
             }
         }
     }

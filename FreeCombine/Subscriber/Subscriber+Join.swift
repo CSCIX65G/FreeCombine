@@ -25,9 +25,9 @@ extension Subscriber {
             guard demand.unsatisfied else { return demand }
             let nextSupply = producer(demand)
             switch nextSupply {
-            case .none: return demand
-            case .failure, .finished: return subscriber(nextSupply)
-            case .value: return consume(nextSupply)
+                case .none: return demand
+                case .failure, .finished: return subscriber(nextSupply)
+                case .value: return consume(nextSupply)
             }
         }
         return .init(consume)
@@ -99,25 +99,25 @@ extension Subscriber {
  
  To reiterate, the value types are:
  
-     Demand
-     Supply
+ Demand
+ Supply
  
  and the base function types (all represented as "call-as-function"
  Swift structs) are:
  
-     Producer: (Demand) -> Supply
-     Subscriber: (Supply) -> Demand
-     Subscription: (Demand) -> Void
+ Producer: (Demand) -> Supply
+ Subscriber: (Supply) -> Demand
+ Subscription: (Demand) -> Void
  
  The higher-order function type is Publisher:
  
-     Publisher: (Subscriber) -> Subscription = ((Supply) -> Demand) -> ((Demand) -> Void)
+ Publisher: (Subscriber) -> Subscription = ((Supply) -> Demand) -> ((Demand) -> Void)
  
  which takes on two even higher higher-order forms when curried
  as:
  
-    (Producer)  -> (Subscriber) -> Subscription  and
-    (Subscriber contraFlatMap) -> (Publisher) -> (Subscription contraFlatMap) -> (Subscriber) -> Subscription
+ (Producer)  -> (Subscriber) -> Subscription  and
+ (Subscriber contraFlatMap) -> (Publisher) -> (Subscription contraFlatMap) -> (Subscriber) -> Subscription
  
  these forms are not given names but much of the library is
  given over to them.
@@ -125,26 +125,26 @@ extension Subscriber {
  We "Combine" these elements using the basic functional
  programming elements as follows:
  
-   On Supply we use:
-     map
+ On Supply we use:
+ map
  
-   And on Subscriber and Subscription we use:
-     contraFlatMap
+ And on Subscriber and Subscription we use:
+ contraFlatMap
  
-   And on Publisher we use:
-     dimap
+ And on Publisher we use:
+ dimap
  
-   to form a plethora of more complex forms
+ to form a plethora of more complex forms
  
  These are all functions we defined on our Func struct.
  
  And this is _all_ we need to create something like
  Combine or RxSwift.
-*/
+ */
 /*:
  This is the curried form I described above:
  
-     (Producer) -> (Subscriber) -> Subscriber
+ (Producer) -> (Subscriber) -> Subscriber
  
  Where the meaning of this particular `join` is described
  by the `satiateOrExhaust` function.  This is the pattern we will
@@ -157,11 +157,11 @@ extension Subscriber {
  will always require us to preserve that signature and
  our joins will have the form:
  
-     (Subscriber) -> Subscriber
+ (Subscriber) -> Subscriber
  
  or in detail:
  
-     ((Supply) -> Demand) -> ((Supply) -> Demand)
+ ((Supply) -> Demand) -> ((Supply) -> Demand)
  
  This supply is then provided to the downstreamSubscriber
  to obtain more demand.  If there is positive demand,
@@ -172,10 +172,10 @@ extension Subscriber {
  Now we can call `contraFlatMap` on the subscriber, rolling
  the producer up in our join function (remember the signature):
 
-     func contraFlatMap<Demand>(
-         _ join:  @escaping ((Supply) -> Demand) -> ((Supply) -> Demand),
-         _ transform:@escaping (Demand) -> Supply
-     ) -> Func<Demand, Demand>
+ func contraFlatMap<Demand>(
+ _ join:  @escaping ((Supply) -> Demand) -> ((Supply) -> Demand),
+ _ transform:@escaping (Demand) -> Supply
+ ) -> Func<Demand, Demand>
 
 
  and passing the producer itself as the transform function.

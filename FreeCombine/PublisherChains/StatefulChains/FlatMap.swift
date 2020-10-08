@@ -12,13 +12,13 @@ extension Subscriber {
         return { downstream in
             .init { supply in
                 switch supply {
-                case .value:
-                    ref = downstream(supply)
-                    return ref
-                case .failure:
-                    return downstream(supply)
-                case .none, .finished:
-                    return ref
+                    case .value:
+                        ref = downstream(supply)
+                        return ref
+                    case .failure:
+                        return downstream(supply)
+                    case .none, .finished:
+                        return ref
                 }
             }
         }
@@ -33,21 +33,21 @@ public extension Publisher {
             joinSubscriber: Subscriber<T, Failure>.join,
             transformSupply: { supply in
                 switch supply {
-                case .value(let value):
-                    let publisher = transform(value)
-                    var first: Supply<T, Failure>?
-                    let subscription = publisher.sink { first = $0 }
-                    subscription(.max(1))
-                    guard let current = first else { fatalError("Add asynchrony") }
-                    return current
-                case .none: return .none
-                case .failure(let failure): return .failure(failure)
-                case .finished: return .finished                    }
+                    case .value(let value):
+                        let publisher = transform(value)
+                        var first: Supply<T, Failure>?
+                        let subscription = publisher.sink { first = $0 }
+                        subscription(.max(1))
+                        guard let current = first else { fatalError("Add asynchrony") }
+                        return current
+                    case .none: return .none
+                    case .failure(let failure): return .failure(failure)
+                    case .finished: return .finished                    }
             },
             transformDemand: {
                 switch $0 {
-                case .cancel: return .cancel
-                default: return .max(1)
+                    case .cancel: return .cancel
+                    default: return .max(1)
                 }
             }
         )

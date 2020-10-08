@@ -17,6 +17,7 @@
 public enum Demand {
     case none
     case max(Int)
+    case decrementPrevious
     case unlimited
     case cancel
 }

@@ -40,17 +40,16 @@ public extension Publisher {
         _ transform: @escaping (Output) -> T
     ) -> Publisher<T, Failure> {
 
+        // => contraMap on downstream subscriber
         let hoist = { (downstream: Subscriber<T, Failure>) -> Subscriber<Output, Failure> in
             .init(downstream.contraFlatMap(identity, Supply.map(transform)))
         }
-        // => contraMap on downstream subscriber
-        
+
+        // => identity on upstream subscription
         let lower = { (mySubscription: Subscription) -> Subscription in
             .init(mySubscription.contraFlatMap(identity, identity))
         }
-        // => identity on upstream subscription
 
         return .init(dimap(hoist, lower))
-
     }
 }

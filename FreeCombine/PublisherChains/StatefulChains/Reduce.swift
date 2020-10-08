@@ -14,14 +14,14 @@ extension Subscriber {
         return { downstream in
             .init { supply in
                 switch supply {
-                case .value(let value):
-                    ref = value
-                    return .unlimited
-                case .none, .failure:
-                    return downstream(supply)
-                case .finished:
-                    _ = downstream(.value(ref))
-                    return downstream(.finished)
+                    case .value(let value):
+                        ref = value
+                        return .unlimited
+                    case .none, .failure:
+                        return downstream(supply)
+                    case .finished:
+                        _ = downstream(.value(ref))
+                        return downstream(.finished)
                 }
             }
         }
@@ -39,8 +39,8 @@ public extension Publisher {
             transformSupply: Supply.map(reduce(accum)),
             transformDemand: {
                 switch $0 {
-                case .cancel: return .cancel
-                default: return .unlimited
+                    case .cancel: return .cancel
+                    default: return .unlimited
                 }
             }
         )
