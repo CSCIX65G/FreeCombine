@@ -12,12 +12,13 @@
  In the beginning is Demand for some values.
  You only have to say how much you want
  not what kind of thing you want. You can
- cancel anytime you want.
+ cancel anytime you want.  You can also say
+ I want some less than the last time I told you.
 */
 public enum Demand {
     case none
     case max(Int)
-    case decrementPrevious
+    case decrementPrevious(Int) // Support for asynchronously consumed supply
     case unlimited
     case cancel
 }
