@@ -17,10 +17,10 @@ public extension Publisher {
         _ a: Output
     ) {
         self = .init { continuation, downstream in
-            Task { await withTaskCancellationHandler(handler: onCancel) {
+            Task { try await withTaskCancellationHandler(handler: onCancel) {
                 continuation?.resume()
                 guard !Task.isCancelled else { return .done }
-                return await downstream(.value(a)) == .more ? await downstream(.terminated) : .done
+                return try await downstream(.value(a)) == .more ? try await downstream(.terminated) : .done
             } }
         }
     }
@@ -39,10 +39,10 @@ public extension Publisher {
         _ result: AsyncStream<Output>.Result
     ) {
         self = .init { continuation, downstream in
-            Task { await withTaskCancellationHandler(handler: onCancel) {
+            Task { try await withTaskCancellationHandler(handler: onCancel) {
                 continuation?.resume()
                 guard !Task.isCancelled else { return .done }
-                return await downstream(result) == .more ? await downstream(.terminated) : .done
+                return try await downstream(result) == .more ? try await downstream(.terminated) : .done
             } }
         }
     }

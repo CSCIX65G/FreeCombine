@@ -51,7 +51,7 @@ public func wait<FinalResult, PartialResult, S: Sequence>(
                     throw error
                 }
                 await Task.yield()
-                await cancellationGroup.cancel()
+                try await cancellationGroup.cancel()
                 return currentValue
             }
         }

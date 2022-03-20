@@ -5,12 +5,6 @@
 //  Created by Van Simmons on 3/3/22.
 //
 
-//
-//  Expectation.swift
-//
-//
-//  Created by Van Simmons on 1/28/22.
-//
 public class UnsafeExpectation<Arg> {
     private let task: Task<Arg, Swift.Error>
     private let resumption: UnsafeContinuation<Arg, Swift.Error>

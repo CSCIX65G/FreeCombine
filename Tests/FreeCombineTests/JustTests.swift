@@ -20,7 +20,7 @@ class JustTests: XCTestCase {
 
         let just = Just(7)
 
-        _ = just.sink(onStartup: .none) { result in
+        _ = just.sink(onStartup: .none) { (result: AsyncStream<Int>.Result) in
             switch result {
                 case let .value(value):
                     XCTAssert(value == 7, "wrong value sent: \(value)")
@@ -35,7 +35,7 @@ class JustTests: XCTestCase {
             }
         }
 
-        _ = just.sink(onStartup: .none) { result in
+        _ = just.sink(onStartup: .none) { (result: AsyncStream<Int>.Result) in
             switch result {
                 case let .value(value):
                     XCTAssert(value == 7, "wrong value sent: \(value)")
@@ -64,7 +64,7 @@ class JustTests: XCTestCase {
 
         let just = Just(7)
 
-        _ = await just.sink { result in
+        _ = await just.sink { (result: AsyncStream<Int>.Result) in
             switch result {
                 case let .value(value):
                     XCTAssert(value == 7, "wrong value sent: \(value)")
@@ -79,8 +79,9 @@ class JustTests: XCTestCase {
             }
         }
 
-        _ = await just
-            .sink { result in
+        var t: Task<Demand, Swift.Error>! = .none
+        _ = await withUnsafeContinuation { continuation in
+            t = just.sink(onStartup: continuation, { result in
                 switch result {
                     case let .value(value):
                         XCTAssert(value == 7, "wrong value sent: \(value)")
@@ -93,8 +94,16 @@ class JustTests: XCTestCase {
                         catch { XCTFail("Failed to complete with error: \(error)") }
                         return .done
                 }
-            }
+            } )
+        }
 
+        do {
+            let finalDemand = try await t.value
+            print(finalDemand)
+            XCTAssert(finalDemand == .done, "Incorrect return")
+        } catch {
+            XCTFail("Errored out")
+        }
         do {
             try await FreeCombine.wait(for: expectation1, timeout: 1_000_000)
             try await FreeCombine.wait(for: expectation2, timeout: 1_000_000)
