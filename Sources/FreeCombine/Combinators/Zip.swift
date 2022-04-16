@@ -35,116 +35,123 @@ fileprivate struct ZipState<Left, Right> {
     }
 }
 
+fileprivate func handleLeft<Left, Right>(
+    _ leftResult: AsyncStream<Left>.Result,
+    _ state: inout ZipState<Left, Right>,
+    _ leftContinuation: UnsafeContinuation<Demand, Error>
+) async throws -> Effect<ZipAction<Left, Right>> {
+    switch leftResult {
+        case let .value(value):
+            if let right = state.right {
+                state.demand = try await state.downstream(.value((value, right.0)))
+                leftContinuation.resume(returning: state.demand)
+                right.1.resume(returning: state.demand)
+                state.right = .none
+            } else {
+                state.left = (value, leftContinuation)
+            }
+            return .none
+        case .terminated:
+            state.demand = try await state.downstream(.terminated)
+            leftContinuation.resume(returning: state.demand)
+            if let right = state.right {
+                right.1.resume(returning: state.demand)
+                state.right = .none
+            } else if let rightCancellable = state.rightCancellable {
+                rightCancellable.cancel()
+            } else {
+                state.shouldCancelRight = true
+            }
+            return .none
+        case let .failure(error):
+            state.demand = try await state.downstream(.failure(error))
+            leftContinuation.resume(returning: state.demand)
+            if let right = state.right {
+                right.1.resume(returning: state.demand)
+                state.right = .none
+            } else if let rightCancellable = state.rightCancellable {
+                rightCancellable.cancel()
+            } else {
+                state.shouldCancelRight = true
+            }
+            return .none
+    }
+}
+
+fileprivate func handleRight<Left, Right>(
+    _ rightResult: AsyncStream<Right>.Result,
+    _ state: inout ZipState<Left, Right>,
+    _ rightContinuation: UnsafeContinuation<Demand, Error>
+) async throws -> Effect<ZipAction<Left, Right>> {
+    switch rightResult {
+        case let .value(value):
+            if let left = state.left {
+                state.demand = try await state.downstream(.value((left.0, value)))
+                rightContinuation.resume(returning: state.demand)
+                left.1.resume(returning: state.demand)
+                state.left = .none
+            } else {
+                state.right = (value, rightContinuation)
+            }
+            return .none
+        case .terminated:
+            state.demand = try await state.downstream(.terminated)
+            rightContinuation.resume(returning: state.demand)
+            if let left = state.left {
+                left.1.resume(returning: state.demand)
+                state.left = .none
+            } else if let leftCancellable = state.leftCancellable {
+                leftCancellable.cancel()
+            } else {
+                state.shouldCancelLeft = true
+            }
+            return .none
+        case let .failure(error):
+            state.demand = try await state.downstream(.failure(error))
+            rightContinuation.resume(returning: state.demand)
+            if let left = state.left {
+                left.1.resume(returning: state.demand)
+                state.left = .none
+            } else if let leftCancellable = state.leftCancellable {
+                leftCancellable.cancel()
+            } else {
+                state.shouldCancelLeft = true
+            }
+            return .none
+    }
+}
+
 fileprivate func zipReducer<Left, Right>(
     state: inout ZipState<Left, Right>,
-    action: ZipAction<Left, Right>,
-    service: Service<ZipAction<Left, Right>>
-) async throws -> Void {
+    action: ZipAction<Left, Right>
+) async throws -> Effect<ZipAction<Left, Right>> {
     switch action {
         case let .setLeft(leftResult, leftContinuation):
             if state.demand == .done {
                 leftContinuation.resume(returning: state.demand)
-                return
+                return .none
             }
-            switch leftResult {
-                case let .value(value):
-                    if let right = state.right {
-                        state.demand = try await state.downstream(.value((value, right.0)))
-                        leftContinuation.resume(returning: state.demand)
-                        right.1.resume(returning: state.demand)
-                        state.right = .none
-                    } else {
-                        state.left = (value, leftContinuation)
-                    }
-                    return
-                case .terminated:
-                    state.demand = try await state.downstream(.terminated)
-                    leftContinuation.resume(returning: state.demand)
-                    if let right = state.right {
-                        right.1.resume(returning: state.demand)
-                        state.right = .none
-                        service.finish()
-                    } else if let rightCancellable = state.rightCancellable {
-                        rightCancellable.cancel()
-                        service.finish()
-                    } else {
-                        state.shouldCancelRight = true
-                    }
-                    return
-                case let .failure(error):
-                    state.demand = try await state.downstream(.failure(error))
-                    leftContinuation.resume(returning: state.demand)
-                    if let right = state.right {
-                        right.1.resume(returning: state.demand)
-                        state.right = .none
-                        service.finish()
-                    } else if let rightCancellable = state.rightCancellable {
-                        rightCancellable.cancel()
-                        service.finish()
-                    } else {
-                        state.shouldCancelRight = true
-                    }
-                    return
-            }
+            return try await handleLeft(leftResult, &state, leftContinuation)
         case let .setRight(rightResult, rightContinuation):
             if state.demand == .done {
                 rightContinuation.resume(returning: state.demand)
-                return
+                return .none
             }
-            switch rightResult {
-                case let .value(value):
-                    if let left = state.left {
-                        state.demand = try await state.downstream(.value((left.0, value)))
-                        rightContinuation.resume(returning: state.demand)
-                        left.1.resume(returning: state.demand)
-                        state.left = .none
-                    } else {
-                        state.right = (value, rightContinuation)
-                    }
-                    return
-                case .terminated:
-                    state.demand = try await state.downstream(.terminated)
-                    rightContinuation.resume(returning: state.demand)
-                    if let left = state.left {
-                        left.1.resume(returning: state.demand)
-                        state.left = .none
-                        service.finish()
-                    } else if let leftCancellable = state.leftCancellable {
-                        leftCancellable.cancel()
-                        service.finish()
-                    } else {
-                        state.shouldCancelLeft = true
-                    }
-                    return
-                case let .failure(error):
-                    state.demand = try await state.downstream(.failure(error))
-                    rightContinuation.resume(returning: state.demand)
-                    if let left = state.left {
-                        left.1.resume(returning: state.demand)
-                        state.left = .none
-                        service.finish()
-                    } else if let leftCancellable = state.leftCancellable {
-                        leftCancellable.cancel()
-                        service.finish()
-                    } else {
-                        state.shouldCancelLeft = true
-                    }
-                    return
-            }
+            return try await handleRight(rightResult, &state, rightContinuation)
         case let .setLeftCancellable(leftTask):
             guard !state.shouldCancelLeft else {
                 leftTask.cancel()
-                service.finish()
-                return
+                return .none
             }
             state.leftCancellable = leftTask
+            return .none
         case let .setRightCancellable(rightTask):
             guard !state.shouldCancelRight else {
                 rightTask.cancel()
-                service.finish()
-                return
+                return .none
             }
             state.rightCancellable = rightTask
+            return .none
     }
 }
 
@@ -160,7 +167,7 @@ fileprivate func zipper<A, B>(
             downstream: downstream,
             demand: .more
         ),
-        onStartup: onStartup,
+        eventHandler: .init(onStartup: onStartup),
         operation: zipReducer
     )
 }
@@ -175,14 +182,12 @@ public func zip<A, B>(
     return .init { continuation, downstream in
         .init { try await withTaskCancellationHandler(handler: cancellation.nonIsolatedCancel) {
             var zipService: Zipper<A, B>!
-            var leftTask: Task<Demand, Swift.Error>!
-            var rightTask: Task<Demand, Swift.Error>!
-
             _ = await withUnsafeContinuation { continuation in
                 zipService = zipper(onStartup: continuation, downstream)
             }
             await cancellation.add(zipService.task)
 
+            var leftTask: Task<Demand, Swift.Error>!
             _ = await withUnsafeContinuation { continuation in
                 leftTask = left(onStartup: continuation) { leftResult in
                     try await withUnsafeThrowingContinuation { leftContinuation in
@@ -200,6 +205,7 @@ public func zip<A, B>(
                 throw ZipError.internalError
             }
 
+            var rightTask: Task<Demand, Swift.Error>!
             _ = await withUnsafeContinuation { continuation in
                 rightTask = right(onStartup: continuation) { rightResult in
                     try await withUnsafeThrowingContinuation { rightContinuation in

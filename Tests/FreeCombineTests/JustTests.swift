@@ -20,7 +20,7 @@ class JustTests: XCTestCase {
 
         let just = Just(7)
 
-        _ = just.sink(onStartup: .none) { (result: AsyncStream<Int>.Result) in
+        _ = await just.sink { (result: AsyncStream<Int>.Result) in
             switch result {
                 case let .value(value):
                     XCTAssert(value == 7, "wrong value sent: \(value)")
@@ -35,7 +35,7 @@ class JustTests: XCTestCase {
             }
         }
 
-        _ = just.sink(onStartup: .none) { (result: AsyncStream<Int>.Result) in
+        _ = await just.sink { (result: AsyncStream<Int>.Result) in
             switch result {
                 case let .value(value):
                     XCTAssert(value == 7, "wrong value sent: \(value)")

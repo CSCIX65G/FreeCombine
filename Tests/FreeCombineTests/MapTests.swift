@@ -19,9 +19,9 @@ class MapTests: XCTestCase {
 
         let just = Just(7)
 
-        _ = just
+        _ = await just
             .map { $0 * 2 }
-            .sink(onStartup: .none) { (result: AsyncStream<Int>.Result) in
+            .sink { (result: AsyncStream<Int>.Result) in
                 switch result {
                     case let .value(value):
                         XCTAssert(value == 14, "wrong value sent: \(value)")

@@ -5,6 +5,28 @@
 //  Created by Van Simmons on 2/17/22.
 //
 public class AsyncReducer<State, Action> {
+    public struct EventHandler {
+        let onStartup: UnsafeContinuation<Void, Never>?
+        let onCancel: @Sendable () -> Void
+        let onTermination: @Sendable (AsyncStream<Action>.Continuation.Termination) -> Void
+        let onFailure: @Sendable (Swift.Error) -> Void
+        let onExit: @Sendable (State) -> Void
+
+        public init(
+            onStartup: UnsafeContinuation<Void, Never>? = .none,
+            onCancel: @Sendable @escaping () -> Void = { },
+            onTermination: @Sendable @escaping (AsyncStream<Action>.Continuation.Termination) -> Void = { _ in },
+            onFailure: @Sendable @escaping (Swift.Error) -> Void = { _ in },
+            onExit: @Sendable @escaping (State) -> Void = { _ in }
+        ) {
+            self.onStartup = onStartup
+            self.onCancel = onCancel
+            self.onTermination = onTermination
+            self.onFailure = onFailure
+            self.onExit = onExit
+        }
+    }
+
     public enum Error: Swift.Error, CaseIterable, Equatable {
         case cancelled
         case dropped
@@ -18,31 +40,41 @@ public class AsyncReducer<State, Action> {
     public init(
         buffering: AsyncStream<Action>.Continuation.BufferingPolicy = .unbounded,
         initialState: State,
-        onStartup: UnsafeContinuation<Void, Never>? = .none,
-        onCancel: @Sendable @escaping () -> Void = { },
-        onTermination: (@Sendable (AsyncStream<Action>.Continuation.Termination) -> Void)? = .none,
-        onFailure: (@Sendable (Swift.Error) -> Void)? = .none,
-        onExit: (@Sendable (State) -> Void)? = .none,
-        operation: @escaping (inout State, Action, Service<Action>) async throws -> Void
+        eventHandler: EventHandler,
+        operation: @escaping (inout State, Action) async throws -> Effect<Action>
     ) {
-        let localService = Service<Action>(buffering: buffering, onTermination: onTermination)
-        self.task = .init { try await withTaskCancellationHandler(handler: onCancel) {
+        let localService = Service<Action>(buffering: buffering, onTermination: eventHandler.onTermination)
+        self.service = localService
+        self.task = .init { try await withTaskCancellationHandler(handler: eventHandler.onCancel) {
+            var cancellables: Set<Task<Demand, Swift.Error>> = []
             var state = initialState
-            onStartup?.resume()
+            eventHandler.onStartup?.resume()
+            guard !Task.isCancelled else { throw Error.cancelled }
             for await action in localService {
-                guard !Task.isCancelled else { throw Error.cancelled }
+                guard !Task.isCancelled else { break }
                 do {
-                    try await operation(&state, action, localService)
+                    let e = try await operation(&state, action)
+                    switch e {
+                        case .none:
+                            ()
+                        case .fireAndForget(let f):
+                            f()
+                        case .published(let p):
+                            let _: Void = await withUnsafeContinuation { continuation in
+                                cancellables.insert( p.sink(
+                                    onStartup: continuation,
+                                    receiveValue: { action in localService.yield(action) }
+                                ) )
+                            }
+                    }
                 }
-                catch {
-                    onFailure?(error); throw error
-                }
+                catch { eventHandler.onFailure(error); throw error }
+                guard !Task.isCancelled else { break }
             }
             guard !Task.isCancelled else { throw Error.cancelled }
-            onExit?(state)
+            eventHandler.onExit(state)
             return state
         } }
-        self.service = localService
     }
 
     deinit {
@@ -70,7 +102,7 @@ public class AsyncReducer<State, Action> {
     }
 
     @inlinable
-    public func value() async throws -> State {
-        try await task.value
+    public var finalState: State {
+        get async throws { try await task.value }
     }
 }
