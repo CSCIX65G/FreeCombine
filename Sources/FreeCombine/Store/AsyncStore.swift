@@ -4,8 +4,16 @@
 //
 //  Created by Van Simmons on 2/17/22.
 //
-public class AsyncReducer<State, Action> {
+
+extension Set where Element == Task<Demand, Swift.Error> {
+    func cancel() -> Void {
+        forEach { task in task.cancel() }
+    }
+}
+
+public class AsyncStore<State, Action> {
     public struct EventHandler {
+        let buffering: AsyncStream<Action>.Continuation.BufferingPolicy
         let onStartup: UnsafeContinuation<Void, Never>?
         let onCancel: @Sendable () -> Void
         let onTermination: @Sendable (AsyncStream<Action>.Continuation.Termination) -> Void
@@ -13,12 +21,14 @@ public class AsyncReducer<State, Action> {
         let onExit: @Sendable (State) -> Void
 
         public init(
+            buffering: AsyncStream<Action>.Continuation.BufferingPolicy = .unbounded,
             onStartup: UnsafeContinuation<Void, Never>? = .none,
             onCancel: @Sendable @escaping () -> Void = { },
             onTermination: @Sendable @escaping (AsyncStream<Action>.Continuation.Termination) -> Void = { _ in },
             onFailure: @Sendable @escaping (Swift.Error) -> Void = { _ in },
             onExit: @Sendable @escaping (State) -> Void = { _ in }
         ) {
+            self.buffering = buffering
             self.onStartup = onStartup
             self.onCancel = onCancel
             self.onTermination = onTermination
@@ -38,12 +48,14 @@ public class AsyncReducer<State, Action> {
     public let task: Task<State, Swift.Error>
 
     public init(
-        buffering: AsyncStream<Action>.Continuation.BufferingPolicy = .unbounded,
         initialState: State,
         eventHandler: EventHandler,
         operation: @escaping (inout State, Action) async throws -> Effect<Action>
     ) {
-        let localService = Service<Action>(buffering: buffering, onTermination: eventHandler.onTermination)
+        let localService = Service<Action>(
+            buffering: eventHandler.buffering,
+            onTermination: eventHandler.onTermination
+        )
         self.service = localService
         self.task = .init { try await withTaskCancellationHandler(handler: eventHandler.onCancel) {
             var cancellables: Set<Task<Demand, Swift.Error>> = []
@@ -53,8 +65,7 @@ public class AsyncReducer<State, Action> {
             for await action in localService {
                 guard !Task.isCancelled else { break }
                 do {
-                    let e = try await operation(&state, action)
-                    switch e {
+                    switch try await operation(&state, action) {
                         case .none:
                             ()
                         case .fireAndForget(let f):
@@ -63,14 +74,22 @@ public class AsyncReducer<State, Action> {
                             let _: Void = await withUnsafeContinuation { continuation in
                                 cancellables.insert( p.sink(
                                     onStartup: continuation,
-                                    receiveValue: { action in localService.yield(action) }
+                                    receiveValue: { action in
+                                        guard !Task.isCancelled else { throw Error.cancelled }
+                                        localService.yield(action)
+                                    }
                                 ) )
                             }
                     }
                 }
-                catch { eventHandler.onFailure(error); throw error }
+                catch {
+                    cancellables.cancel()
+                    eventHandler.onFailure(error);
+                    throw error
+                }
                 guard !Task.isCancelled else { break }
             }
+            cancellables.cancel()
             guard !Task.isCancelled else { throw Error.cancelled }
             eventHandler.onExit(state)
             return state

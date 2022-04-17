@@ -46,7 +46,7 @@ public extension Publisher {
     @discardableResult
     func sink(
         onStartup: UnsafeContinuation<Void, Never>?,
-        _ f: @escaping (AsyncStream<Output>.Result) async -> Demand
+        _ f: @escaping (AsyncStream<Output>.Result) async throws -> Demand
     ) -> Task<Demand, Swift.Error> {
         self(onStartup: onStartup, f)
     }
@@ -57,6 +57,7 @@ public extension Publisher {
         _ f: @escaping (AsyncStream<Output>.Result) async throws -> Demand
     ) -> Task<Demand, Swift.Error> {
         call(onStartup, { result in
+            guard !Task.isCancelled else { return .done }
             let demand = try await f(result)
             await Task.yield()
             return demand
@@ -65,7 +66,7 @@ public extension Publisher {
 
     @discardableResult
     func sink(
-        _ f: @escaping (AsyncStream<Output>.Result) async -> Demand
+        _ f: @escaping (AsyncStream<Output>.Result) async throws -> Demand
     ) async -> Task<Demand, Swift.Error> {
         await self(f)
     }
@@ -77,6 +78,7 @@ public extension Publisher {
         var t: Task<Demand, Swift.Error>! = .none
         await withUnsafeContinuation { continuation in
             t = call(continuation, { result in
+                guard !Task.isCancelled else { return .done }
                 let demand = try await f(result)
                 await Task.yield()
                 return demand
@@ -88,11 +90,11 @@ public extension Publisher {
 
 extension Publisher {
     private func lift(
-        _ receiveValue: @escaping (Output) async -> Void
-    ) -> (AsyncStream<Output>.Result) async -> Demand {
+        _ receiveValue: @escaping (Output) async throws -> Void
+    ) -> (AsyncStream<Output>.Result) async throws -> Demand {
         { result in switch result {
             case let .value(value):
-                await receiveValue(value)
+                try await receiveValue(value)
                 return .more
             case .failure, .terminated:
                 return .done
@@ -101,30 +103,30 @@ extension Publisher {
 
     func sink(
         onStartup: UnsafeContinuation<Void, Never>?,
-        receiveValue: @escaping (Output) async -> Void
+        receiveValue: @escaping (Output) async throws -> Void
     ) -> Task<Demand, Swift.Error> {
         sink(onStartup: onStartup, lift(receiveValue))
     }
 
     func sink(
-        receiveValue: @escaping (Output) async -> Void
+        receiveValue: @escaping (Output) async throws -> Void
     ) async -> Task<Demand, Swift.Error> {
         await sink(lift(receiveValue))
     }
 
     private func lift(
-        _ receiveCompletion: @escaping (Completion) async -> Void,
-        _ receiveValue: @escaping (Output) async -> Void
-    ) -> (AsyncStream<Output>.Result) async -> Demand {
+        _ receiveCompletion: @escaping (Completion) async throws -> Void,
+        _ receiveValue: @escaping (Output) async throws -> Void
+    ) -> (AsyncStream<Output>.Result) async throws -> Demand {
         { result in switch result {
             case let .value(value):
-                await receiveValue(value)
+                try await receiveValue(value)
                 return .more
             case let .failure(error):
-                await receiveCompletion(.failure(error))
+                try await receiveCompletion(.failure(error))
                 return .done
             case .terminated:
-                await receiveCompletion(.finished)
+                try await receiveCompletion(.finished)
                 return .done
         } }
     }

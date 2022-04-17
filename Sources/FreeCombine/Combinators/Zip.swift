@@ -155,18 +155,14 @@ fileprivate func zipReducer<Left, Right>(
     }
 }
 
-fileprivate typealias Zipper<A, B> = AsyncReducer<ZipState<A, B>, ZipAction<A, B>>
+fileprivate typealias Zipper<A, B> = AsyncStore<ZipState<A, B>, ZipAction<A, B>>
 
 fileprivate func zipper<A, B>(
     onStartup: UnsafeContinuation<Void, Never>,
     _ downstream: @escaping (AsyncStream<(A, B)>.Result) async throws -> Demand
 ) -> Zipper<A, B> {
     .init(
-        buffering: .unbounded,
-        initialState: .init(
-            downstream: downstream,
-            demand: .more
-        ),
+        initialState: .init(downstream: downstream, demand: .more),
         eventHandler: .init(onStartup: onStartup),
         operation: zipReducer
     )
