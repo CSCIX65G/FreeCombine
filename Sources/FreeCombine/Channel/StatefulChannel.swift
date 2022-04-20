@@ -1,17 +1,12 @@
 //
-//  RunLoop.swift
+//  StatefulChannel.swift
 //  
 //
 //  Created by Van Simmons on 2/17/22.
 //
 
-extension Set where Element == Task<Demand, Swift.Error> {
-    func cancel() -> Void {
-        forEach { task in task.cancel() }
-    }
-}
-
-public class AsyncStore<State, Action> {
+public class StatefulChannel<State, Action> {
+    // Optional onStartup can be used from synchronous context
     public struct EventHandler {
         let buffering: AsyncStream<Action>.Continuation.BufferingPolicy
         let onStartup: UnsafeContinuation<Void, Never>?
@@ -47,10 +42,10 @@ public class AsyncStore<State, Action> {
     public let service: Service<Action>
     public let task: Task<State, Swift.Error>
 
-    public init(
+    required public init(
         initialState: State,
         eventHandler: EventHandler,
-        operation: @escaping (inout State, Action) async throws -> Effect<Action>
+        operation: @escaping (inout State, Action) async throws -> Void
     ) {
         let localService = Service<Action>(
             buffering: eventHandler.buffering,
@@ -58,38 +53,14 @@ public class AsyncStore<State, Action> {
         )
         self.service = localService
         self.task = .init { try await withTaskCancellationHandler(handler: eventHandler.onCancel) {
-            var cancellables: Set<Task<Demand, Swift.Error>> = []
             var state = initialState
             eventHandler.onStartup?.resume()
             guard !Task.isCancelled else { throw Error.cancelled }
             for await action in localService {
                 guard !Task.isCancelled else { break }
-                do {
-                    switch try await operation(&state, action) {
-                        case .none:
-                            ()
-                        case .fireAndForget(let f):
-                            f()
-                        case .published(let p):
-                            let _: Void = await withUnsafeContinuation { continuation in
-                                cancellables.insert( p.sink(
-                                    onStartup: continuation,
-                                    receiveValue: { action in
-                                        guard !Task.isCancelled else { throw Error.cancelled }
-                                        localService.yield(action)
-                                    }
-                                ) )
-                            }
-                    }
-                }
-                catch {
-                    cancellables.cancel()
-                    eventHandler.onFailure(error);
-                    throw error
-                }
-                guard !Task.isCancelled else { break }
+                do { try await operation(&state, action) }
+                catch {  eventHandler.onFailure(error); throw error }
             }
-            cancellables.cancel()
             guard !Task.isCancelled else { throw Error.cancelled }
             eventHandler.onExit(state)
             return state
@@ -123,5 +94,47 @@ public class AsyncStore<State, Action> {
     @inlinable
     public var finalState: State {
         get async throws { try await task.value }
+    }
+
+    @inlinable
+    public var result: Result<State, Swift.Error> {
+        get async {
+            do {
+                let success = try await finalState
+                return .success(success)
+            } catch {
+                return .failure(error)
+            }
+        }
+    }
+}
+
+extension StatefulChannel.EventHandler where State == Void {
+    public init(
+        buffering: AsyncStream<Action>.Continuation.BufferingPolicy = .unbounded,
+        onStartup: UnsafeContinuation<Void, Never>? = .none,
+        onCancel: @Sendable @escaping () -> Void = { },
+        onTermination: @Sendable @escaping (AsyncStream<Action>.Continuation.Termination) -> Void = { _ in },
+        onFailure: @Sendable @escaping (Swift.Error) -> Void = { _ in },
+        onExit: @Sendable @escaping () -> Void = { }
+    ) {
+        self.buffering = buffering
+        self.onStartup = onStartup
+        self.onCancel = onCancel
+        self.onTermination = onTermination
+        self.onFailure = onFailure
+        self.onExit = { _ in onExit() }
+    }
+}
+extension StatefulChannel where State == Void {
+    public convenience init(
+        eventHandler: EventHandler,
+        operation: @escaping (Action) async throws -> Void
+    ) {
+        self.init(
+            initialState: (),
+            eventHandler: eventHandler,
+            operation: { _, action in try await operation(action) }
+        )
     }
 }
