@@ -35,6 +35,7 @@ public class StatefulChannel<State, Action> {
     public enum Error: Swift.Error, CaseIterable, Equatable {
         case cancelled
         case dropped
+        case internalError
         case alreadyCancelled
         case alreadyTerminated
     }
@@ -42,7 +43,12 @@ public class StatefulChannel<State, Action> {
     public let service: Service<Action>
     public let task: Task<State, Swift.Error>
 
-    required public init(
+    public init(service: Service<Action>, task: Task<State, Swift.Error>) {
+        self.service = service
+        self.task = task
+    }
+
+    public init(
         initialState: State,
         eventHandler: EventHandler,
         operation: @escaping (inout State, Action) async throws -> Void
@@ -51,20 +57,25 @@ public class StatefulChannel<State, Action> {
             buffering: eventHandler.buffering,
             onTermination: eventHandler.onTermination
         )
-        self.service = localService
-        self.task = .init { try await withTaskCancellationHandler(handler: eventHandler.onCancel) {
+        let localTask = Task<State, Swift.Error> { try await withTaskCancellationHandler(handler: eventHandler.onCancel) {
             var state = initialState
             eventHandler.onStartup?.resume()
             guard !Task.isCancelled else { throw Error.cancelled }
             for await action in localService {
-                guard !Task.isCancelled else { break }
+                guard !Task.isCancelled else { continue }
                 do { try await operation(&state, action) }
-                catch {  eventHandler.onFailure(error); throw error }
+                catch {
+                    eventHandler.onFailure(error);
+                    for await _ in localService { localService.finish(); continue; }
+                    throw error
+                }
             }
             guard !Task.isCancelled else { throw Error.cancelled }
             eventHandler.onExit(state)
             return state
         } }
+        self.service = localService
+        self.task = localTask
     }
 
     deinit {
@@ -126,8 +137,9 @@ extension StatefulChannel.EventHandler where State == Void {
         self.onExit = { _ in onExit() }
     }
 }
-extension StatefulChannel where State == Void {
-    public convenience init(
+
+public extension StatefulChannel where State == Void {
+    convenience init(
         eventHandler: EventHandler,
         operation: @escaping (Action) async throws -> Void
     ) {
@@ -136,5 +148,50 @@ extension StatefulChannel where State == Void {
             eventHandler: eventHandler,
             operation: { _, action in try await operation(action) }
         )
+    }
+}
+
+public protocol SynchronousAction {
+    associatedtype State
+    var continuation: UnsafeContinuation<State, Swift.Error> { get }
+}
+
+public extension StatefulChannel where Action: SynchronousAction, State == Action.State {
+    convenience init(
+        initialState: State,
+        eventHandler: EventHandler,
+        operation: @escaping (inout State, Action) async throws -> Void
+    ) {
+        let localService = Service<Action>(
+            buffering: eventHandler.buffering,
+            onTermination: eventHandler.onTermination
+        )
+        let localTask: Task<State, Swift.Error> = .init { try await withTaskCancellationHandler(handler: eventHandler.onCancel) {
+            var state = initialState
+            eventHandler.onStartup?.resume()
+            guard !Task.isCancelled else { throw Error.cancelled }
+            for await action in localService {
+                guard !Task.isCancelled else {
+                    action.continuation.resume(throwing: Error.cancelled)
+                    continue
+                }
+                do { try await operation(&state, action) }
+                catch {
+                    eventHandler.onFailure(error);
+                    action.continuation.resume(throwing: Error.internalError)
+                    for await action in localService {
+                        localService.finish()
+                        action.continuation.resume(throwing: Error.cancelled)
+                    }
+                    throw error
+                }
+                action.continuation.resume(returning: state)
+            }
+            guard !Task.isCancelled else { throw Error.cancelled }
+            eventHandler.onExit(state)
+            return state
+        } }
+
+        self.init(service: localService, task: localTask)
     }
 }
