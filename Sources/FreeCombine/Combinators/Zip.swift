@@ -9,10 +9,19 @@ fileprivate enum ZipError: Error {
     case internalError
 }
 
-fileprivate enum ZipAction<Left, Right> {
+fileprivate enum ZipAction<Left, Right>: SynchronousAction {
     case setLeft(AsyncStream<Left>.Result, UnsafeContinuation<Demand, Swift.Error>)
     case setRight(AsyncStream<Right>.Result, UnsafeContinuation<Demand, Swift.Error>)
-    case setTasks(left: Task<Demand, Swift.Error>, right: Task<Demand, Swift.Error>)
+    case setTasks(left: Task<Demand, Swift.Error>, right: Task<Demand, Swift.Error>, UnsafeContinuation<Demand, Swift.Error>)
+
+    typealias State = Demand
+    var continuation: UnsafeContinuation<Demand, Error> {
+        switch self {
+            case let .setLeft(_, continuation): return continuation
+            case let .setRight(_, continuation): return continuation
+            case let .setTasks(left: _, right: _, continuation): return continuation
+        }
+    }
 }
 
 fileprivate struct ZipState<Left, Right> {
@@ -109,6 +118,16 @@ fileprivate struct ZipState<Left, Right> {
         }
     }
 
+    mutating func handleSetTasks(
+        leftTask: Task<Demand, Swift.Error>,
+        rightTask: Task<Demand, Swift.Error>,
+        continuation: UnsafeContinuation<Demand, Swift.Error>
+    ) async throws -> Void {
+        leftCancellable = leftTask
+        rightCancellable = rightTask
+        continuation.resume(returning: .more)
+    }
+
     mutating func reduce(
         action: ZipAction<Left, Right>
     ) async throws -> Void {
@@ -119,10 +138,9 @@ fileprivate struct ZipState<Left, Right> {
             case let .setRight(rightResult, rightContinuation):
                 return demand == .done ? rightContinuation.resume(returning: demand)
                     : try await handleRight(rightResult, rightContinuation)
-            case let .setTasks(left: leftTask, right: rightTask):
-                leftCancellable = leftTask
-                rightCancellable = rightTask
-                return
+            case let .setTasks(left: leftTask, right: rightTask, continuation):
+                return demand == .done ? continuation.resume(returning: demand)
+                    : try await handleSetTasks(leftTask: leftTask, rightTask: rightTask, continuation: continuation)
         }
     }
 
@@ -136,7 +154,7 @@ fileprivate struct ZipState<Left, Right> {
     ) -> StatefulChannel<ZipState<Left, Right>, ZipAction<Left, Right>> {
         .init(
             initialState: .init(downstream: downstream, demand: .more),
-            eventHandler: .init(onStartup: onStartup),
+            eventHandler: .init(buffering: .bufferingOldest(2), onStartup: onStartup),
             operation: Self.reduce
         )
     }
@@ -147,17 +165,16 @@ public func zip<Left, Right>(
     _ left: Publisher<Left>,
     _ right: Publisher<Right>
 ) -> Publisher<(Left, Right)> {
-    let cancellation = CancellationGroup(onCancel: onCancel)
     return .init { continuation, downstream in
-        .init { try await withTaskCancellationHandler(handler: cancellation.nonIsolatedCancel) {
+        .init {
             var zipChannel: StatefulChannel<ZipState<Left, Right>, ZipAction<Left, Right>>!
-            await withUnsafeContinuation { continuation in
-                zipChannel = ZipState<Left, Right>.channel(onStartup: continuation, downstream)
+            await withUnsafeContinuation { zContinuation in
+                zipChannel = ZipState<Left, Right>.channel(onStartup: zContinuation, downstream)
             }
 
             var leftTask: Task<Demand, Swift.Error>!
-            await withUnsafeContinuation { continuation in
-                leftTask = left(onStartup: continuation) { leftResult in
+            await withUnsafeContinuation { lContinuation in
+                leftTask = left(onStartup: lContinuation) { leftResult in
                     try await withUnsafeThrowingContinuation { leftContinuation in
                         guard case .enqueued = zipChannel.yield(.setLeft(leftResult, leftContinuation)) else {
                             leftContinuation.resume(throwing: ZipError.internalError)
@@ -168,8 +185,8 @@ public func zip<Left, Right>(
             }
 
             var rightTask: Task<Demand, Swift.Error>!
-            await withUnsafeContinuation { continuation in
-                rightTask = right(onStartup: continuation) { rightResult in
+            await withUnsafeContinuation { rContinuation in
+                rightTask = right(onStartup: rContinuation) { rightResult in
                     try await withUnsafeThrowingContinuation { rightContinuation in
                         guard case .enqueued = zipChannel.yield(.setRight(rightResult, rightContinuation)) else {
                             rightContinuation.resume(throwing: ZipError.internalError)
@@ -179,26 +196,32 @@ public func zip<Left, Right>(
                 }
             }
 
-            await cancellation.add(zipChannel.task)
-            await cancellation.add(leftTask)
-            await cancellation.add(rightTask)
-
-            guard case .enqueued = zipChannel.yield(.setTasks(left: leftTask, right: rightTask)) else {
-                leftTask.cancel()
-                rightTask.cancel()
-                zipChannel.cancel()
-                throw ZipError.internalError
+            let t1: Task<ZipState<Left, Right>, Swift.Error> = zipChannel.task
+            let t2: Task<Demand, Swift.Error> = leftTask
+            let t3: Task<Demand, Swift.Error> = rightTask
+            let cancellation: @Sendable () -> Void = {
+                t1.cancel()
+                t2.cancel()
+                t3.cancel()
+                onCancel()
             }
 
-            guard !Task.isCancelled else {
-                leftTask.cancel()
-                rightTask.cancel()
-                zipChannel.cancel()
-                throw Publisher<(Left, Right)>.Error.cancelled
-            }
+            return try await withTaskCancellationHandler(handler: cancellation) {
+                continuation?.resume()
 
-            continuation?.resume()
-            return try await zipChannel.task.value.demand
-        } }
+                let _: Demand = try await withUnsafeThrowingContinuation { dContinuation in
+                    guard case .enqueued = zipChannel.yield(
+                        .setTasks(left: leftTask, right: rightTask, dContinuation)
+                    ) else {
+                        cancellation()
+                        dContinuation.resume(throwing: ZipError.internalError)
+                        return
+                    }
+                }
+
+                guard !Task.isCancelled else { throw Publisher<(Left, Right)>.Error.cancelled }
+                return try await zipChannel.task.value.demand
+            }
+        }
     }
 }
