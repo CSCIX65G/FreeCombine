@@ -9,18 +9,15 @@ public final class StatefulChannel<State, Action: Sendable> {
     // Optional onStartup can be used from synchronous context
     public struct EventHandler {
         let onCancel: @Sendable () -> Void
-        let onTermination: @Sendable (AsyncStream<Action>.Continuation.Termination) -> Void
         let onFailure: @Sendable (Swift.Error) -> Void
         let onExit: @Sendable (State) -> Void
 
         public init(
             onCancel: @Sendable @escaping () -> Void = { },
-            onTermination: @Sendable @escaping (AsyncStream<Action>.Continuation.Termination) -> Void = { _ in },
             onFailure: @Sendable @escaping (Swift.Error) -> Void = { _ in },
             onExit: @Sendable @escaping (State) -> Void = { _ in }
         ) {
             self.onCancel = onCancel
-            self.onTermination = onTermination
             self.onFailure = onFailure
             self.onExit = onExit
         }
@@ -68,10 +65,7 @@ public final class StatefulChannel<State, Action: Sendable> {
         eventHandler: EventHandler = .init(),
         operation: @escaping (inout State, Action) async throws -> Void
     ) {
-        let localService = Service<Action>(
-            buffering: buffering,
-            onTermination: eventHandler.onTermination
-        )
+        let localService = Service<Action>(buffering: buffering)
         let localTask = Task<State, Swift.Error> {
             var state = initialState
             let cancellation: @Sendable () -> Void = { localService.finish(); eventHandler.onCancel() }
@@ -138,12 +132,10 @@ public final class StatefulChannel<State, Action: Sendable> {
 extension StatefulChannel.EventHandler where State == Void {
     public init(
         onCancel: @Sendable @escaping () -> Void = { },
-        onTermination: @Sendable @escaping (AsyncStream<Action>.Continuation.Termination) -> Void = { _ in },
         onFailure: @Sendable @escaping (Swift.Error) -> Void = { _ in },
         onExit: @Sendable @escaping () -> Void = { }
     ) {
         self.onCancel = onCancel
-        self.onTermination = onTermination
         self.onFailure = onFailure
         self.onExit = { _ in onExit() }
     }
@@ -179,10 +171,7 @@ public extension StatefulChannel where State: Sendable, Action: SynchronousActio
         eventHandler: EventHandler = .init(),
         operation: @escaping (inout State, Action) async throws -> Void
     ) {
-        let localService = Service<Action>(
-            buffering: buffering,
-            onTermination: eventHandler.onTermination
-        )
+        let localService = Service<Action>(buffering: buffering)
         let localTask: Task<State, Swift.Error> = .init {
             var state = initialState
             let cancellation: @Sendable () -> Void = { localService.finish(); eventHandler.onCancel() }
