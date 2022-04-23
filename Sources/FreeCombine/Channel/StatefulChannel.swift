@@ -31,11 +31,11 @@ public final class StatefulChannel<State, Action: Sendable> {
         case alreadyTerminated
     }
 
-    public let service: Service<Action>
+    public let channel: Channel<Action>
     public let task: Task<State, Swift.Error>
 
-    public init(service: Service<Action>, task: Task<State, Swift.Error>) {
-        self.service = service
+    public init(channel: Channel<Action>, task: Task<State, Swift.Error>) {
+        self.channel = channel
         self.task = task
     }
 
@@ -65,7 +65,7 @@ public final class StatefulChannel<State, Action: Sendable> {
         eventHandler: EventHandler = .init(),
         operation: @escaping (inout State, Action) async throws -> Void
     ) {
-        let localService = Service<Action>(buffering: buffering)
+        let localService = Channel<Action>(buffering: buffering)
         let localTask = Task<State, Swift.Error> {
             var state = initialState
             let cancellation: @Sendable () -> Void = { localService.finish(); eventHandler.onCancel() }
@@ -86,7 +86,7 @@ public final class StatefulChannel<State, Action: Sendable> {
                 return state
             }
         }
-        self.init(service: localService, task: localTask)
+        self.init(channel: localService, task: localTask)
     }
 
     deinit { task.cancel() }
@@ -103,12 +103,12 @@ public final class StatefulChannel<State, Action: Sendable> {
 
     @inlinable
     public func finish() -> Void {
-        service.finish()
+        channel.finish()
     }
 
     @inlinable
     public func yield(_ element: Action) -> AsyncStream<Action>.Continuation.YieldResult {
-        service.yield(element)
+        channel.yield(element)
     }
 
     @inlinable
@@ -158,7 +158,7 @@ public extension StatefulChannel where State == Void {
     }
 }
 
-public protocol SynchronousAction {
+public protocol SynchronousAction: Sendable {
     associatedtype Sync
     var continuation: UnsafeContinuation<Sync, Swift.Error> { get }
 }
@@ -171,7 +171,7 @@ public extension StatefulChannel where State: Sendable, Action: SynchronousActio
         eventHandler: EventHandler = .init(),
         operation: @escaping (inout State, Action) async throws -> Void
     ) {
-        let localService = Service<Action>(buffering: buffering)
+        let localService = Channel<Action>(buffering: buffering)
         let localTask: Task<State, Swift.Error> = .init {
             var state = initialState
             let cancellation: @Sendable () -> Void = { localService.finish(); eventHandler.onCancel() }
@@ -199,7 +199,7 @@ public extension StatefulChannel where State: Sendable, Action: SynchronousActio
                 return state
             }
         }
-        self.init(service: localService, task: localTask)
+        self.init(channel: localService, task: localTask)
     }
 }
 

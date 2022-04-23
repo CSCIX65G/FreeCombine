@@ -22,12 +22,12 @@ class ZipTests: XCTestCase {
 
         let counter = Counter()
 
-        var count = 0
         _ = await zip(publisher1, publisher2)
             .sink { (result: AsyncStream<(Int, String)>.Result) in
+                let count = await counter.count
                 switch result {
                     case let .value(value):
-                        count = await counter.increment()
+                        _ = await counter.increment()
                         XCTAssertTrue(value.0 == 100, "Incorrect Int value")
                         XCTAssertTrue(value.1 == "abcdefghijklmnopqrstuvwxyz", "Incorrect String value")
                     case let .failure(error):
@@ -43,7 +43,10 @@ class ZipTests: XCTestCase {
         await Task.yield()
 
         do { try await FreeCombine.wait(for: expectation, timeout: 100_000_000) }
-        catch { XCTFail("Timed out, count = \(count)") }
+        catch {
+            let count = await counter.count
+            XCTFail("Timed out, count = \(count)")
+        }
     }
 
     func testEmptyZip() async throws {
@@ -54,12 +57,12 @@ class ZipTests: XCTestCase {
 
         let counter = Counter()
 
-        var count = 0
         _ = await zip(publisher1, publisher2)
             .sink { (result: AsyncStream<(Int, String)>.Result) in
+                let count = await counter.count
                 switch result {
                     case let .value(value):
-                        count = await counter.increment()
+                        _ = await counter.increment()
                         XCTFail("Should not have received a value: \(value)")
                     case let .failure(error):
                         XCTFail("Got an error? \(error)")
@@ -74,6 +77,9 @@ class ZipTests: XCTestCase {
         await Task.yield()
 
         do { try await FreeCombine.wait(for: expectation, timeout: 100_000_000) }
-        catch { XCTFail("Timed out, count = \(count)") }
+        catch {
+            let count = await counter.count
+            XCTFail("Timed out, count = \(count)")
+        }
     }
 }

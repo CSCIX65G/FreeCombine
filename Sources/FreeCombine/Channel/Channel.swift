@@ -5,7 +5,7 @@
 //  Created by Van Simmons on 1/28/22.
 //
 
-public struct Service<Element>: AsyncSequence {
+public struct Channel<Element>: AsyncSequence {
     private let stream: AsyncStream<Element>
     private let continuation: AsyncStream<Element>.Continuation
 
@@ -43,7 +43,7 @@ public struct Service<Element>: AsyncSequence {
     }
 }
 
-extension Service where Element == Void {
+extension Channel where Element == Void {
     @discardableResult
     @Sendable public func yield() -> AsyncStream<Element>.Continuation.YieldResult {
         continuation.yield(())

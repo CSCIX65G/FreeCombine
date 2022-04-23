@@ -5,7 +5,7 @@
 //  Created by Van Simmons on 3/16/22.
 //
 
-fileprivate enum ZipAction<Left, Right>: SynchronousAction {
+fileprivate enum ZipAction<Left: Sendable, Right: Sendable>: SynchronousAction {
     case setLeft(AsyncStream<Left>.Result, UnsafeContinuation<Demand, Swift.Error>)
     case setRight(AsyncStream<Right>.Result, UnsafeContinuation<Demand, Swift.Error>)
     case setTasks(left: Task<Demand, Swift.Error>, right: Task<Demand, Swift.Error>, UnsafeContinuation<Demand, Swift.Error>)
@@ -20,8 +20,8 @@ fileprivate enum ZipAction<Left, Right>: SynchronousAction {
     }
 }
 
-fileprivate struct ZipState<Left, Right> {
-    var downstream: (AsyncStream<(Left, Right)>.Result) async throws -> Demand
+fileprivate struct ZipState<Left: Sendable, Right: Sendable>: Sendable {
+    var downstream: @Sendable (AsyncStream<(Left, Right)>.Result) async throws -> Demand
     var demand: Demand
     var left: (value: Left, continuation: UnsafeContinuation<Demand, Swift.Error>)? = .none
     var leftCancellable: Task<Demand, Swift.Error>? = .none
@@ -29,7 +29,7 @@ fileprivate struct ZipState<Left, Right> {
     var rightCancellable: Task<Demand, Swift.Error>? = .none
 
     init(
-        downstream: @escaping (AsyncStream<(Left, Right)>.Result) async throws -> Demand,
+        downstream: @Sendable @escaping (AsyncStream<(Left, Right)>.Result) async throws -> Demand,
         demand: Demand = .more
     ) {
         self.downstream = downstream
@@ -37,10 +37,20 @@ fileprivate struct ZipState<Left, Right> {
     }
 
     mutating func resume(returning demand: Demand) {
-        left?.continuation.resume(returning: demand)
+        if let left = left {
+            left.continuation.resume(returning: demand)
+        } else if demand == .done {
+            leftCancellable?.cancel()
+            leftCancellable = .none
+        }
         left = .none
 
-        right?.continuation.resume(returning: demand)
+        if let right = right {
+            right.continuation.resume(returning: demand)
+        } else if demand == .done {
+            rightCancellable?.cancel()
+            rightCancellable = .none
+        }
         right = .none
     }
 
@@ -55,64 +65,39 @@ fileprivate struct ZipState<Left, Right> {
             case let .value((value)):
                 left = (value, leftContinuation)
                 if let right = right {
-                    resume(returning: try await downstream(.value((value, right.value))))
+                    demand = try await downstream(.value((value, right.value)))
+                    resume(returning: demand)
                 }
             case .terminated:
                 demand = try await downstream(.terminated)
-                leftContinuation.resume(returning: demand)
-                leftCancellable = .none
-                if let right = right {
-                    right.continuation.resume(returning: demand)
-                    rightCancellable = .none
-                } else if let rightCancellable = rightCancellable {
-                    rightCancellable.cancel()
-                }
+                resume(returning: demand)
             case let .failure(error):
                 demand = try await downstream(.failure(error))
-                leftContinuation.resume(returning: demand)
-                leftCancellable = .none
-                if let right = right {
-                    right.continuation.resume(returning: demand)
-                    rightCancellable = .none
-                } else if let rightCancellable = rightCancellable {
-                    rightCancellable.cancel()
-                }
+                resume(returning: demand)
         }
-        self.right = .none
     }
 
     mutating func handleRight(
         _ rightResult: AsyncStream<Right>.Result,
         _ rightContinuation: UnsafeContinuation<Demand, Error>
     ) async throws -> Void {
-        guard right == nil else { throw StatefulChannel<ZipState<Left, Right>, ZipAction<Left, Right>>.Error.internalError }
+        guard right == nil else {
+            throw StatefulChannel<ZipState<Left, Right>, ZipAction<Left, Right>>.Error.internalError
+        }
         switch rightResult {
             case let .value((value)):
+                right = (value, rightContinuation)
                 if let left = left {
                     demand = try await downstream(.value((left.value, value)))
-                    rightContinuation.resume(returning: demand)
-                    left.continuation.resume(returning: demand)
-                } else {
-                    right = (value, rightContinuation)
+                    resume(returning: demand)
                 }
             case .terminated:
                 demand = try await downstream(.terminated)
-                rightContinuation.resume(returning: demand)
-                if let left = left {
-                    left.continuation.resume(returning: demand)
-                } else if let leftCancellable = leftCancellable {
-                    leftCancellable.cancel()
-                }
+                resume(returning: demand)
             case let .failure(error):
                 demand = try await downstream(.failure(error))
-                rightContinuation.resume(returning: demand)
-                if let left = left {
-                    left.continuation.resume(returning: demand)
-                } else if let leftCancellable = leftCancellable {
-                    leftCancellable.cancel()
-                }
+                resume(returning: demand)
         }
-        self.left = .none
     }
 
     mutating func handleSetTasks(
@@ -120,17 +105,9 @@ fileprivate struct ZipState<Left, Right> {
         rightTask: Task<Demand, Swift.Error>,
         continuation: UnsafeContinuation<Demand, Swift.Error>
     ) async throws -> Void {
-        guard .more == demand else {
-            leftCancellable?.cancel()
-            rightCancellable?.cancel()
-            continuation.resume(returning: .done)
-            demand = .done
-            return
-        }
         leftCancellable = leftTask
         rightCancellable = rightTask
-        demand = .more
-        continuation.resume(returning: .more)
+        continuation.resume(returning: demand)
     }
 
     mutating func reduce(
@@ -154,6 +131,26 @@ fileprivate struct ZipState<Left, Right> {
     }
 }
 
+extension StatefulChannel where Action: Sendable {
+    fileprivate func setTasks<Left, Right>(
+        continuation: UnsafeContinuation<Void, Never>?,
+        left: Task<Demand, Swift.Error>,
+        right: Task<Demand, Swift.Error>
+    ) async throws -> Demand where State == ZipState<Left, Right>, Action ==  ZipAction<Left, Right> {
+        try await withUnsafeThrowingContinuation { dContinuation in
+            guard case .enqueued = self.channel.yield(.setTasks(left: left, right: right, dContinuation)) else {
+                self.channel.finish()
+                left.cancel()
+                right.cancel()
+                self.cancel()
+                continuation?.resume()
+                dContinuation.resume(throwing: StatefulChannel<ZipState<Left, Right>, ZipAction<Left, Right>>.Error.internalError)
+                return
+            }
+        }
+    }
+}
+
 public func zip<Left, Right>(
     onCancel: @Sendable @escaping () -> Void = { },
     _ left: Publisher<Left>,
@@ -162,6 +159,8 @@ public func zip<Left, Right>(
     .init { continuation, downstream in
         .init {
             // Construct the zip channel and connect it to downstream
+            // If downstream ever returns `.done` the channel will never send downstream again.
+            // Note that this and subsequent calls all `await`
             let channel: StatefulChannel<ZipState<Left, Right>, ZipAction<Left, Right>> = await .channel(
                 initialState: .init(downstream: downstream, demand: .more),
                 buffering: .bufferingOldest(3),
@@ -174,6 +173,12 @@ public func zip<Left, Right>(
             // Construct the right upstream task by providing a sink to the right publisher
             let rightTask = await channel.consume(publisher: right, using: ZipAction<Left, Right>.setRight)
 
+            // Tell the zip channel how to cancel the upstream tasks if necessary
+            // if either of the upstream publishers completed before we could
+            // set the cancellables in the downstream state, this returns .done
+            // It should never throw
+            let demand: Demand = try await channel.setTasks(continuation: continuation, left: leftTask, right: rightTask)
+
             // Compose the entire cancellation now that the tasks are running and communicating
             // Note the subtasks cannot be cancelled externally bc they are never visible
             // outside this function.  They can only be cancelled as a side effect of
@@ -185,28 +190,10 @@ public func zip<Left, Right>(
                 onCancel()
             }
 
-            // Tell the zip channel how to cancel the upstream tasks if necessary
-            // verify that neither of the upstream publishers completed before we could
-            // set these
-            let demand: Demand = try await withUnsafeThrowingContinuation { dContinuation in
-                guard case .enqueued = channel.yield(
-                    .setTasks(left: leftTask, right: rightTask, dContinuation)
-                ) else {
-                    // This means that we are not processing in the zipChannel and it is bad
-                    // we have to cancel everything, tell the outside world and throw from here.
-                    channel.finish()
-                    cancellation()
-                    continuation?.resume()
-                    dContinuation.resume(throwing: StatefulChannel<ZipState<Left, Right>, ZipAction<Left, Right>>.Error.internalError)
-                    return
-                }
-            }
-
             // Everything is now setup, install the cancellation and tell the outside
             // world to proceed.
             return try await withTaskCancellationHandler(handler: cancellation) {
                 continuation?.resume()
-                // This means that left or right sent a value of done before the .setTasks call
                 guard case .more = demand else {
                     channel.finish()
                     return .done
