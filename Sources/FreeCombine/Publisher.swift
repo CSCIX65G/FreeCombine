@@ -27,11 +27,14 @@ public enum Completion {
 public struct Publisher<Output> {
     public enum Error: Swift.Error, CaseIterable, Equatable {
         case cancelled
+        case internalError
     }
+
     private let call: (
         UnsafeContinuation<Void, Never>?,
         @escaping (AsyncStream<Output>.Result) async throws -> Demand
     ) -> Task<Demand, Swift.Error>
+
     init(
         _ call: @escaping (
             UnsafeContinuation<Void, Never>?,

@@ -8,23 +8,17 @@
 public final class StatefulChannel<State, Action: Sendable> {
     // Optional onStartup can be used from synchronous context
     public struct EventHandler {
-        let buffering: AsyncStream<Action>.Continuation.BufferingPolicy
-        let onStartup: UnsafeContinuation<Void, Never>?
         let onCancel: @Sendable () -> Void
         let onTermination: @Sendable (AsyncStream<Action>.Continuation.Termination) -> Void
         let onFailure: @Sendable (Swift.Error) -> Void
         let onExit: @Sendable (State) -> Void
 
         public init(
-            buffering: AsyncStream<Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
-            onStartup: UnsafeContinuation<Void, Never>? = .none,
             onCancel: @Sendable @escaping () -> Void = { },
             onTermination: @Sendable @escaping (AsyncStream<Action>.Continuation.Termination) -> Void = { _ in },
             onFailure: @Sendable @escaping (Swift.Error) -> Void = { _ in },
             onExit: @Sendable @escaping (State) -> Void = { _ in }
         ) {
-            self.buffering = buffering
-            self.onStartup = onStartup
             self.onCancel = onCancel
             self.onTermination = onTermination
             self.onFailure = onFailure
@@ -48,20 +42,41 @@ public final class StatefulChannel<State, Action: Sendable> {
         self.task = task
     }
 
+    public static func channel(
+        initialState: State,
+        buffering: AsyncStream<Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
+        eventHandler: EventHandler = .init(),
+        operation: @escaping (inout State, Action) async throws -> Void
+    ) async -> Self {
+        var channel: Self!
+        await withUnsafeContinuation { channelContinuation in
+            channel = Self.init(
+                initialState: initialState,
+                buffering: buffering,
+                onStartup: channelContinuation,
+                eventHandler: eventHandler,
+                operation: operation
+            )
+        }
+        return channel
+    }
+    
     public convenience init(
         initialState: State,
-        eventHandler: EventHandler,
+        buffering: AsyncStream<Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
+        onStartup: UnsafeContinuation<Void, Never>?,
+        eventHandler: EventHandler = .init(),
         operation: @escaping (inout State, Action) async throws -> Void
     ) {
         let localService = Service<Action>(
-            buffering: eventHandler.buffering,
+            buffering: buffering,
             onTermination: eventHandler.onTermination
         )
         let localTask = Task<State, Swift.Error> {
             var state = initialState
             let cancellation: @Sendable () -> Void = { localService.finish(); eventHandler.onCancel() }
             return try await withTaskCancellationHandler(handler: cancellation) {
-                eventHandler.onStartup?.resume()
+                onStartup?.resume()
                 for await action in localService {
                     guard !Task.isCancelled else { continue }
                     do { try await operation(&state, action) }
@@ -122,15 +137,11 @@ public final class StatefulChannel<State, Action: Sendable> {
 
 extension StatefulChannel.EventHandler where State == Void {
     public init(
-        buffering: AsyncStream<Action>.Continuation.BufferingPolicy = .unbounded,
-        onStartup: UnsafeContinuation<Void, Never>? = .none,
         onCancel: @Sendable @escaping () -> Void = { },
         onTermination: @Sendable @escaping (AsyncStream<Action>.Continuation.Termination) -> Void = { _ in },
         onFailure: @Sendable @escaping (Swift.Error) -> Void = { _ in },
         onExit: @Sendable @escaping () -> Void = { }
     ) {
-        self.buffering = buffering
-        self.onStartup = onStartup
         self.onCancel = onCancel
         self.onTermination = onTermination
         self.onFailure = onFailure
@@ -140,11 +151,15 @@ extension StatefulChannel.EventHandler where State == Void {
 
 public extension StatefulChannel where State == Void {
     convenience init(
+        buffering: AsyncStream<Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
+        onStartup: UnsafeContinuation<Void, Never>? = .none,
         eventHandler: EventHandler,
         operation: @escaping (Action) async throws -> Void
     ) {
         self.init(
             initialState: (),
+            buffering: buffering,
+            onStartup: onStartup,
             eventHandler: eventHandler,
             operation: { _, action in try await operation(action) }
         )
@@ -152,25 +167,27 @@ public extension StatefulChannel where State == Void {
 }
 
 public protocol SynchronousAction {
-    associatedtype State
-    var continuation: UnsafeContinuation<State, Swift.Error> { get }
+    associatedtype Sync
+    var continuation: UnsafeContinuation<Sync, Swift.Error> { get }
 }
 
-public extension StatefulChannel where State: Sendable, Action: SynchronousAction, State == Action.State {
+public extension StatefulChannel where State: Sendable, Action: SynchronousAction, State == Action.Sync {
     convenience init(
         initialState: State,
-        eventHandler: EventHandler,
+        buffering: AsyncStream<Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
+        onStartup: UnsafeContinuation<Void, Never>? = .none,
+        eventHandler: EventHandler = .init(),
         operation: @escaping (inout State, Action) async throws -> Void
     ) {
         let localService = Service<Action>(
-            buffering: eventHandler.buffering,
+            buffering: buffering,
             onTermination: eventHandler.onTermination
         )
         let localTask: Task<State, Swift.Error> = .init {
             var state = initialState
             let cancellation: @Sendable () -> Void = { localService.finish(); eventHandler.onCancel() }
             return try await withTaskCancellationHandler(handler: cancellation) {
-                eventHandler.onStartup?.resume()
+                onStartup?.resume()
                 for await action in localService {
                     guard !Task.isCancelled else {
                         action.continuation.resume(throwing: Error.cancelled)
@@ -193,7 +210,22 @@ public extension StatefulChannel where State: Sendable, Action: SynchronousActio
                 return state
             }
         }
-
         self.init(service: localService, task: localTask)
+    }
+}
+
+public extension StatefulChannel {
+    func consume<Upstream>(
+        publisher: Publisher<Upstream>,
+        using action: @escaping (AsyncStream<Upstream>.Result, UnsafeContinuation<Demand, Swift.Error>) -> Action
+    ) async -> Task<Demand, Swift.Error> {
+        await publisher { upstreamValue in
+            try await withUnsafeThrowingContinuation { continuation in
+                guard case .enqueued = self.yield(action(upstreamValue, continuation)) else {
+                    continuation.resume(throwing: Publisher<Upstream>.Error.internalError)
+                    return
+                }
+            }
+        }
     }
 }
