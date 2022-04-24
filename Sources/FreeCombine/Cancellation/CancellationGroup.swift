@@ -10,7 +10,7 @@ public enum CancellationError: Error {
     case alreadyCancelled
 }
 
-fileprivate struct Cancellable {
+fileprivate struct Cancellable: Sendable {
     @Sendable public static func noEffect() -> Void { }
     public static let empty: Cancellable = .init(noEffect)
     public let cancel: @Sendable () -> Void

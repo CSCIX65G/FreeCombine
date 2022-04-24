@@ -9,5 +9,5 @@ import Foundation
 
 struct Distibutor<Output> {
     enum Action { }
-    let channel: StatefulChannel<Output, Action>
+    let channel: StateThread<Output, Action>
 }

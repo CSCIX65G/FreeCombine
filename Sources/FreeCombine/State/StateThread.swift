@@ -5,8 +5,7 @@
 //  Created by Van Simmons on 2/17/22.
 //
 
-public final class StatefulChannel<State, Action: Sendable> {
-    // Optional onStartup can be used from synchronous context
+public final class StateThread<State, Action: Sendable> {
     public struct EventHandler {
         let onCancel: @Sendable () -> Void
         let onFailure: @Sendable (Swift.Error) -> Void
@@ -39,23 +38,23 @@ public final class StatefulChannel<State, Action: Sendable> {
         self.task = task
     }
 
-    public static func channel(
+    public static func stateThread(
         initialState: State,
         buffering: AsyncStream<Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
         eventHandler: EventHandler = .init(),
         operation: @escaping (inout State, Action) async throws -> Void
     ) async -> Self {
-        var channel: Self!
-        await withUnsafeContinuation { channelContinuation in
-            channel = Self.init(
+        var stateThread: Self!
+        await withUnsafeContinuation { stateThreadContinuation in
+            stateThread = Self.init(
                 initialState: initialState,
                 buffering: buffering,
-                onStartup: channelContinuation,
+                onStartup: stateThreadContinuation,
                 eventHandler: eventHandler,
                 operation: operation
             )
         }
-        return channel
+        return stateThread
     }
     
     public convenience init(
@@ -129,7 +128,7 @@ public final class StatefulChannel<State, Action: Sendable> {
     }
 }
 
-extension StatefulChannel.EventHandler where State == Void {
+extension StateThread.EventHandler where State == Void {
     public init(
         onCancel: @Sendable @escaping () -> Void = { },
         onFailure: @Sendable @escaping (Swift.Error) -> Void = { _ in },
@@ -141,7 +140,7 @@ extension StatefulChannel.EventHandler where State == Void {
     }
 }
 
-public extension StatefulChannel where State == Void {
+public extension StateThread where State == Void {
     convenience init(
         buffering: AsyncStream<Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
         onStartup: UnsafeContinuation<Void, Never>? = .none,
@@ -163,7 +162,7 @@ public protocol SynchronousAction: Sendable {
     var continuation: UnsafeContinuation<Sync, Swift.Error> { get }
 }
 
-public extension StatefulChannel where State: Sendable, Action: SynchronousAction, State == Action.Sync {
+public extension StateThread where State: Sendable, Action: SynchronousAction, State == Action.Sync {
     convenience init(
         initialState: State,
         buffering: AsyncStream<Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
@@ -203,7 +202,7 @@ public extension StatefulChannel where State: Sendable, Action: SynchronousActio
     }
 }
 
-public extension StatefulChannel {
+public extension StateThread {
     func consume<Upstream>(
         publisher: Publisher<Upstream>,
         using action: @escaping (AsyncStream<Upstream>.Result, UnsafeContinuation<Demand, Swift.Error>) -> Action

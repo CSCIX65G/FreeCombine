@@ -59,12 +59,13 @@ fileprivate struct ZipState<Left: Sendable, Right: Sendable>: Sendable {
         _ leftContinuation: UnsafeContinuation<Demand, Error>
     ) async throws -> Void {
         guard left == nil else {
-            throw StatefulChannel<ZipState<Left, Right>, ZipAction<Left, Right>>.Error.internalError
+            throw StateThread<ZipState<Left, Right>, ZipAction<Left, Right>>.Error.internalError
         }
         switch leftResult {
             case let .value((value)):
                 left = (value, leftContinuation)
-                if let right = right {
+                if let right = right, rightCancellable != nil {
+                    // Do not send non-terminal values downstream until cancellables are in place
                     demand = try await downstream(.value((value, right.value)))
                     resume(returning: demand)
                 }
@@ -82,12 +83,13 @@ fileprivate struct ZipState<Left: Sendable, Right: Sendable>: Sendable {
         _ rightContinuation: UnsafeContinuation<Demand, Error>
     ) async throws -> Void {
         guard right == nil else {
-            throw StatefulChannel<ZipState<Left, Right>, ZipAction<Left, Right>>.Error.internalError
+            throw StateThread<ZipState<Left, Right>, ZipAction<Left, Right>>.Error.internalError
         }
         switch rightResult {
             case let .value((value)):
                 right = (value, rightContinuation)
-                if let left = left {
+                if let left = left, leftCancellable != nil {
+                    // Do not send non-terminal values downstream until cancellables are in place
                     demand = try await downstream(.value((left.value, value)))
                     resume(returning: demand)
                 }
@@ -107,6 +109,13 @@ fileprivate struct ZipState<Left: Sendable, Right: Sendable>: Sendable {
     ) async throws -> Void {
         leftCancellable = leftTask
         rightCancellable = rightTask
+        if let left = left, let right = right {
+            demand = try await downstream(.value((left.value, right.value)))
+            resume(returning: demand)
+        } else if demand == .done {
+            leftTask.cancel()
+            rightTask.cancel()
+        }
         continuation.resume(returning: demand)
     }
 
@@ -131,11 +140,11 @@ fileprivate struct ZipState<Left: Sendable, Right: Sendable>: Sendable {
     }
 }
 
-extension StatefulChannel where Action: Sendable {
-    fileprivate func setTasks<Left, Right>(
-        continuation: UnsafeContinuation<Void, Never>?,
+fileprivate extension StateThread {
+    func setTasks<Left, Right>(
         left: Task<Demand, Swift.Error>,
-        right: Task<Demand, Swift.Error>
+        right: Task<Demand, Swift.Error>,
+        _ continuation: UnsafeContinuation<Void, Never>?
     ) async throws -> Demand where State == ZipState<Left, Right>, Action ==  ZipAction<Left, Right> {
         try await withUnsafeThrowingContinuation { dContinuation in
             guard case .enqueued = self.channel.yield(.setTasks(left: left, right: right, dContinuation)) else {
@@ -144,7 +153,7 @@ extension StatefulChannel where Action: Sendable {
                 right.cancel()
                 self.cancel()
                 continuation?.resume()
-                dContinuation.resume(throwing: StatefulChannel<ZipState<Left, Right>, ZipAction<Left, Right>>.Error.internalError)
+                dContinuation.resume(throwing: StateThread<ZipState<Left, Right>, ZipAction<Left, Right>>.Error.internalError)
                 return
             }
         }
@@ -161,47 +170,48 @@ public func zip<Left, Right>(
             // Construct the zip channel and connect it to downstream
             // If downstream ever returns `.done` the channel will never send downstream again.
             // Note that this and subsequent calls all `await`
-            let channel: StatefulChannel<ZipState<Left, Right>, ZipAction<Left, Right>> = await .channel(
+            let stateThread: StateThread<ZipState<Left, Right>, ZipAction<Left, Right>> = await .stateThread(
                 initialState: .init(downstream: downstream, demand: .more),
                 buffering: .bufferingOldest(3),
                 operation: ZipState<Left, Right>.reduce
             )
 
             // Construct the left upstream task by providing a sink to the left publisher
-            let leftTask = await channel.consume(publisher: left, using: ZipAction<Left, Right>.setLeft)
+            let leftTask = await stateThread.consume(publisher: left, using: ZipAction<Left, Right>.setLeft)
 
             // Construct the right upstream task by providing a sink to the right publisher
-            let rightTask = await channel.consume(publisher: right, using: ZipAction<Left, Right>.setRight)
+            let rightTask = await stateThread.consume(publisher: right, using: ZipAction<Left, Right>.setRight)
 
             // Tell the zip channel how to cancel the upstream tasks if necessary
+            // allow any values from upstream to be sent downstream
             // if either of the upstream publishers completed before we could
             // set the cancellables in the downstream state, this returns .done
             // It should never throw
-            let demand: Demand = try await channel.setTasks(continuation: continuation, left: leftTask, right: rightTask)
+            let demand: Demand = try await stateThread.setTasks(left: leftTask, right: rightTask, continuation)
 
             // Compose the entire cancellation now that the tasks are running and communicating
             // Note the subtasks cannot be cancelled externally bc they are never visible
             // outside this function.  They can only be cancelled as a side effect of
             // cancelling this publisher
             let cancellation: @Sendable () -> Void = {
-                channel.task.cancel()
+                stateThread.task.cancel()
                 leftTask.cancel()
                 rightTask.cancel()
                 onCancel()
             }
 
-            // Everything is now setup, install the cancellation and tell the outside
+            // Everything is now set up, install the cancellation and tell the outside
             // world to proceed.
             return try await withTaskCancellationHandler(handler: cancellation) {
                 continuation?.resume()
                 guard case .more = demand else {
-                    channel.finish()
+                    stateThread.finish()
                     return .done
                 }
                 guard !Task.isCancelled else {
                     throw Publisher<(Left, Right)>.Error.cancelled
                 }
-                return try await channel.task.value.demand
+                return try await stateThread.task.value.demand
             }
         }
     }
