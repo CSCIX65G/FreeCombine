@@ -19,7 +19,7 @@ public struct Channel<Element>: AsyncSequence {
 
     public init(
         _: Element.Type = Element.self,
-        buffering: AsyncStream<Element>.Continuation.BufferingPolicy = .unbounded,
+        buffering: AsyncStream<Element>.Continuation.BufferingPolicy = .bufferingOldest(1),
         onTermination: (@Sendable (AsyncStream<Element>.Continuation.Termination) -> Void)? = .none
     ) {
         var localContinuation: AsyncStream<Element>.Continuation! = .none

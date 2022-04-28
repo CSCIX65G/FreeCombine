@@ -34,7 +34,7 @@ public struct Publisher<Output: Sendable> {
         @Sendable @escaping (AsyncStream<Output>.Result) async throws -> Demand
     ) -> Task<Demand, Swift.Error>
 
-    init(
+    internal init(
         _ call: @Sendable @escaping (
             UnsafeContinuation<Void, Never>?,
             @Sendable @escaping (AsyncStream<Output>.Result) async throws -> Demand

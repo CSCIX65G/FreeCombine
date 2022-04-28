@@ -7,14 +7,14 @@
 
 public final class StateThread<State, Action: Sendable> {
     public struct EventHandler {
-        let onCancel: @Sendable () -> Void
-        let onFailure: @Sendable (Swift.Error) -> Void
-        let onExit: @Sendable (State) -> Void
+        let onCancel: () -> Void
+        let onFailure: (Swift.Error) -> Void
+        let onExit: (State) -> Void
 
         public init(
-            onCancel: @Sendable @escaping () -> Void = { },
-            onFailure: @Sendable @escaping (Swift.Error) -> Void = { _ in },
-            onExit: @Sendable @escaping (State) -> Void = { _ in }
+            onCancel: @escaping () -> Void = { },
+            onFailure: @escaping (Swift.Error) -> Void = { _ in },
+            onExit: @escaping (State) -> Void = { _ in }
         ) {
             self.onCancel = onCancel
             self.onFailure = onFailure
