@@ -13,18 +13,22 @@ fileprivate func subjectReducer<Output: Sendable>(
 }
 
 public final class Subject<Output: Sendable> {
+    enum Completion {
+        case finished
+        case failure(Error)
+    }
+
     struct DownstreamState { }
     fileprivate enum DownstreamAction: Sendable {
         case send(
             result: AsyncStream<Output>.Result,
             semaphore: EffectfulSemaphore,
-            onError: @Sendable (Swift.Error) -> () -> Void,
-            onFinish: @Sendable () -> Void
+            completion: @Sendable (Completion) -> () -> Void
         )
     }
 
     fileprivate struct State {
-        var currentValue: Output?
+        var currentValue: Output
         var nextKey: Int
         var downstreams: [Int: StateThread<DownstreamState, DownstreamAction>]
     }
@@ -51,5 +55,24 @@ public final class Subject<Output: Sendable> {
             eventHandler: .init(),
             operation: subjectReducer
         )
+    }
+}
+
+extension Subject {
+    func reduce(
+        action: Action
+    ) async throws -> Void {
+        switch action {
+            case let .send(result, continuation):
+                return
+            case let .subscribe(downstream, continuation):
+                return
+            case let .unsubscribe(channelId, continuation):
+                return
+        }
+    }
+
+    static func reduce(`self`: inout Subject, action: Action) async throws -> Void {
+        try await `self`.reduce(action: action)
     }
 }

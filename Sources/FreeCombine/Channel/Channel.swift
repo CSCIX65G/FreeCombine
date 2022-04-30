@@ -9,6 +9,8 @@ public struct Channel<Element>: AsyncSequence {
     private let stream: AsyncStream<Element>
     private let continuation: AsyncStream<Element>.Continuation
 
+    // (Value, UnsafeThrowingContination<Void, Error>)
+
     init(
         stream: AsyncStream<Element>,
         continuation: AsyncStream<Element>.Continuation

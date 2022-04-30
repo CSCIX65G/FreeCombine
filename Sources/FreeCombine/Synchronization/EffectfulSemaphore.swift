@@ -6,10 +6,6 @@
 //
 
 public actor EffectfulSemaphore {
-    public enum Error: Swift.Error {
-        case invalidState
-        case inUse
-    }
     let continuation: UnsafeContinuation<() -> Void, Never>
     var count: Int
     var effect: () -> Void = { }
@@ -19,12 +15,14 @@ public actor EffectfulSemaphore {
         self.count = count
     }
 
-    public func decrement(with effect: @escaping () -> Void = { }) throws {
+    public func decrement(with effect: (() -> Void)? = .none) throws {
         guard count > 0 else {
             fatalError("Semaphore over decremented")
         }
         count -= 1
-        self.effect = { self.effect(); effect() }
+        if let effect = effect {
+            self.effect = { self.effect(); effect() }
+        }
         if count == 0 {
             continuation.resume(returning: self.effect)
         }

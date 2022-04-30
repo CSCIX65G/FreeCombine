@@ -1,7 +1,6 @@
 //
-//  StatefulChannel.swift
+//  StateThread.swift
 //  
-//
 //  Created by Van Simmons on 2/17/22.
 //
 
