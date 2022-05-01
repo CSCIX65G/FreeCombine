@@ -24,9 +24,10 @@ public enum Completion: Sendable {
 }
 
 public struct Publisher<Output: Sendable> {
-    public enum Error: Swift.Error, CaseIterable, Equatable, Sendable {
+    public enum Error: Swift.Error, Sendable {
         case cancelled
         case internalError
+        case enqueueError(AsyncStream<Output>.Result)
     }
 
     private let call: (

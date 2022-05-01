@@ -1,5 +1,5 @@
 //
-//  AwaitStream.swift
+//  Channel.swift
 //  
 //
 //  Created by Van Simmons on 1/28/22.
@@ -8,8 +8,6 @@
 public struct Channel<Element>: AsyncSequence {
     private let stream: AsyncStream<Element>
     private let continuation: AsyncStream<Element>.Continuation
-
-    // (Value, UnsafeThrowingContination<Void, Error>)
 
     init(
         stream: AsyncStream<Element>,
@@ -45,9 +43,40 @@ public struct Channel<Element>: AsyncSequence {
     }
 }
 
-extension Channel where Element == Void {
+public extension Channel where Element == Void {
     @discardableResult
-    @Sendable public func yield() -> AsyncStream<Element>.Continuation.YieldResult {
+    @Sendable func yield() -> AsyncStream<Element>.Continuation.YieldResult {
         continuation.yield(())
     }
 }
+
+public extension Channel {
+    func consume<Upstream>(
+        publisher: Publisher<Upstream>
+    ) async -> Task<Demand, Swift.Error> where Element == (AsyncStream<Upstream>.Result, UnsafeContinuation<Demand, Error>) {
+        await consume(publisher: publisher, using: { ($0, $1) })
+    }
+
+    func consume<Upstream>(
+        publisher: Publisher<Upstream>,
+        using action: @escaping (AsyncStream<Upstream>.Result, UnsafeContinuation<Demand, Swift.Error>) -> Element
+    ) async -> Task<Demand, Swift.Error>  {
+        await publisher { upstreamValue in
+            try await withUnsafeThrowingContinuation { continuation in
+                switch self.yield(action(upstreamValue, continuation)) {
+                    case .enqueued:
+                        return
+                    case .dropped:
+                        continuation.resume(throwing: Publisher<Upstream>.Error.enqueueError(upstreamValue))
+                        return
+                    case .terminated:
+                        continuation.resume(throwing: Publisher<Upstream>.Error.cancelled)
+                        return
+                    @unknown default:
+                        fatalError("Unhandled continuation value")
+                }
+            }
+        }
+    }
+}
+
