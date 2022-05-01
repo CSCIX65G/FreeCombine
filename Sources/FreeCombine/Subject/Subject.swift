@@ -49,10 +49,9 @@ public final class Subject<Output: Sendable> {
         onStartup: UnsafeContinuation<Void, Never>? = .none
     ) {
         self.stateThread = .init(
-            initialState: .init(currentValue: currentValue, nextKey: 0, downstreams: [:]),
+            initialState: { channel in .init(currentValue: currentValue, nextKey: 0, downstreams: [:]) },
             buffering: buffering,
             onStartup: onStartup,
-            eventHandler: .init(),
             operation: subjectReducer
         )
     }
