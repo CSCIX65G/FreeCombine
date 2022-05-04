@@ -8,8 +8,7 @@
 public extension AsyncStream where Element: Sendable {
     enum Result: Sendable {
         case value(Element)
-        case failure(Error)
-        case terminated
+        case completion(Completion)
     }
 }
 
@@ -99,7 +98,7 @@ extension Publisher {
             case let .value(value):
                 try await receiveValue(value)
                 return .more
-            case .failure, .terminated:
+            case .completion:
                 return .done
         }  }
     }
@@ -125,10 +124,10 @@ extension Publisher {
             case let .value(value):
                 try await receiveValue(value)
                 return .more
-            case let .failure(error):
+            case let .completion(.failure(error)):
                 try await receiveCompletion(.failure(error))
                 return .done
-            case .terminated:
+            case .completion(.finished):
                 try await receiveCompletion(.finished)
                 return .done
         } }

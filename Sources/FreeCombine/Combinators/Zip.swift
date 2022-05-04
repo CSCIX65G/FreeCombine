@@ -4,7 +4,6 @@
 //
 //  Created by Van Simmons on 3/16/22.
 //
-
 fileprivate struct ZipState<Left: Sendable, Right: Sendable> {
     enum Action {
         case setLeft(AsyncStream<Left>.Result, UnsafeContinuation<Demand, Swift.Error>)
@@ -42,16 +41,8 @@ fileprivate struct ZipState<Left: Sendable, Right: Sendable> {
         right = .none
     }
 
-    mutating func terminate(with completion: AsyncStream<Left>.Result) async throws -> Void {
-        var finalState = AsyncStream<(Left, Right)>.Result.terminated
-        if case let .failure(error) = completion { finalState = .failure(error) }
-        mostRecentDemand = try await downstream(finalState)
-        resume(returning: mostRecentDemand)
-    }
-    mutating func terminate(with completion: AsyncStream<Right>.Result) async throws -> Void {
-        var finalState = AsyncStream<(Left, Right)>.Result.terminated
-        if case let .failure(error) = completion { finalState = .failure(error) }
-        mostRecentDemand = try await downstream(finalState)
+    mutating func terminate(with completion: Completion) async throws -> Void {
+        mostRecentDemand = try await downstream(.completion(completion))
         resume(returning: mostRecentDemand)
     }
 
@@ -62,13 +53,15 @@ fileprivate struct ZipState<Left: Sendable, Right: Sendable> {
         guard left == nil else {
             throw StateThread<ZipState<Left, Right>, Self.Action>.Error.internalError
         }
-        guard case let .value((value)) = leftResult else {
-            try await terminate(with: leftResult); return
-        }
-        left = (value, leftContinuation)
-        if let right = right {
-            mostRecentDemand = try await downstream(.value((value, right.value)))
-            resume(returning: mostRecentDemand)
+        switch leftResult {
+            case let .value((value)):
+                left = (value, leftContinuation)
+                if let right = right {
+                    mostRecentDemand = try await downstream(.value((value, right.value)))
+                    resume(returning: mostRecentDemand)
+                }
+            case let .completion(finalState) :
+                try await terminate(with: finalState); return
         }
     }
 
@@ -79,13 +72,15 @@ fileprivate struct ZipState<Left: Sendable, Right: Sendable> {
         guard right == nil else {
             throw StateThread<ZipState<Left, Right>, Self.Action>.Error.internalError
         }
-        guard case let .value((value)) = rightResult else {
-            try await terminate(with: rightResult); return
-        }
-        right = (value, rightContinuation)
-        if let left = left{
-            mostRecentDemand = try await downstream(.value((left.value, value)))
-            resume(returning: mostRecentDemand)
+        switch rightResult {
+            case let .value((value)):
+                right = (value, rightContinuation)
+                if let left = left{
+                    mostRecentDemand = try await downstream(.value((left.value, value)))
+                    resume(returning: mostRecentDemand)
+                }
+            case let .completion(finalState) :
+                try await terminate(with: finalState); return
         }
     }
 

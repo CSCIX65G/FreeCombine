@@ -30,9 +30,9 @@ class ZipTests: XCTestCase {
                         _ = await counter.increment()
                         XCTAssertTrue(value.0 == 100, "Incorrect Int value")
                         XCTAssertTrue(value.1 == "abcdefghijklmnopqrstuvwxyz", "Incorrect String value")
-                    case let .failure(error):
+                    case let .completion(.failure(error)):
                         XCTFail("Got an error? \(error)")
-                    case .terminated:
+                    case .completion(.finished):
                         XCTAssert(count == 1, "wrong number of values sent: \(count)")
                         do {  try await expectation.complete() }
                         catch { XCTFail("Failed to complete: \(error)") }
@@ -64,9 +64,9 @@ class ZipTests: XCTestCase {
                     case let .value(value):
                         _ = await counter.increment()
                         XCTFail("Should not have received a value: \(value)")
-                    case let .failure(error):
+                    case let .completion(.failure(error)):
                         XCTFail("Got an error? \(error)")
-                    case .terminated:
+                    case .completion(.finished):
                         XCTAssert(count == 0, "wrong number of values sent: \(count)")
                         do {  try await expectation.complete() }
                         catch { XCTFail("Failed to complete: \(error)") }

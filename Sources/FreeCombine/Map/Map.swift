@@ -13,10 +13,8 @@ public extension Publisher {
             self(onStartup: continuation) { r in guard !Task.isCancelled else { return .done }; switch r {
                 case .value(let a):
                     return try await downstream(.value(f(a)))
-                case .failure(let e):
-                    return try await downstream(.failure(e))
-                case .terminated:
-                    return try await downstream(.terminated)
+                case let .completion(value):
+                    return try await downstream(.completion(value))
             } }
         }
     }

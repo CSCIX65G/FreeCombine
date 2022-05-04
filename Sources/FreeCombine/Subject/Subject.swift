@@ -61,14 +61,14 @@ extension Subject {
     func reduce(
         action: Action
     ) async throws -> Void {
-        switch action {
-            case let .send(result, continuation):
-                return
-            case let .subscribe(downstream, continuation):
-                return
-            case let .unsubscribe(channelId, continuation):
-                return
-        }
+//        switch action {
+//            case let .send(result, continuation):
+//                return
+//            case let .subscribe(downstream, continuation):
+//                return
+//            case let .unsubscribe(channelId, continuation):
+//                return
+//        }
     }
 
     static func reduce(`self`: inout Subject, action: Action) async throws -> Void {

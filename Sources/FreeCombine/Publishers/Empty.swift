@@ -20,7 +20,7 @@ public extension Publisher {
             Task { try await withTaskCancellationHandler(handler: onCancel) {
                 continuation?.resume()
                 guard !Task.isCancelled else { return .done }
-                return try await downstream(.terminated)
+                return try await downstream(.completion(.finished))
             } }
         }
     }

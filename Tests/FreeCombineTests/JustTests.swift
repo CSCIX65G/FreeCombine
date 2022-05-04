@@ -25,10 +25,10 @@ class JustTests: XCTestCase {
                 case let .value(value):
                     XCTAssert(value == 7, "wrong value sent: \(value)")
                     return .more
-                case let .failure(error):
+                case let .completion(.failure(error)):
                     XCTFail("Got an error? \(error)")
                     return .done
-                case .terminated:
+                case .completion(.finished):
                     do { try await expectation1.complete() }
                     catch { XCTFail("Failed to complete with error: \(error)") }
                     return .done
@@ -40,10 +40,10 @@ class JustTests: XCTestCase {
                 case let .value(value):
                     XCTAssert(value == 7, "wrong value sent: \(value)")
                     return .more
-                case let .failure(error):
+                case let .completion(.failure(error)):
                     XCTFail("Got an error? \(error)")
                     return .done
-                case .terminated:
+                case .completion(.finished):
                     do { try await expectation2.complete() }
                     catch { XCTFail("Failed to complete with error: \(error)") }
                     return .done
@@ -69,10 +69,10 @@ class JustTests: XCTestCase {
                 case let .value(value):
                     XCTAssert(value == 7, "wrong value sent: \(value)")
                     return .more
-                case let .failure(error):
+                case let .completion(.failure(error)):
                     XCTFail("Got an error? \(error)")
                     return .done
-                case .terminated:
+                case .completion(.finished):
                     do { try await expectation1.complete() }
                     catch { XCTFail("Failed to complete with error: \(error)") }
                     return .done
@@ -86,10 +86,10 @@ class JustTests: XCTestCase {
                     case let .value(value):
                         XCTAssert(value == 7, "wrong value sent: \(value)")
                         return .more
-                    case let .failure(error):
+                    case let .completion(.failure(error)):
                         XCTFail("Got an error? \(error)")
                         return .done
-                    case .terminated:
+                    case .completion(.finished):
                         do { try await expectation2.complete() }
                         catch { XCTFail("Failed to complete with error: \(error)") }
                         return .done

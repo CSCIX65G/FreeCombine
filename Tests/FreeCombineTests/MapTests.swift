@@ -26,10 +26,10 @@ class MapTests: XCTestCase {
                     case let .value(value):
                         XCTAssert(value == 14, "wrong value sent: \(value)")
                         return .more
-                    case let .failure(error):
+                    case let .completion(.failure(error)):
                         XCTFail("Got an error? \(error)")
                         return .done
-                    case .terminated:
+                    case .completion(.finished):
                         do { try await expectation1.complete() }
                         catch { XCTFail("Failed to complete with error: \(error)") }
                         return .done
