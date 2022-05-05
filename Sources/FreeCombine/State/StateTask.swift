@@ -3,6 +3,24 @@
 //  
 //  Created by Van Simmons on 2/17/22.
 //
+/*:
+ #actor problems
+
+ 1. no oneway funcs (can't call from synchronous code)
+ 2. can't block on internal state (can only block with async call to another task)
+ 3. no concept of cancellation
+ 4. execute on global actor queues (generally not needed or desirable)
+
+ #sol'n: statetasks
+
+ # statetask actions:
+
+ 1. sendable funcs
+ 2. routable
+ 3. value types
+ 4. some actions are blocking, these need special handling (think DO oneway keyword)
+
+ */
 
 public final class StateTask<State, Action: Sendable> {
     public enum Completion {
