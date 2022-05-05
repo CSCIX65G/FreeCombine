@@ -4,7 +4,22 @@
 //
 //  Created by Van Simmons on 3/16/22.
 //
-fileprivate struct ZipState<Left: Sendable, Right: Sendable> {
+public func zip<Left, Right>(
+    onCancel: @escaping () -> Void = { },
+    _ left: Publisher<Left>,
+    _ right: Publisher<Right>
+) -> Publisher<(Left, Right)> {
+    Combinator.publisher(
+        initialState: ZipState<Left, Right>.create(left: left, right: right),
+        buffering: .bufferingOldest(2),
+        onCancel: onCancel,
+        onCompletion: ZipState<Left, Right>.complete,
+        operation: ZipState<Left, Right>.reduce
+    )
+}
+
+fileprivate struct ZipState<Left: Sendable, Right: Sendable>: CombinatorState {
+    typealias CombinatorAction = Self.Action
     enum Action {
         case setLeft(AsyncStream<Left>.Result, UnsafeContinuation<Demand, Swift.Error>)
         case setRight(AsyncStream<Right>.Result, UnsafeContinuation<Demand, Swift.Error>)
@@ -31,19 +46,39 @@ fileprivate struct ZipState<Left: Sendable, Right: Sendable> {
         self.rightCancellable = await channel.consume(publisher: right, using: ZipState<Left, Right>.Action.setRight)
     }
 
-    mutating func resume(returning demand: Demand) {
-        if let left = left { left.continuation.resume(returning: demand) }
-        else if demand == .done { leftCancellable.cancel() }
-        left = .none
-
-        if let right = right { right.continuation.resume(returning: demand) }
-        else if demand == .done { rightCancellable.cancel() }
-        right = .none
+    static func create(
+        mostRecentDemand: Demand = .more,
+        left: Publisher<Left>,
+        right: Publisher<Right>
+    ) -> (@escaping (AsyncStream<(Left, Right)>.Result) async throws -> Demand) -> (Channel<ZipState<Left, Right>.Action>) async -> Self {
+        { downstream in { channel in await .init(downstream: downstream, channel: channel, left: left, right: right) } }
     }
 
-    mutating func terminate(with completion: Completion) async throws -> Void {
-        mostRecentDemand = try await downstream(.completion(completion))
-        resume(returning: mostRecentDemand)
+    static func complete(state: Self, completion: StateTask<Self, Self.Action>.Completion) -> Void {
+        switch completion {
+            case let .cancel(state):
+                state.leftCancellable.cancel()
+                state.rightCancellable.cancel()
+            default:
+                ()
+        }
+    }
+
+    static func reduce(`self`: inout Self, action: Self.Action) async throws -> Void {
+        try await `self`.reduce(action: action)
+    }
+
+    mutating func reduce(
+        action: Self.Action
+    ) async throws -> Void {
+        switch action {
+            case let .setLeft(leftResult, leftContinuation):
+                return mostRecentDemand == .done ? leftContinuation.resume(returning: .done)
+                    : try await handleLeft(leftResult, leftContinuation)
+            case let .setRight(rightResult, rightContinuation):
+                return mostRecentDemand == .done ? rightContinuation.resume(returning: .done)
+                    : try await handleRight(rightResult, rightContinuation)
+        }
     }
 
     mutating func handleLeft(
@@ -51,7 +86,7 @@ fileprivate struct ZipState<Left: Sendable, Right: Sendable> {
         _ leftContinuation: UnsafeContinuation<Demand, Error>
     ) async throws -> Void {
         guard left == nil else {
-            throw StateThread<ZipState<Left, Right>, Self.Action>.Error.internalError
+            throw StateTask<ZipState<Left, Right>, Self.Action>.Error.internalError
         }
         switch leftResult {
             case let .value((value)):
@@ -70,7 +105,7 @@ fileprivate struct ZipState<Left: Sendable, Right: Sendable> {
         _ rightContinuation: UnsafeContinuation<Demand, Error>
     ) async throws -> Void {
         guard right == nil else {
-            throw StateThread<ZipState<Left, Right>, Self.Action>.Error.internalError
+            throw StateTask<ZipState<Left, Right>, Self.Action>.Error.internalError
         }
         switch rightResult {
             case let .value((value)):
@@ -84,52 +119,18 @@ fileprivate struct ZipState<Left: Sendable, Right: Sendable> {
         }
     }
 
-    mutating func reduce(
-        action: Self.Action
-    ) async throws -> Void {
-        switch action {
-            case let .setLeft(leftResult, leftContinuation):
-                return mostRecentDemand == .done ? leftContinuation.resume(returning: .done)
-                    : try await handleLeft(leftResult, leftContinuation)
-            case let .setRight(rightResult, rightContinuation):
-                return mostRecentDemand == .done ? rightContinuation.resume(returning: .done)
-                    : try await handleRight(rightResult, rightContinuation)
-        }
+    mutating func resume(returning demand: Demand) {
+        if let left = left { left.continuation.resume(returning: demand) }
+        else if demand == .done { leftCancellable.cancel() }
+        left = .none
+
+        if let right = right { right.continuation.resume(returning: demand) }
+        else if demand == .done { rightCancellable.cancel() }
+        right = .none
     }
 
-    static func reduce(`self`: inout Self, action: Self.Action) async throws -> Void {
-        try await `self`.reduce(action: action)
-    }
-}
-
-public func zip<Left, Right>(
-    onCancel: @Sendable @escaping () -> Void = { },
-    _ left: Publisher<Left>,
-    _ right: Publisher<Right>
-) -> Publisher<(Left, Right)> {
-    .init { continuation, downstream in
-        .init {
-            let zipStateThread: StateThread<ZipState<Left, Right>, ZipState<Left, Right>.Action> = await .stateThread(
-                initialState: { await .init(downstream: downstream, channel: $0, left: left, right: right) },
-                buffering: .bufferingOldest(2),
-                onCompletion: { completion in switch completion {
-                    case let .cancel(state):
-                        state.leftCancellable.cancel()
-                        state.rightCancellable.cancel()
-                    default:
-                        ()
-                } },
-                operation: ZipState<Left, Right>.reduce
-            )
-
-            return try await withTaskCancellationHandler(handler: {
-                zipStateThread.cancel()
-                onCancel()
-            }) {
-                continuation?.resume()
-                guard !Task.isCancelled else { throw Publisher<(Left, Right)>.Error.cancelled }
-                return try await zipStateThread.finalState.mostRecentDemand
-            }
-        }
+    mutating func terminate(with completion: Completion) async throws -> Void {
+        mostRecentDemand = try await downstream(.completion(completion))
+        resume(returning: mostRecentDemand)
     }
 }

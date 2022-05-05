@@ -1,10 +1,10 @@
 //
-//  StateThread.swift
+//  StateTask.swift
 //  
 //  Created by Van Simmons on 2/17/22.
 //
 
-public final class StateThread<State, Action: Sendable> {
+public final class StateTask<State, Action: Sendable> {
     public enum Completion {
         case termination(State)
         case exit(State)
@@ -25,25 +25,25 @@ public final class StateThread<State, Action: Sendable> {
         self.task = task
     }
     
-    public static func stateThread(
+    public static func stateTask(
         initialState: @escaping (Channel<Action>) async -> State,
         buffering: AsyncStream<Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
         onCancel: @escaping () -> Void = { },
-        onCompletion: @escaping (Completion) -> Void = { _ in },
-        operation: @escaping (inout State, Action) async throws -> Void
+        onCompletion: @escaping (State, Completion) -> Void = { _, _ in },
+        reducer: @escaping (inout State, Action) async throws -> Void
     ) async -> Self {
-        var stateThread: Self!
-        await withUnsafeContinuation { stateThreadContinuation in
-            stateThread = Self.init(
+        var stateTask: Self!
+        await withUnsafeContinuation { stateTaskContinuation in
+            stateTask = Self.init(
                 initialState: initialState,
                 buffering: buffering,
-                onStartup: stateThreadContinuation,
+                onStartup: stateTaskContinuation,
                 onCancel: onCancel,
                 onCompletion: onCompletion,
-                operation: operation
+                reducer: reducer
             )
         }
-        return stateThread
+        return stateTask
     }
 
     public convenience init(
@@ -51,8 +51,8 @@ public final class StateThread<State, Action: Sendable> {
         buffering: AsyncStream<Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
         onStartup: UnsafeContinuation<Void, Never>? = .none,
         onCancel: @escaping () -> Void = { },
-        onCompletion: @escaping (Completion) -> Void = { _ in },
-        operation: @escaping (inout State, Action) async throws -> Void
+        onCompletion: @escaping (State, Completion) -> Void = { _, _ in },
+        reducer: @escaping (inout State, Action) async throws -> Void
     ) {
         let localChannel = Channel<Action>(buffering: buffering)
         let localTask = Task<State, Swift.Error> {
@@ -62,19 +62,19 @@ public final class StateThread<State, Action: Sendable> {
                 var state = await initialState(localChannel)
                 for await action in localChannel {
                     guard !Task.isCancelled else { continue }
-                    do { try await operation(&state, action) }
+                    do { try await reducer(&state, action) }
                     catch {
                         localChannel.finish();
                         for await _ in localChannel { continue; }
-                        onCompletion(.failure(error));
+                        onCompletion(state, .failure(error));
                         throw error
                     }
                 }
                 guard !Task.isCancelled else {
-                    onCompletion(.cancel(state))
+                    onCompletion(state, .cancel(state))
                     throw Error.cancelled
                 }
-                onCompletion(.termination(state))
+                onCompletion(state, .termination(state))
                 return state
             }
         }
@@ -118,13 +118,13 @@ public final class StateThread<State, Action: Sendable> {
     }
 }
 
-public extension StateThread where State == Void {
+public extension StateTask where State == Void {
     convenience init(
         buffering: AsyncStream<Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
         onStartup: UnsafeContinuation<Void, Never>? = .none,
         onCancel: @escaping () -> Void = { },
-        onCompletion: @escaping (Completion) -> Void = { _ in },
-        operation: @escaping (Action) async throws -> Void
+        onCompletion: @escaping (State, Completion) -> Void = {_,  _ in },
+        reducer: @escaping (Action) async throws -> Void
     ) {
         self.init(
             initialState: {_ in },
@@ -132,7 +132,7 @@ public extension StateThread where State == Void {
             onStartup: onStartup,
             onCancel: onCancel,
             onCompletion: onCompletion,
-            operation: { _, action in try await operation(action) }
+            reducer: { _, action in try await reducer(action) }
         )
     }
 }

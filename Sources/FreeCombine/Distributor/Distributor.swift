@@ -18,7 +18,7 @@ public struct Distibutor<Output: Sendable> {
 
     fileprivate struct State {
         var nextKey: Int
-        var downstreams: [Int: StateThread<DownstreamState, DownstreamAction>]
+        var downstreams: [Int: StateTask<DownstreamState, DownstreamAction>]
     }
 
     fileprivate enum Action: Sendable {
@@ -29,5 +29,5 @@ public struct Distibutor<Output: Sendable> {
         )
         case unsubscribe(Int, UnsafeContinuation<Void, Swift.Error>?)
     }
-    private let stateThread: StateThread<Distibutor<Output>.State, Distibutor<Output>.Action>
+    private let stateTask: StateTask<Distibutor<Output>.State, Distibutor<Output>.Action>
 }

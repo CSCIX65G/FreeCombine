@@ -30,7 +30,7 @@ public final class Subject<Output: Sendable> {
     fileprivate struct State {
         var currentValue: Output
         var nextKey: Int
-        var downstreams: [Int: StateThread<DownstreamState, DownstreamAction>]
+        var downstreams: [Int: StateTask<DownstreamState, DownstreamAction>]
     }
 
     enum Action: Sendable {
@@ -41,18 +41,18 @@ public final class Subject<Output: Sendable> {
         )
         case unsubscribe(Int, UnsafeContinuation<Void, Swift.Error>?)
     }
-    private let stateThread: StateThread<Subject<Output>.State, Subject<Output>.Action>
+    private let stateTask: StateTask<Subject<Output>.State, Subject<Output>.Action>
 
     init(
         currentValue: Output,
         buffering: AsyncStream<Subject<Output>.Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
         onStartup: UnsafeContinuation<Void, Never>? = .none
     ) {
-        self.stateThread = .init(
+        self.stateTask = .init(
             initialState: { channel in .init(currentValue: currentValue, nextKey: 0, downstreams: [:]) },
             buffering: buffering,
             onStartup: onStartup,
-            operation: subjectReducer
+            reducer: subjectReducer
         )
     }
 }
