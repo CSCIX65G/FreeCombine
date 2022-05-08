@@ -12,25 +12,36 @@ fileprivate func subjectReducer<Output: Sendable>(
 
 }
 
+//fileprivate struct ZipState<Left: Sendable, Right: Sendable>: CombinatorState {
+//    typealias CombinatorAction = Self.Action
+//    enum Action {
+//        case setLeft(AsyncStream<Left>.Result, UnsafeContinuation<Demand, Swift.Error>)
+//        case setRight(AsyncStream<Right>.Result, UnsafeContinuation<Demand, Swift.Error>)
+//    }
+//    let downstream: (AsyncStream<(Left, Right)>.Result) async throws -> Demand
+
+
 public final class Subject<Output: Sendable> {
     enum Completion {
         case finished
         case failure(Error)
     }
 
-    struct DownstreamState { }
-    fileprivate enum DownstreamAction: Sendable {
-        case send(
-            result: AsyncStream<Output>.Result,
-            semaphore: EffectfulSemaphore,
-            completion: @Sendable (Completion) -> () -> Void
-        )
+    struct DownstreamState {
+        enum Action: Sendable {
+            case send(
+                result: AsyncStream<Output>.Result,
+                semaphore: Semaphore<[Int], DistributorAction<Int>>,
+                completion: @Sendable (Completion) -> () -> Void
+            )
+        }
+        let downstream: (AsyncStream<Output>.Result) async throws -> Demand
     }
-
+    
     fileprivate struct State {
         var currentValue: Output
         var nextKey: Int
-        var downstreams: [Int: StateTask<DownstreamState, DownstreamAction>]
+        var downstreams: [Int: StateTask<DownstreamState, DownstreamState.Action>]
     }
 
     enum Action: Sendable {

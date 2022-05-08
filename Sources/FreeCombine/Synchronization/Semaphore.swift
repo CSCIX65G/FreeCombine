@@ -1,22 +1,22 @@
 //
-//  ReducingSemaphore.swift
+//  Semaphore.swift
 //  
 //
 //  Created by Van Simmons on 4/24/22.
 //
-public actor ReducingSemaphore<State, Action> {
+public actor Semaphore<State, Action> {
     public enum Error: Swift.Error {
         case complete
     }
     let continuation: UnsafeContinuation<State, Never>
-    let reducer: (State, Action) -> State
+    let reducer: (inout State, Action) -> Void
 
     var state: State
     var count: Int
 
     public init(
         continuation: UnsafeContinuation<State, Never>,
-        reducer: @escaping (State, Action) -> State,
+        reducer: @escaping (inout State, Action) -> Void,
         initialState: State,
         count: Int
     ) {
@@ -26,22 +26,22 @@ public actor ReducingSemaphore<State, Action> {
         self.count = count
     }
 
-    public func decrement(with action: Action, file: String = #file, line: Int = #line) -> Void {
+    public func decrement(with action: Action, function: String = #function, file: String = #file, line: Int = #line) -> Void {
         guard count > 0 else {
-            fatalError("Semaphore decremented after complete @\(file):\(line)")
+            fatalError("Semaphore decremented after complete in \(function) @\(file):\(line)")
         }
         count -= 1
-        state = reducer(state, action)
+        reducer(&state, action)
         if count == 0 {
             continuation.resume(returning: state)
         }
     }
 
-    public func increment(with action: Action, file: String = #file, line: Int = #line) -> Void {
+    public func increment(with action: Action, function: String = #function, file: String = #file, line: Int = #line) -> Void {
         guard count > 0 else {
-            fatalError("Semaphore incremented after complete @\(file):\(line)")
+            fatalError("Semaphore incremented after complete in \(function) @\(file):\(line)")
         }
         count += 1
-        state = reducer(state, action)
+        reducer(&state, action)
     }
 }

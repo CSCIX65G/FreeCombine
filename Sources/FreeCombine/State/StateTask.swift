@@ -119,6 +119,10 @@ public final class StateTask<State, Action: Sendable> {
         channel.yield(element)
     }
 
+    public func send(_ element: Action) -> AsyncStream<Action>.Continuation.YieldResult {
+        channel.yield(element)
+    }
+
     public var finalState: State {
         get async throws { try await task.value }
     }
@@ -141,7 +145,7 @@ public extension StateTask where State == Void {
         buffering: AsyncStream<Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
         onStartup: UnsafeContinuation<Void, Never>? = .none,
         onCancel: @escaping () -> Void = { },
-        onCompletion: @escaping (State, Completion) -> Void = {_,  _ in },
+        onCompletion: @escaping (Completion) -> Void = {_ in },
         reducer: @escaping (Action) async throws -> Void
     ) {
         self.init(
@@ -149,7 +153,7 @@ public extension StateTask where State == Void {
             buffering: buffering,
             onStartup: onStartup,
             onCancel: onCancel,
-            onCompletion: onCompletion,
+            onCompletion: { _, completion in onCompletion(completion) },
             reducer: { _, action in try await reducer(action) }
         )
     }

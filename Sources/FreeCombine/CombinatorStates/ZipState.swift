@@ -4,32 +4,18 @@
 //
 //  Created by Van Simmons on 3/16/22.
 //
-public func zip<Left, Right>(
-    onCancel: @escaping () -> Void = { },
-    _ left: Publisher<Left>,
-    _ right: Publisher<Right>
-) -> Publisher<(Left, Right)> {
-    Combinator.publisher(
-        initialState: ZipState<Left, Right>.create(left: left, right: right),
-        buffering: .bufferingOldest(2),
-        onCancel: onCancel,
-        onCompletion: ZipState<Left, Right>.complete,
-        operation: ZipState<Left, Right>.reduce
-    )
-}
-
-fileprivate struct ZipState<Left: Sendable, Right: Sendable>: CombinatorState {
+struct ZipState<Left: Sendable, Right: Sendable>: CombinatorState {
     typealias CombinatorAction = Self.Action
     enum Action {
         case setLeft(AsyncStream<Left>.Result, UnsafeContinuation<Demand, Swift.Error>)
         case setRight(AsyncStream<Right>.Result, UnsafeContinuation<Demand, Swift.Error>)
     }
 
-    var downstream: (AsyncStream<(Left, Right)>.Result) async throws -> Demand
-    var mostRecentDemand: Demand
-    var leftCancellable: Task<Demand, Swift.Error>
-    var rightCancellable: Task<Demand, Swift.Error>
+    let downstream: (AsyncStream<(Left, Right)>.Result) async throws -> Demand
+    let leftCancellable: Task<Demand, Swift.Error>
+    let rightCancellable: Task<Demand, Swift.Error>
 
+    var mostRecentDemand: Demand
     var left: (value: Left, continuation: UnsafeContinuation<Demand, Swift.Error>)? = .none
     var right: (value: Right, continuation: UnsafeContinuation<Demand, Swift.Error>)? = .none
 

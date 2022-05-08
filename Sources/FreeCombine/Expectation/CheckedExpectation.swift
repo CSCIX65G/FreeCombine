@@ -12,18 +12,18 @@ public class CheckedExpectation<Arg> {
         case inconsistentState
     }
 
-    public actor State {
-        public enum Status: Equatable {
-            case cancelled
-            case completed
-            case waiting
-            case failed
-        }
+    public enum Status: Equatable {
+        case cancelled
+        case completed
+        case waiting
+        case failed
+    }
 
-        public private(set) var status: Status
-        public private(set) var resumption: UnsafeContinuation<Arg, Swift.Error>?
+    actor State {
+        private(set) var status: Status
+        private(set) var resumption: UnsafeContinuation<Arg, Swift.Error>?
 
-        public init(status: Status = .waiting) {
+        init(status: Status = .waiting) {
             self.status = status
         }
 
@@ -39,17 +39,17 @@ public class CheckedExpectation<Arg> {
             return resumption
         }
 
-        public func cancel() throws {
+        func cancel() throws {
             let resumption = try validateState()
             status = .cancelled
             resumption.resume(throwing: Error.cancelled)
         }
-        public func complete(_ arg: Arg) throws {
+        func complete(_ arg: Arg) throws {
             let resumption = try validateState()
             status = .completed
             resumption.resume(returning: arg)
         }
-        public func fail(_ error: Swift.Error) throws {
+        func fail(_ error: Swift.Error) throws {
             let resumption = try validateState()
             status = .failed
             resumption.resume(throwing: error)
@@ -84,6 +84,10 @@ public class CheckedExpectation<Arg> {
         task.isCancelled
     }
 
+    public func status() async -> Status {
+        await state.status
+    }
+
     @discardableResult
     public func result() async -> Result<Arg, Swift.Error> {
         await task.result
@@ -92,10 +96,6 @@ public class CheckedExpectation<Arg> {
     @discardableResult
     public func value() async throws -> Arg {
         try await task.value
-    }
-
-    public func status() async -> State.Status {
-        await state.status
     }
 
     public func cancel() -> Void {

@@ -2,11 +2,8 @@
 //  Combinator.swift
 //  
 //
-//  Created by Van Simmons on 5/4/22.
+//  Created by Van Simmons on 5/8/22.
 //
-
-public enum Combinator { }
-
 public protocol CombinatorState {
     associatedtype CombinatorAction
     var mostRecentDemand: Demand { get }
@@ -14,15 +11,31 @@ public protocol CombinatorState {
     static func reduce(`self`: inout Self, action: CombinatorAction) async throws -> Void
 }
 
-public extension Combinator {
-    static func publisher<Output, State: CombinatorState, Action>(
+public func Combinator<Output: Sendable, State: CombinatorState, Action>(
+    initialState: @escaping (@escaping (AsyncStream<Output>.Result) async throws -> Demand) -> (Channel<Action>) async -> State,
+    buffering: AsyncStream<Action>.Continuation.BufferingPolicy,
+    onCancel: @escaping () -> Void,
+    onCompletion: @escaping (State, StateTask<State, Action>.Completion) -> Void,
+    operation: @escaping (inout State, Action) async throws -> Void
+) -> Publisher<Output> where State.CombinatorAction == Action {
+    .init(
+        initialState: initialState,
+        buffering: buffering,
+        onCancel: onCancel,
+        onCompletion: onCompletion,
+        operation: operation
+    )
+}
+
+public extension Publisher {
+    init<State: CombinatorState, Action>(
         initialState: @escaping (@escaping (AsyncStream<Output>.Result) async throws -> Demand) -> (Channel<Action>) async -> State,
         buffering: AsyncStream<Action>.Continuation.BufferingPolicy,
         onCancel: @escaping () -> Void,
         onCompletion: @escaping (State, StateTask<State, Action>.Completion) -> Void,
         operation: @escaping (inout State, Action) async throws -> Void
-    ) -> Publisher<Output> {
-        .init { continuation, downstream in
+    ) where State.CombinatorAction == Action {
+        self = .init { continuation, downstream in
             .init {
                 let stateTask = await StateTask.stateTask(
                     initialState: initialState(downstream),
