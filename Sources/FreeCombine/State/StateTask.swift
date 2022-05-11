@@ -7,19 +7,22 @@
  #actor problems
 
  1. no oneway funcs (can't call from synchronous code)
- 2. can't block on internal state (can only block with async call to another task)
- 3. no concept of cancellation
- 4. execute on global actor queues (generally not needed or desirable)
+ 2. can't selectively block callers
+ 3. can't block on internal state (can only block with async call to another task)
+ 4. no concept of cancellation
+ 5. execute on global actor queues (generally not needed or desirable)
 
- #sol'n: statetasks
+ #actor solutions: statetasks
+
+ 1. LOCK FREE CHANNELS
+ 2. Haskell translation: ∀s becomes a Task
 
  # statetask actions:
 
- 1. sendable funcs
- 2. routable
- 3. value types
- 4. some actions are blocking, these need special handling (think DO oneway keyword)
-
+ 2. sendable funcs
+ 3. routable
+ 4. value types
+ 5. some actions are blocking, these need special handling (think DO oneway keyword)
  */
 
 public final class StateTask<State, Action: Sendable> {
@@ -36,7 +39,7 @@ public final class StateTask<State, Action: Sendable> {
     }
 
     private let channel: Channel<Action>
-    private let task: Task<State, Swift.Error>
+    public let task: Task<State, Swift.Error>
 
     public init(channel: Channel<Action>, task: Task<State, Swift.Error>) {
         self.channel = channel
@@ -62,6 +65,24 @@ public final class StateTask<State, Action: Sendable> {
             )
         }
         return stateTask
+    }
+
+    public convenience init(
+        initialState: State,
+        buffering: AsyncStream<Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
+        onStartup: UnsafeContinuation<Void, Never>? = .none,
+        onCancel: @escaping () -> Void = { },
+        onCompletion: @escaping (State, Completion) -> Void = { _, _ in },
+        reducer: @escaping (inout State, Action) async throws -> Void
+    ) {
+        self.init(
+            initialState: {_ in initialState},
+            buffering: buffering,
+            onStartup: onStartup,
+            onCancel: onCancel,
+            onCompletion: onCompletion,
+            reducer: reducer
+        )
     }
 
     public convenience init(
@@ -107,19 +128,19 @@ public final class StateTask<State, Action: Sendable> {
         task.isCancelled
     }
 
-    public func cancel() -> Void {
+    @Sendable public func cancel() -> Void {
         task.cancel()
     }
 
-    public func finish() -> Void {
+    @Sendable public func finish() -> Void {
         channel.finish()
     }
 
-    public func yield(_ element: Action) -> AsyncStream<Action>.Continuation.YieldResult {
+    @Sendable public func yield(_ element: Action) -> AsyncStream<Action>.Continuation.YieldResult {
         channel.yield(element)
     }
 
-    public func send(_ element: Action) -> AsyncStream<Action>.Continuation.YieldResult {
+    @Sendable public func send(_ element: Action) -> AsyncStream<Action>.Continuation.YieldResult {
         channel.yield(element)
     }
 

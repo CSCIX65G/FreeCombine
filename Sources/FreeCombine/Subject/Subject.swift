@@ -5,47 +5,74 @@
 //  Created by Van Simmons on 3/22/22.
 //
 
-fileprivate func subjectReducer<Output: Sendable>(
-    state: inout Subject<Output>.State,
-    action: Subject<Output>.Action
-) async throws -> Void {
-
-}
-
-//fileprivate struct ZipState<Left: Sendable, Right: Sendable>: CombinatorState {
-//    typealias CombinatorAction = Self.Action
-//    enum Action {
-//        case setLeft(AsyncStream<Left>.Result, UnsafeContinuation<Demand, Swift.Error>)
-//        case setRight(AsyncStream<Right>.Result, UnsafeContinuation<Demand, Swift.Error>)
-//    }
-//    let downstream: (AsyncStream<(Left, Right)>.Result) async throws -> Demand
-
-
 public final class Subject<Output: Sendable> {
-    enum Completion {
-        case finished
-        case failure(Error)
+    enum SemaphoreAction {
+        case more
+        case done(Int)
     }
 
-    struct DownstreamState {
-        enum Action: Sendable {
-            case send(
-                result: AsyncStream<Output>.Result,
-                semaphore: Semaphore<[Int], DistributorAction<Int>>,
-                completion: @Sendable (Completion) -> () -> Void
-            )
-        }
-        let downstream: (AsyncStream<Output>.Result) async throws -> Demand
-    }
-    
-    fileprivate struct State {
+    struct State {
         var currentValue: Output
         var nextKey: Int
-        var downstreams: [Int: StateTask<DownstreamState, DownstreamState.Action>]
+        var downstreams: [Int: StateTask<RepeaterState<Int, Output>, RepeaterState<Int, Output>.Action>]
+
+        mutating func process(
+            repeaters : [Int: StateTask<RepeaterState<Int, Output>, RepeaterState<Int, Output>.Action>],
+            with result: AsyncStream<Output>.Result
+        ) async -> Void {
+            await withUnsafeContinuation { (completedContinuation: UnsafeContinuation<[Int], Never>) in
+                let semaphore = Semaphore<[Int], RepeaterAction<Int>>(
+                    continuation: completedContinuation,
+                    reducer: { completedIds, action in
+                        guard case let .repeated(id, .done) = action else { return }
+                        completedIds.append(id)
+                    },
+                    initialState: [Int](),
+                    count: downstreams.count
+                )
+                repeaters.forEach { (key, downstreamTask) in
+                    guard case .enqueued = downstreamTask.send(.repeat(result, semaphore)) else {
+                        fatalError("Internal failure in Subject reducer processing key: \(key)")
+                    }
+                }
+            }.forEach { key in downstreams.removeValue(forKey: key) }
+        }
+
+        mutating func process(
+            subscription downstream: @escaping @Sendable (AsyncStream<Output>.Result) async throws -> Demand
+        ) async -> Task<Demand, Swift.Error> {
+            nextKey += 1
+            let repeater:StateTask<RepeaterState<Int, Output>, RepeaterState<Int, Output>.Action> = await .init(
+                initialState: .init(id: nextKey, downstream: downstream),
+                buffering: .bufferingOldest(1),
+                reducer: RepeaterState.reduce
+            )
+            downstreams[nextKey] = repeater
+            return Task { try await withTaskCancellationHandler(handler: repeater.cancel)  {
+                try await repeater.finalState.mostRecentDemand
+            } }
+        }
+
+        mutating func reduce(action: Action) async throws -> Void {
+            switch action {
+                case let .receive(result, continuation):
+                    await process(repeaters: downstreams, with: result)
+                    continuation?.resume()
+                case let .subscribe(downstream, continuation):
+                    let task = await process(subscription: downstream)
+                    continuation?.resume(returning: task)
+                case let .unsubscribe(channelId, continuation):
+                    guard let downstream = downstreams.removeValue(forKey: channelId) else {
+                        fatalError("could not remove requested value")
+                    }
+                    await process(repeaters: [channelId: downstream], with: .completion(.finished))
+                    continuation?.resume()
+            }
+        }
     }
 
     enum Action: Sendable {
-        case send(AsyncStream<Output>.Result, UnsafeContinuation<Void, Swift.Error>?)
+        case receive(AsyncStream<Output>.Result, UnsafeContinuation<Void, Swift.Error>?)
         case subscribe(
             @Sendable (AsyncStream<Output>.Result) async throws -> Demand,
             UnsafeContinuation<Task<Demand, Swift.Error>, Swift.Error>?
@@ -57,32 +84,21 @@ public final class Subject<Output: Sendable> {
     init(
         currentValue: Output,
         buffering: AsyncStream<Subject<Output>.Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
-        onStartup: UnsafeContinuation<Void, Never>? = .none
+        onStartup: UnsafeContinuation<Void, Never>? = .none,
+        onCancel: @escaping () -> Void = { },
+        onCompletion: @escaping (Subject<Output>.State, StateTask<Subject<Output>.State, Subject<Output>.Action>.Completion) -> Void = { _, _ in }
     ) {
         self.stateTask = .init(
             initialState: { channel in .init(currentValue: currentValue, nextKey: 0, downstreams: [:]) },
             buffering: buffering,
             onStartup: onStartup,
-            reducer: subjectReducer
+            onCancel: onCancel,
+            onCompletion: onCompletion,
+            reducer: Self.reduce
         )
     }
-}
 
-extension Subject {
-    func reduce(
-        action: Action
-    ) async throws -> Void {
-//        switch action {
-//            case let .send(result, continuation):
-//                return
-//            case let .subscribe(downstream, continuation):
-//                return
-//            case let .unsubscribe(channelId, continuation):
-//                return
-//        }
-    }
-
-    static func reduce(`self`: inout Subject, action: Action) async throws -> Void {
+    static func reduce(`self`: inout State, action: Action) async throws -> Void {
         try await `self`.reduce(action: action)
     }
 }

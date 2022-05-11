@@ -5,13 +5,6 @@
 //  Created by Van Simmons on 3/15/22.
 //
 
-public extension AsyncStream where Element: Sendable {
-    enum Result: Sendable {
-        case value(Element)
-        case completion(Completion)
-    }
-}
-
 public enum Demand: Equatable, Sendable {
     case more
     case done
@@ -20,6 +13,13 @@ public enum Demand: Equatable, Sendable {
 public enum Completion: Sendable {
     case failure(Error)
     case finished
+}
+
+public extension AsyncStream where Element: Sendable {
+    enum Result: Sendable {
+        case value(Element)
+        case completion(Completion)
+    }
 }
 
 public struct Publisher<Output: Sendable> {
