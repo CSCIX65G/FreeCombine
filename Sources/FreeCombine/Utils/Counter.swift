@@ -20,12 +20,4 @@ public actor Counter {
         count -= 1
         return count
     }
-    public func value(resetAt value: Int) -> Int {
-        let tmpCount = count
-        guard tmpCount != value else {
-            count = 0
-            return tmpCount
-        }
-        return count
-    }
 }
