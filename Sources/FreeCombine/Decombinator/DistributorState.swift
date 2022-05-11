@@ -4,12 +4,12 @@
 //
 //  Created by Van Simmons on 5/10/22.
 //
-struct DistributorState<Output: Sendable> {
-    var currentValue: Output
-    var nextKey: Int
-    var downstreams: [Int: StateTask<RepeaterState<Int, Output>, RepeaterState<Int, Output>.Action>]
+public struct DistributorState<Output: Sendable> {
+    private var currentValue: Output?
+    private var nextKey: Int
+    private var downstreams: [Int: StateTask<RepeaterState<Int, Output>, RepeaterState<Int, Output>.Action>]
 
-    enum Action: Sendable {
+    public enum Action: Sendable {
         case receive(AsyncStream<Output>.Result, UnsafeContinuation<Void, Swift.Error>?)
         case subscribe(
             @Sendable (AsyncStream<Output>.Result) async throws -> Demand,
@@ -18,14 +18,35 @@ struct DistributorState<Output: Sendable> {
         case unsubscribe(Int, UnsafeContinuation<Void, Swift.Error>?)
     }
 
+    static func reduce(`self`: inout Self, action: Self.Action) async throws -> Void {
+        try await `self`.reduce(action: action)
+    }
+
+    public init(
+        currentValue: Output? = .none,
+        nextKey: Int = 0,
+        downstreams: [Int: StateTask<RepeaterState<Int, Output>, RepeaterState<Int, Output>.Action>] = [ : ]
+    ) {
+        self.currentValue = currentValue
+        self.nextKey = nextKey
+        self.downstreams = downstreams
+    }
+
+
     mutating func reduce(action: Action) async throws -> Void {
         switch action {
             case let .receive(result, continuation):
                 await process(repeaters: downstreams, with: result)
                 continuation?.resume()
             case let .subscribe(downstream, continuation):
-                let task = await process(subscription: downstream)
-                continuation?.resume(returning: task)
+                do {
+                    let repeater = try await process(subscription: downstream)
+                    continuation?.resume(returning: Task { try await withTaskCancellationHandler(handler: repeater.cancel)  {
+                        try await repeater.finalState.mostRecentDemand
+                    } } )
+                } catch {
+                    continuation?.resume(throwing: error)
+                }
             case let .unsubscribe(channelId, continuation):
                 guard let downstream = downstreams.removeValue(forKey: channelId) else {
                     fatalError("could not remove requested value")
@@ -59,16 +80,17 @@ struct DistributorState<Output: Sendable> {
 
     mutating func process(
         subscription downstream: @escaping @Sendable (AsyncStream<Output>.Result) async throws -> Demand
-    ) async -> Task<Demand, Swift.Error> {
+    ) async throws -> StateTask<RepeaterState<Int, Output>, RepeaterState<Int, Output>.Action> {
         nextKey += 1
-        let repeater:StateTask<RepeaterState<Int, Output>, RepeaterState<Int, Output>.Action> = await .init(
+        let repeater: StateTask<RepeaterState<Int, Output>, RepeaterState<Int, Output>.Action> = await .init(
             initialState: .init(id: nextKey, downstream: downstream),
             buffering: .bufferingOldest(1),
             reducer: RepeaterState.reduce
         )
+        if let currentValue = currentValue, try await downstream(.value(currentValue)) == .done {
+            return repeater
+        }
         downstreams[nextKey] = repeater
-        return Task { try await withTaskCancellationHandler(handler: repeater.cancel)  {
-            try await repeater.finalState.mostRecentDemand
-        } }
+        return repeater
     }
 }

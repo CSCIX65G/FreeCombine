@@ -5,20 +5,20 @@
 //  Created by Van Simmons on 5/7/22.
 //
 
-enum RepeaterAction<ID: Hashable & Sendable>: Sendable {
+public enum RepeaterAction<ID: Hashable & Sendable>: Sendable {
     case repeated(ID, Demand)
 }
 
-struct RepeaterState<ID: Hashable & Sendable, Output: Sendable>: Identifiable {
-    enum Action {
+public struct RepeaterState<ID: Hashable & Sendable, Output: Sendable>: Identifiable {
+    public enum Action {
         case `repeat`(AsyncStream<Output>.Result, Semaphore<[ID], RepeaterAction<ID>>)
     }
 
-    let id: ID
+    public let id: ID
     let downstream: (AsyncStream<Output>.Result) async throws -> Demand
     var mostRecentDemand: Demand
 
-    init(
+    public init(
         id: ID,
         downstream: @escaping (AsyncStream<Output>.Result) async throws -> Demand,
         mostRecentDemand: Demand = .more

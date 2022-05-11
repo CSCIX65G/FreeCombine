@@ -22,7 +22,7 @@ public func wait<FinalResult, PartialResult>(
 }
 
 public func wait<FinalResult, PartialResult, S: Sequence>(
-    for expecations: S,
+    for expectations: S,
     timeout: UInt64,
     reducing initialValue: FinalResult,
     with reducer: @escaping (FinalResult, PartialResult) throws -> FinalResult
@@ -30,13 +30,13 @@ public func wait<FinalResult, PartialResult, S: Sequence>(
     let reducingTask = Task<FinalResult, Error>.init {
         let cancellationGroup = CancellationGroup()
         let reducingTask: Task<FinalResult, Error> = .init {
-            try await withTaskCancellationHandler(handler: { expecations.forEach {
+            try await withTaskCancellationHandler(handler: { expectations.forEach {
                 guard !$0.isCancelled else { return }
                 $0.cancel()
             } } ) {
                 var currentValue = initialValue
                 do {
-                    for expectation in expecations {
+                    for expectation in expectations {
                         guard !Task.isCancelled else { throw CheckedExpectation<FinalResult>.Error.cancelled }
                         currentValue = try reducer(currentValue, try await expectation.value())
                     }
