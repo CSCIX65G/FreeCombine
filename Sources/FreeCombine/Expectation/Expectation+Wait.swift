@@ -16,7 +16,7 @@ public func wait<FinalResult, PartialResult>(
     for expectation: CheckedExpectation<PartialResult>,
     timeout: UInt64,
     reducing initialValue: FinalResult,
-    with reducer: @escaping (FinalResult, PartialResult) throws -> FinalResult
+    with reducer: @escaping (inout FinalResult, PartialResult) throws -> Void
 ) async throws -> FinalResult {
     try await wait(for: [expectation], timeout: timeout, reducing: initialValue, with: reducer)
 }
@@ -25,56 +25,37 @@ public func wait<FinalResult, PartialResult, S: Sequence>(
     for expectations: S,
     timeout: UInt64,
     reducing initialValue: FinalResult,
-    with reducer: @escaping (FinalResult, PartialResult) throws -> FinalResult
+    with reducer: @escaping (inout FinalResult, PartialResult) throws -> Void
 ) async throws -> FinalResult where S.Element == CheckedExpectation<PartialResult> {
     let reducingTask = Task<FinalResult, Error>.init {
-        let cancellationGroup = CancellationGroup()
-        let reducingTask: Task<FinalResult, Error> = .init {
-            try await withTaskCancellationHandler(handler: { expectations.forEach {
-                guard !$0.isCancelled else { return }
-                $0.cancel()
-            } } ) {
-                var currentValue = initialValue
-                do {
-                    for expectation in expectations {
-                        guard !Task.isCancelled else { throw CheckedExpectation<FinalResult>.Error.cancelled }
-                        currentValue = try reducer(currentValue, try await expectation.value())
-                    }
-                } catch {
-                    await Task.yield()
-                    withUnsafeCurrentTask { currentTask in
-                        if let currentTask = currentTask, !currentTask.isCancelled {
-                            currentTask.cancel()
+        let stateTask = await StateTask<WaitState<FinalResult, PartialResult>, WaitState<FinalResult, PartialResult>.Action>.stateTask(
+            initialState: { channel in
+                .init(with: channel, for: expectations, timeout: timeout, reducer: reducer, initialValue: initialValue)
+            },
+            buffering: .bufferingOldest(expectations.underestimatedCount + 1),
+            reducer: { state, action in
+                switch action {
+                    case let .complete(index, partialResult):
+                        guard let _ = state.expectations.removeValue(forKey: index),
+                              let _ = state.tasks.removeValue(forKey: index) else {
+                            fatalError("could not find task")
                         }
-                    }
-                    await Task.yield()
-                    throw error
+                        if state.expectations.count == 0 {
+                            state.watchdog.cancel()
+                            state.channel.finish()
+                        }
+                        do { try state.stateReducer(&state.finalResult, partialResult) }
+                        catch {
+                            state.cancel()
+                            throw error
+                        }
+                    case .timeout:
+                        state.cancel()
+                        throw CheckedExpectation<FinalResult>.Error.timedOut
                 }
-                await Task.yield()
-                try await cancellationGroup.cancel()
-                return currentValue
             }
-        }
-        
-        let timeout: Task<Void, Never> = .init {
-            do {
-                await Task.yield()
-                try await Task.sleep(nanoseconds: timeout)
-                await Task.yield()
-                reducingTask.cancel()
-            } catch {
-                return
-            }
-        }
-        guard !Task.isCancelled else {
-            throw CheckedExpectation<FinalResult>.Error.alreadyCancelled
-        }
-        await cancellationGroup.add(timeout)
-        do {
-            return try await reducingTask.value
-        } catch {
-            throw error
-        }
+        )
+        return try await stateTask.finalState.finalResult
     }
     return try await reducingTask.value
 }

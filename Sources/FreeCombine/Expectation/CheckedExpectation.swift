@@ -10,6 +10,7 @@ public class CheckedExpectation<Arg> {
         case alreadyCompleted
         case cancelled
         case inconsistentState
+        case timedOut
     }
 
     public enum Status: Equatable {
@@ -66,9 +67,7 @@ public class CheckedExpectation<Arg> {
             localTask = Task<Arg, Swift.Error> { try await withTaskCancellationHandler(handler: {
                 Task { try await localState.cancel() }
             }) {
-                try await withUnsafeThrowingContinuation { inner in
-                    cc.resume(returning: inner)
-                }
+                try await withUnsafeThrowingContinuation(cc.resume)
             } }
         }
         await localState.set(resumption: localResumption)
