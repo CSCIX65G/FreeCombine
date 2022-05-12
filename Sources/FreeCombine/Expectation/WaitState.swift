@@ -14,7 +14,7 @@ struct WaitState<FinalResult, PartialResult> {
 
     let channel: Channel<WaitState<FinalResult, PartialResult>.Action>
     let watchdog: Task<Void, Swift.Error>
-    let stateReducer: (inout FinalResult, PartialResult) throws -> Void
+    let resultReducer: (inout FinalResult, PartialResult) throws -> Void
 
     var expectations: [Int: CheckedExpectation<PartialResult>]
     var tasks: [Int: Task<PartialResult, Swift.Error>]
@@ -49,7 +49,7 @@ struct WaitState<FinalResult, PartialResult> {
             try await Task.sleep(nanoseconds: timeout)
             channel.yield(.timeout)
         }
-        self.stateReducer = reducer
+        self.resultReducer = reducer
         self.finalResult = initialValue
     }
 
@@ -57,5 +57,32 @@ struct WaitState<FinalResult, PartialResult> {
         expectations.values.forEach { $0.cancel() }
         expectations.removeAll()
         tasks.removeAll()
+    }
+
+    static func reduce(`self`: inout Self, action: Self.Action) throws -> Void {
+        try `self`.reduce(action: action)
+    }
+
+    mutating func reduce(action: Action) throws -> Void {
+        switch action {
+            case let .complete(index, partialResult):
+                guard let _ = expectations.removeValue(forKey: index),
+                      let _ = tasks.removeValue(forKey: index) else {
+                    fatalError("could not find task")
+                }
+                if expectations.count == 0 {
+                    watchdog.cancel()
+                    channel.finish()
+                }
+                do { try resultReducer(&finalResult, partialResult) }
+                catch {
+                    cancel()
+                    throw error
+                }
+            case .timeout:
+                cancel()
+                throw CheckedExpectation<FinalResult>.Error.timedOut
+        }
+
     }
 }

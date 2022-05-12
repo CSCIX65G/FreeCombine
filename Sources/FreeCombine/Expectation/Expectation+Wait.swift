@@ -33,27 +33,7 @@ public func wait<FinalResult, PartialResult, S: Sequence>(
                 .init(with: channel, for: expectations, timeout: timeout, reducer: reducer, initialValue: initialValue)
             },
             buffering: .bufferingOldest(expectations.underestimatedCount + 1),
-            reducer: { state, action in
-                switch action {
-                    case let .complete(index, partialResult):
-                        guard let _ = state.expectations.removeValue(forKey: index),
-                              let _ = state.tasks.removeValue(forKey: index) else {
-                            fatalError("could not find task")
-                        }
-                        if state.expectations.count == 0 {
-                            state.watchdog.cancel()
-                            state.channel.finish()
-                        }
-                        do { try state.stateReducer(&state.finalResult, partialResult) }
-                        catch {
-                            state.cancel()
-                            throw error
-                        }
-                    case .timeout:
-                        state.cancel()
-                        throw CheckedExpectation<FinalResult>.Error.timedOut
-                }
-            }
+            reducer: WaitState<FinalResult, PartialResult>.reduce
         )
         return try await stateTask.finalState.finalResult
     }
