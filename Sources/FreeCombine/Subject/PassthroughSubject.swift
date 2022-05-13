@@ -16,7 +16,7 @@ public func PassthroughSubject<Output>(
     ) -> Void = { _, _ in }
 ) -> StateTask<DistributorState<Output>, DistributorState<Output>.Action> {
     .init(
-        initialState: { channel in .init() },
+        initialState: DistributorState<Output>.init,
         buffering: buffering,
         onStartup: onStartup,
         onCancel: onCancel,

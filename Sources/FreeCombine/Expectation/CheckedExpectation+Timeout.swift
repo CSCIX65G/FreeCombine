@@ -12,6 +12,14 @@ public func wait(
     try await wait(for: [expectation], timeout: timeout, reducing: (), with: {_, _ in })
 }
 
+public extension CheckedExpectation where Arg == Void {
+    func timeout(
+        after timeout: UInt64
+    ) async throws -> Void  {
+        try await wait(for: self, timeout: timeout)
+    }
+}
+
 public func wait<FinalResult, PartialResult>(
     for expectation: CheckedExpectation<PartialResult>,
     timeout: UInt64,
@@ -19,6 +27,16 @@ public func wait<FinalResult, PartialResult>(
     with reducer: @escaping (inout FinalResult, PartialResult) throws -> Void
 ) async throws -> FinalResult {
     try await wait(for: [expectation], timeout: timeout, reducing: initialValue, with: reducer)
+}
+
+public extension CheckedExpectation {
+    func timeout<FinalResult>(
+        after timeout: UInt64,
+        reducing initialValue: FinalResult,
+        with reducer: @escaping (inout FinalResult, Arg) throws -> Void
+    ) async throws -> FinalResult  {
+        try await wait(for: self, timeout: timeout, reducing: initialValue, with: reducer)
+    }
 }
 
 public func wait<FinalResult, PartialResult, S: Sequence>(
@@ -38,4 +56,14 @@ public func wait<FinalResult, PartialResult, S: Sequence>(
         return try await stateTask.finalState.finalResult
     }
     return try await reducingTask.value
+}
+
+public extension Array {
+    func timeout<FinalResult, PartialResult>(
+        after timeout: UInt64,
+        reducing initialValue: FinalResult,
+        with reducer: @escaping (inout FinalResult, PartialResult) throws -> Void
+    ) async throws -> FinalResult where Element == CheckedExpectation<PartialResult> {
+        try await wait(for: self, timeout: timeout, reducing: initialValue, with: reducer)
+    }
 }

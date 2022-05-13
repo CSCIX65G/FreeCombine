@@ -5,6 +5,7 @@
 //  Created by Van Simmons on 5/10/22.
 //
 public struct DistributorState<Output: Sendable> {
+    private var channel: Channel<DistributorState<Output>.Action>
     private var currentValue: Output?
     private var nextKey: Int
     private var downstreams: [Int: StateTask<RepeaterState<Int, Output>, RepeaterState<Int, Output>.Action>]
@@ -23,10 +24,18 @@ public struct DistributorState<Output: Sendable> {
     }
 
     public init(
-        currentValue: Output? = .none,
-        nextKey: Int = 0,
-        downstreams: [Int: StateTask<RepeaterState<Int, Output>, RepeaterState<Int, Output>.Action>] = [ : ]
+        channel: Channel<DistributorState<Output>.Action>
     ) {
+        self.init(channel: channel, currentValue: .none, nextKey: 0, downstreams: [:])
+    }
+
+    public init(
+        channel: Channel<DistributorState<Output>.Action>,
+        currentValue: Output?,
+        nextKey: Int,
+        downstreams: [Int: StateTask<RepeaterState<Int, Output>, RepeaterState<Int, Output>.Action>]
+    ) {
+        self.channel = channel
         self.currentValue = currentValue
         self.nextKey = nextKey
         self.downstreams = downstreams

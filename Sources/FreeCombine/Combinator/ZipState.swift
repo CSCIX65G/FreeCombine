@@ -20,9 +20,9 @@ struct ZipState<Left: Sendable, Right: Sendable>: CombinatorState {
     var right: (value: Right, continuation: UnsafeContinuation<Demand, Swift.Error>)? = .none
 
     init(
+        channel: Channel<ZipState<Left, Right>.Action>,
         downstream: @escaping (AsyncStream<(Left, Right)>.Result) async throws -> Demand,
         mostRecentDemand: Demand = .more,
-        channel: Channel<ZipState<Left, Right>.Action>,
         left: Publisher<Left>,
         right: Publisher<Right>
     ) async {
@@ -37,7 +37,9 @@ struct ZipState<Left: Sendable, Right: Sendable>: CombinatorState {
         left: Publisher<Left>,
         right: Publisher<Right>
     ) -> (@escaping (AsyncStream<(Left, Right)>.Result) async throws -> Demand) -> (Channel<ZipState<Left, Right>.Action>) async -> Self {
-        { downstream in { channel in await .init(downstream: downstream, channel: channel, left: left, right: right) } }
+        { downstream in { channel in
+            await .init(channel: channel, downstream: downstream, left: left, right: right)
+        } }
     }
 
     static func complete(state: Self, completion: StateTask<Self, Self.Action>.Completion) -> Void {

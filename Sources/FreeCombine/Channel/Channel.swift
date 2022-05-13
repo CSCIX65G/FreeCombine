@@ -79,4 +79,3 @@ public extension Channel {
         }
     }
 }
-

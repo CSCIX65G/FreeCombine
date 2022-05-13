@@ -36,6 +36,7 @@ public final class StateTask<State, Action: Sendable> {
     public enum Error: Swift.Error {
         case cancelled
         case internalError
+        case enqueueError(AsyncStream<Action>.Continuation.YieldResult)
     }
 
     private let channel: Channel<Action>
