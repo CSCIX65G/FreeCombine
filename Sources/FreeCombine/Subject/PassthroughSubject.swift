@@ -1,5 +1,5 @@
 //
-//  File.swift
+//  PassthroughSubject.swift
 //  
 //
 //  Created by Van Simmons on 5/11/22.
@@ -19,6 +19,24 @@ public func PassthroughSubject<Output>(
         initialState: DistributorState<Output>.init,
         buffering: buffering,
         onStartup: onStartup,
+        onCancel: onCancel,
+        onCompletion: onCompletion,
+        reducer: DistributorState<Output>.reduce
+    )
+}
+
+public func PassthroughSubject<Output>(
+    type: Output.Type = Output.self,
+    buffering: AsyncStream<DistributorState<Output>.Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
+    onCancel: @escaping () -> Void = { },
+    onCompletion: @escaping (
+        DistributorState<Output>,
+        StateTask<DistributorState<Output>, DistributorState<Output>.Action>.Completion
+    ) -> Void = { _, _ in }
+) async -> StateTask<DistributorState<Output>, DistributorState<Output>.Action> {
+    await .stateTask(
+        initialState: DistributorState<Output>.init,
+        buffering: buffering,
         onCancel: onCancel,
         onCompletion: onCompletion,
         reducer: DistributorState<Output>.reduce

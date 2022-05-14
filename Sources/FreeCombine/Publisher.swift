@@ -31,13 +31,13 @@ public struct Publisher<Output: Sendable> {
 
     private let call: (
         UnsafeContinuation<Void, Never>?,
-        @escaping (AsyncStream<Output>.Result) async throws -> Demand
+        @Sendable @escaping (AsyncStream<Output>.Result) async throws -> Demand
     ) -> Task<Demand, Swift.Error>
 
     internal init(
         _ call: @escaping (
             UnsafeContinuation<Void, Never>?,
-            @escaping (AsyncStream<Output>.Result) async throws -> Demand
+            @Sendable @escaping (AsyncStream<Output>.Result) async throws -> Demand
         ) -> Task<Demand, Swift.Error>
     ) {
         self.call = call
@@ -48,7 +48,7 @@ public extension Publisher {
     @discardableResult
     func sink(
         onStartup: UnsafeContinuation<Void, Never>?,
-        _ f: @escaping (AsyncStream<Output>.Result) async throws -> Demand
+        _ f: @Sendable @escaping (AsyncStream<Output>.Result) async throws -> Demand
     ) -> Task<Demand, Swift.Error> {
         self(onStartup: onStartup, f)
     }
@@ -56,7 +56,7 @@ public extension Publisher {
     @discardableResult
     func callAsFunction(
         onStartup: UnsafeContinuation<Void, Never>?,
-        _ f: @escaping (AsyncStream<Output>.Result) async throws -> Demand
+        _ f: @Sendable @escaping (AsyncStream<Output>.Result) async throws -> Demand
     ) -> Task<Demand, Swift.Error> {
         call(onStartup, { result in
             guard !Task.isCancelled else { return .done }
@@ -68,14 +68,14 @@ public extension Publisher {
 
     @discardableResult
     func sink(
-        _ f: @escaping (AsyncStream<Output>.Result) async throws -> Demand
+        _ f: @Sendable @escaping (AsyncStream<Output>.Result) async throws -> Demand
     ) async -> Task<Demand, Swift.Error> {
         await self(f)
     }
 
     @discardableResult
     func callAsFunction(
-        _ f: @escaping (AsyncStream<Output>.Result) async throws -> Demand
+        _ f: @Sendable @escaping (AsyncStream<Output>.Result) async throws -> Demand
     ) async -> Task<Demand, Swift.Error> {
         var t: Task<Demand, Swift.Error>! = .none
         await withUnsafeContinuation { continuation in
@@ -91,9 +91,9 @@ public extension Publisher {
 }
 
 extension Publisher {
-    private func lift(
-        _ receiveValue: @escaping (Output) async throws -> Void
-    ) -> (AsyncStream<Output>.Result) async throws -> Demand {
+    @Sendable private func lift(
+        _ receiveValue: @Sendable @escaping (Output) async throws -> Void
+    ) -> @Sendable (AsyncStream<Output>.Result) async throws -> Demand {
         { result in switch result {
             case let .value(value):
                 try await receiveValue(value)
@@ -105,21 +105,21 @@ extension Publisher {
 
     func sink(
         onStartup: UnsafeContinuation<Void, Never>?,
-        receiveValue: @escaping (Output) async throws -> Void
+        receiveValue: @Sendable @escaping (Output) async throws -> Void
     ) -> Task<Demand, Swift.Error> {
         sink(onStartup: onStartup, lift(receiveValue))
     }
 
     func sink(
-        receiveValue: @escaping (Output) async throws -> Void
+        receiveValue: @Sendable @escaping (Output) async throws -> Void
     ) async -> Task<Demand, Swift.Error> {
         await sink(lift(receiveValue))
     }
 
-    private func lift(
-        _ receiveCompletion: @escaping (Completion) async throws -> Void,
-        _ receiveValue: @escaping (Output) async throws -> Void
-    ) -> (AsyncStream<Output>.Result) async throws -> Demand {
+    @Sendable private func lift(
+        _ receiveCompletion: @Sendable @escaping (Completion) async throws -> Void,
+        _ receiveValue: @Sendable @escaping (Output) async throws -> Void
+    ) -> @Sendable (AsyncStream<Output>.Result) async throws -> Demand {
         { result in switch result {
             case let .value(value):
                 try await receiveValue(value)
@@ -135,15 +135,15 @@ extension Publisher {
 
     func sink(
         onStartup: UnsafeContinuation<Void, Never>?,
-        receiveCompletion: @escaping (Completion) async -> Void,
-        receiveValue: @escaping (Output) async -> Void
+        receiveCompletion: @Sendable @escaping (Completion) async -> Void,
+        receiveValue: @Sendable @escaping (Output) async -> Void
     ) -> Task<Demand, Swift.Error> {
         sink(onStartup: onStartup, lift(receiveCompletion, receiveValue))
     }
 
     func sink(
-        receiveCompletion: @escaping (Completion) async -> Void,
-        receiveValue: @escaping (Output) async -> Void
+        receiveCompletion: @Sendable @escaping (Completion) async -> Void,
+        receiveValue: @Sendable @escaping (Output) async -> Void
     ) async -> Task<Demand, Swift.Error> {
         await sink(lift(receiveCompletion, receiveValue))
     }

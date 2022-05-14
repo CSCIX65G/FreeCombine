@@ -1,5 +1,5 @@
 //
-//  File.swift
+//  DistributorState.swift
 //  
 //
 //  Created by Van Simmons on 5/10/22.
@@ -14,6 +14,7 @@ public struct DistributorState<Output: Sendable> {
         case receive(AsyncStream<Output>.Result, UnsafeContinuation<Void, Swift.Error>?)
         case subscribe(
             @Sendable (AsyncStream<Output>.Result) async throws -> Demand,
+            UnsafeContinuation<Void, Never>?,
             UnsafeContinuation<Task<Demand, Swift.Error>, Swift.Error>?
         )
         case unsubscribe(Int, UnsafeContinuation<Void, Swift.Error>?)
@@ -47,9 +48,9 @@ public struct DistributorState<Output: Sendable> {
             case let .receive(result, continuation):
                 await process(repeaters: downstreams, with: result)
                 continuation?.resume()
-            case let .subscribe(downstream, continuation):
+            case let .subscribe(downstream, outerContinuation, continuation):
                 do {
-                    let repeater = try await process(subscription: downstream)
+                    let repeater = try await process(subscription: downstream, continuation: outerContinuation)
                     continuation?.resume(returning: Task { try await withTaskCancellationHandler(handler: repeater.cancel)  {
                         try await repeater.finalState.mostRecentDemand
                     } } )
@@ -70,7 +71,8 @@ public struct DistributorState<Output: Sendable> {
         with result: AsyncStream<Output>.Result
     ) async -> Void {
         await withUnsafeContinuation { (completedContinuation: UnsafeContinuation<[Int], Never>) in
-            let semaphore = Semaphore<[Int], RepeaterAction<Int>>(
+            print("making semaphore")
+            let semaphore = Semaphore<[Int], RepeatedAction<Int>>(
                 continuation: completedContinuation,
                 reducer: { completedIds, action in
                     guard case let .repeated(id, .done) = action else { return }
@@ -79,21 +81,25 @@ public struct DistributorState<Output: Sendable> {
                 initialState: [Int](),
                 count: downstreams.count
             )
+            print("sending downstream")
             repeaters.forEach { (key, downstreamTask) in
                 guard case .enqueued = downstreamTask.send(.repeat(result, semaphore)) else {
                     fatalError("Internal failure in Subject reducer processing key: \(key)")
                 }
             }
-        }.forEach { key in downstreams.removeValue(forKey: key) }
+        }
+        .forEach { key in downstreams.removeValue(forKey: key) }
     }
 
     mutating func process(
-        subscription downstream: @escaping @Sendable (AsyncStream<Output>.Result) async throws -> Demand
+        subscription downstream: @escaping @Sendable (AsyncStream<Output>.Result) async throws -> Demand,
+        continuation: UnsafeContinuation<Void, Never>?
     ) async throws -> StateTask<RepeaterState<Int, Output>, RepeaterState<Int, Output>.Action> {
         nextKey += 1
         let repeater: StateTask<RepeaterState<Int, Output>, RepeaterState<Int, Output>.Action> = await .init(
             initialState: .init(id: nextKey, downstream: downstream),
             buffering: .bufferingOldest(1),
+            onStartup: continuation,
             reducer: RepeaterState.reduce
         )
         if let currentValue = currentValue, try await downstream(.value(currentValue)) == .done {

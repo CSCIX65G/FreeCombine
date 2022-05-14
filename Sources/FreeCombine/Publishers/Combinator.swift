@@ -7,8 +7,6 @@
 public protocol CombinatorState {
     associatedtype CombinatorAction
     var mostRecentDemand: Demand { get }
-    static func complete(state: Self, completion: StateTask<Self, CombinatorAction>.Completion) -> Void
-    static func reduce(`self`: inout Self, action: CombinatorAction) async throws -> Void
 }
 
 public func Combinator<Output: Sendable, State: CombinatorState, Action>(

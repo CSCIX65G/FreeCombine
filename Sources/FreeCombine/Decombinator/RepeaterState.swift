@@ -5,13 +5,13 @@
 //  Created by Van Simmons on 5/7/22.
 //
 
-public enum RepeaterAction<ID: Hashable & Sendable>: Sendable {
+public enum RepeatedAction<ID: Hashable & Sendable>: Sendable {
     case repeated(ID, Demand)
 }
 
 public struct RepeaterState<ID: Hashable & Sendable, Output: Sendable>: Identifiable {
     public enum Action {
-        case `repeat`(AsyncStream<Output>.Result, Semaphore<[ID], RepeaterAction<ID>>)
+        case `repeat`(AsyncStream<Output>.Result, Semaphore<[ID], RepeatedAction<ID>>)
     }
 
     public let id: ID

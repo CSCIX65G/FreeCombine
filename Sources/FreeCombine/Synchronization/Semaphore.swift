@@ -8,11 +8,11 @@ public actor Semaphore<State, Action> {
     public enum Error: Swift.Error {
         case complete
     }
-    let continuation: UnsafeContinuation<State, Never>
-    let reducer: (inout State, Action) -> Void
+    private let continuation: UnsafeContinuation<State, Never>
+    private let reducer: (inout State, Action) -> Void
 
-    var state: State
-    var count: Int
+    private var state: State
+    private var count: Int
 
     public init(
         continuation: UnsafeContinuation<State, Never>,
