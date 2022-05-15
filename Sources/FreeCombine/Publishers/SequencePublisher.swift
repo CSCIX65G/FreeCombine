@@ -34,7 +34,7 @@ public extension Publisher {
                         guard !Task.isCancelled else { throw Publisher<Output>.Error.cancelled }
                         return try await downstream(.completion(.finished))
                     } catch Publisher<Output>.Error.cancelled {
-                        withUnsafeCurrentTask { t in t?.cancel() }
+                        onCancel()
                         throw Publisher<Output>.Error.cancelled
                     }
                 }
