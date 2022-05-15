@@ -1,10 +1,9 @@
 //
-//  Wait.swift
+//  CheckedExpectation+Timeout.swift
 //  
 //
 //  Created by Van Simmons on 2/20/22.
 //
-
 public func wait(
     for expectation: CheckedExpectation<Void>,
     timeout: UInt64

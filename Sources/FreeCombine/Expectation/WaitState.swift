@@ -4,7 +4,6 @@
 //
 //  Created by Van Simmons on 5/12/22.
 //
-
 struct WaitState<FinalResult, PartialResult> {
     typealias ST = StateTask<WaitState<FinalResult, PartialResult>, WaitState<FinalResult, PartialResult>.Action>
     enum Action {

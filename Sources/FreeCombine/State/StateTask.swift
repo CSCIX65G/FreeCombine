@@ -15,7 +15,7 @@
  #actor solutions: statetasks
 
  1. LOCK FREE CHANNELS
- 2. Haskell translation: ∀s becomes a Task
+ 2. Haskell translation: ∀s in Rank-N types becomes a Task
 
  # statetask actions:
 
@@ -102,7 +102,7 @@ public extension StateTask {
     @Sendable func yield(_ element: Action) -> AsyncStream<Action>.Continuation.YieldResult {
         channel.yield(element)
     }
-    
+
     @Sendable func send(_ element: Action) -> AsyncStream<Action>.Continuation.YieldResult {
         channel.yield(element)
     }
