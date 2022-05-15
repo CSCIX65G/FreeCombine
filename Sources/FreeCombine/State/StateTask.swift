@@ -42,13 +42,13 @@ public final class StateTask<State, Action: Sendable> {
     private let channel: Channel<Action>
     public let task: Task<State, Swift.Error>
 
+    deinit {
+        task.cancel()
+    }
+
     public init(channel: Channel<Action>, task: Task<State, Swift.Error>) {
         self.channel = channel
         self.task = task
-    }
-
-    deinit {
-        task.cancel()
     }
 
     public convenience init(
@@ -88,7 +88,9 @@ public final class StateTask<State, Action: Sendable> {
 }
 
 public extension StateTask {
+    @inlinable
     var isCancelled: Bool { task.isCancelled }
+
     @Sendable func cancel() -> Void {
         task.cancel()
     }
@@ -100,12 +102,9 @@ public extension StateTask {
     @Sendable func yield(_ element: Action) -> AsyncStream<Action>.Continuation.YieldResult {
         channel.yield(element)
     }
+    
     @Sendable func send(_ element: Action) -> AsyncStream<Action>.Continuation.YieldResult {
         channel.yield(element)
-    }
-
-    var finalState: State {
-        get async throws { try await task.value }
     }
 
     @inlinable
@@ -119,23 +118,9 @@ public extension StateTask {
             }
         }
     }
-}
 
-public extension StateTask where State == Void {
-    convenience init(
-        buffering: AsyncStream<Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
-        onStartup: UnsafeContinuation<Void, Never>? = .none,
-        onCancel: @escaping () -> Void = { },
-        onCompletion: @escaping (Completion) -> Void = {_ in },
-        reducer: @escaping (Action) async throws -> Void
-    ) {
-        self.init(
-            initialState: {_ in },
-            buffering: buffering,
-            onStartup: onStartup,
-            onCancel: onCancel,
-            onCompletion: { _, completion in onCompletion(completion) },
-            reducer: { _, action in try await reducer(action) }
-        )
+    @inlinable
+    var finalState: State {
+        get async throws { try await task.value }
     }
 }

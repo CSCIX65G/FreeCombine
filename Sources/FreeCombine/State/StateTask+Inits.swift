@@ -45,3 +45,22 @@ public extension StateTask {
         )
     }
 }
+
+public extension StateTask where State == Void {
+    convenience init(
+        buffering: AsyncStream<Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
+        onStartup: UnsafeContinuation<Void, Never>? = .none,
+        onCancel: @escaping () -> Void = { },
+        onCompletion: @escaping (Completion) -> Void = {_ in },
+        reducer: @escaping (Action) async throws -> Void
+    ) {
+        self.init(
+            initialState: {_ in },
+            buffering: buffering,
+            onStartup: onStartup,
+            onCancel: onCancel,
+            onCompletion: { _, completion in onCompletion(completion) },
+            reducer: { _, action in try await reducer(action) }
+        )
+    }
+}
