@@ -1,5 +1,5 @@
 //
-//  File.swift
+//  SubjectTests.swift
 //  
 //
 //  Created by Van Simmons on 5/13/22.
@@ -28,20 +28,25 @@ class SubjectTests: XCTestCase {
         _ = await publisher1.sink { (result: AsyncStream<Int>.Result) in
             let count = await counter.count
             switch result {
-                case let .value(value):
+                case .value:
                     _ = await counter.increment()
-                    print(value)
                 case let .completion(.failure(error)):
                     XCTFail("Got an error? \(error)")
                 case .completion(.finished):
-                    XCTAssert(count == 1, "wrong number of values sent: \(count)")
-                    do {  try await expectation.complete() }
+                    XCTAssert(count == 4, "wrong number of values sent: \(count)")
+                    do {
+                        try await expectation.complete()
+                    }
                     catch { XCTFail("Failed to complete: \(error)") }
                     return .done
             }
             return .more
         }
         try await subject.send(14)
+        try await subject.send(15)
+        try await subject.send(16)
+        try await subject.send(17)
+        try await subject.complete()
 
         do { try await FreeCombine.wait(for: expectation, timeout: 100_000_000) }
         catch {

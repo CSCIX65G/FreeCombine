@@ -106,6 +106,7 @@ class DistributorTests: XCTestCase {
                             let count2 = await counter.count
                             XCTAssert(count2 == 4, "Incorrect number of sends: \(count2)")
                             try await distributor.reduce(action: .receive(.completion(.finished), c))
+                            XCTAssert(distributor.repeaters.count == 0, "Incorrect number of repeaters = \(distributor.repeaters.count)")
                         } catch {
                             XCTFail("Caught: \(error)")
                         }

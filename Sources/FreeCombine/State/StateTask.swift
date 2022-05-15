@@ -46,44 +46,9 @@ public final class StateTask<State, Action: Sendable> {
         self.channel = channel
         self.task = task
     }
-    
-    public static func stateTask(
-        initialState: @escaping (Channel<Action>) async -> State,
-        buffering: AsyncStream<Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
-        onCancel: @escaping () -> Void = { },
-        onCompletion: @escaping (State, Completion) -> Void = { _, _ in },
-        reducer: @escaping (inout State, Action) async throws -> Void
-    ) async -> Self {
-        var stateTask: Self!
-        await withUnsafeContinuation { stateTaskContinuation in
-            stateTask = Self.init(
-                initialState: initialState,
-                buffering: buffering,
-                onStartup: stateTaskContinuation,
-                onCancel: onCancel,
-                onCompletion: onCompletion,
-                reducer: reducer
-            )
-        }
-        return stateTask
-    }
 
-    public convenience init(
-        initialState: State,
-        buffering: AsyncStream<Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
-        onStartup: UnsafeContinuation<Void, Never>? = .none,
-        onCancel: @escaping () -> Void = { },
-        onCompletion: @escaping (State, Completion) -> Void = { _, _ in },
-        reducer: @escaping (inout State, Action) async throws -> Void
-    ) {
-        self.init(
-            initialState: {_ in initialState},
-            buffering: buffering,
-            onStartup: onStartup,
-            onCancel: onCancel,
-            onCompletion: onCompletion,
-            reducer: reducer
-        )
+    deinit {
+        task.cancel()
     }
 
     public convenience init(
@@ -120,37 +85,31 @@ public final class StateTask<State, Action: Sendable> {
         }
         self.init(channel: localChannel, task: localTask)
     }
+}
 
-    deinit {
+public extension StateTask {
+    var isCancelled: Bool { task.isCancelled }
+    @Sendable func cancel() -> Void {
         task.cancel()
     }
 
-    public var isCancelled: Bool {
-        task.isCancelled
-    }
-
-    @Sendable public func cancel() -> Void {
-        task.cancel()
-    }
-
-    @Sendable public func finish() -> Void {
+    @Sendable func finish() -> Void {
         channel.finish()
     }
 
-    @Sendable public func yield(_ element: Action) -> AsyncStream<Action>.Continuation.YieldResult {
+    @Sendable func yield(_ element: Action) -> AsyncStream<Action>.Continuation.YieldResult {
+        channel.yield(element)
+    }
+    @Sendable func send(_ element: Action) -> AsyncStream<Action>.Continuation.YieldResult {
         channel.yield(element)
     }
 
-    @Sendable public func send(_ element: Action) -> AsyncStream<Action>.Continuation.YieldResult {
-        channel.yield(element)
-    }
-
-    public var finalState: State {
+    var finalState: State {
         get async throws { try await task.value }
     }
 
     @inlinable
-    public var result: Result<State, Swift.Error> {
+    var result: Result<State, Swift.Error> {
         get async {
             do {
                 let success = try await finalState
