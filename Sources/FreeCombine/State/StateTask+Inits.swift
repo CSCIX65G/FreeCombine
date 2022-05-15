@@ -9,8 +9,8 @@ public extension StateTask {
     static func stateTask(
         initialState: @escaping (Channel<Action>) async -> State,
         buffering: AsyncStream<Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
-        onCancel: @escaping () -> Void = { },
-        onCompletion: @escaping (State, Completion) -> Void = { _, _ in },
+        onCancel: @Sendable @escaping () -> Void = { },
+        onCompletion: @escaping (State, Completion) async -> Void = { _, _ in },
         reducer: @escaping (inout State, Action) async throws -> Void
     ) async -> Self {
         var stateTask: Self!
@@ -31,8 +31,8 @@ public extension StateTask {
         initialState: State,
         buffering: AsyncStream<Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
         onStartup: UnsafeContinuation<Void, Never>? = .none,
-        onCancel: @escaping () -> Void = { },
-        onCompletion: @escaping (State, Completion) -> Void = { _, _ in },
+        onCancel: @Sendable @escaping () -> Void = { },
+        onCompletion: @escaping (State, Completion) async -> Void = { _, _ in },
         reducer: @escaping (inout State, Action) async throws -> Void
     ) {
         self.init(
@@ -50,8 +50,8 @@ public extension StateTask where State == Void {
     convenience init(
         buffering: AsyncStream<Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
         onStartup: UnsafeContinuation<Void, Never>? = .none,
-        onCancel: @escaping () -> Void = { },
-        onCompletion: @escaping (Completion) -> Void = {_ in },
+        onCancel: @Sendable @escaping () -> Void = { },
+        onCompletion: @escaping (Completion) async -> Void = {_ in },
         reducer: @escaping (Action) async throws -> Void
     ) {
         self.init(
@@ -59,7 +59,7 @@ public extension StateTask where State == Void {
             buffering: buffering,
             onStartup: onStartup,
             onCancel: onCancel,
-            onCompletion: { _, completion in onCompletion(completion) },
+            onCompletion: { _, completion in await onCompletion(completion) },
             reducer: { _, action in try await reducer(action) }
         )
     }

@@ -42,11 +42,15 @@ struct ZipState<Left: Sendable, Right: Sendable>: CombinatorState {
         } }
     }
 
-    static func complete(state: Self, completion: StateTask<Self, Self.Action>.Completion) -> Void {
+    static func complete(state: Self, completion: StateTask<Self, Self.Action>.Completion) async -> Void {
         switch completion {
             case let .cancel(state):
                 state.leftCancellable.cancel()
+                state.left?.continuation.resume(returning: .done)
+                let leftResult = await state.leftCancellable.result
                 state.rightCancellable.cancel()
+                state.right?.continuation.resume(returning: .done)
+                let rightResult = await state.rightCancellable.result
             default:
                 ()
         }

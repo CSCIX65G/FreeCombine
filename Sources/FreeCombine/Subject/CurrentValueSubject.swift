@@ -9,7 +9,7 @@ public func CurrentValueSubject<Output>(
     currentValue: Output,
     buffering: AsyncStream<DistributorState<Output>.Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
     onStartup: UnsafeContinuation<Void, Never>? = .none,
-    onCancel: @escaping () -> Void = { },
+    onCancel: @Sendable @escaping () -> Void = { },
     onCompletion: @escaping (
         DistributorState<Output>,
         StateTask<DistributorState<Output>, DistributorState<Output>.Action>.Completion
@@ -27,7 +27,7 @@ public func CurrentValueSubject<Output>(
 public func CurrentValueSubject<Output>(
     currentValue: Output,
     buffering: AsyncStream<DistributorState<Output>.Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
-    onCancel: @escaping () -> Void = { },
+    onCancel: @Sendable @escaping () -> Void = { },
     onCompletion: @escaping (
         DistributorState<Output>,
         StateTask<DistributorState<Output>, DistributorState<Output>.Action>.Completion

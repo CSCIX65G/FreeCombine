@@ -60,11 +60,11 @@ public extension StateTask  {
     static func stateTask<Output: Sendable>(
         currentValue: Output,
         buffering: AsyncStream<DistributorState<Output>.Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
-        onCancel: @escaping () -> Void = { },
+        onCancel: @Sendable @escaping () -> Void = { },
         onCompletion: @escaping (
             DistributorState<Output>,
             StateTask<DistributorState<Output>, DistributorState<Output>.Action>.Completion
-        ) -> Void = { _, _ in }
+        ) async -> Void = { _, _ in }
     ) async -> Self where State == DistributorState<Output>, Action == DistributorState<Output>.Action {
         await .stateTask(
             initialState: { channel in
@@ -81,11 +81,11 @@ public extension StateTask  {
         currentValue: Output,
         buffering: AsyncStream<DistributorState<Output>.Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
         onStartup: UnsafeContinuation<Void, Never>? = .none,
-        onCancel: @escaping () -> Void = { },
+        onCancel: @Sendable @escaping () -> Void = { },
         onCompletion: @escaping (
             DistributorState<Output>,
             StateTask<DistributorState<Output>, DistributorState<Output>.Action>.Completion
-        ) -> Void = { _, _ in }
+        ) async -> Void = { _, _ in }
     ) where State == DistributorState<Output>, Action == DistributorState<Output>.Action {
         self.init(
             initialState: { channel in

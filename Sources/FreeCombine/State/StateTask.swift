@@ -55,31 +55,37 @@ public final class StateTask<State, Action: Sendable> {
         initialState: @escaping (Channel<Action>) async -> State,
         buffering: AsyncStream<Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
         onStartup: UnsafeContinuation<Void, Never>? = .none,
-        onCancel: @escaping () -> Void = { },
-        onCompletion: @escaping (State, Completion) -> Void = { _, _ in },
+        onCancel: @Sendable @escaping () -> Void = { },
+        onCompletion: @escaping (State, Completion) async -> Void = { _, _ in },
         reducer: @escaping (inout State, Action) async throws -> Void
     ) {
         let localChannel = Channel<Action>(buffering: buffering)
         let localTask = Task<State, Swift.Error> {
-            let cancellation: @Sendable () -> Void = { localChannel.finish(); onCancel() }
-            return try await withTaskCancellationHandler(handler: cancellation) {
+            return try await withTaskCancellationHandler(handler: {
+                localChannel.finish()
+                onCancel()
+            }) {
                 onStartup?.resume()
                 var state = await initialState(localChannel)
                 for await action in localChannel {
-                    guard !Task.isCancelled else { continue }
+                    guard !Task.isCancelled else {
+                        await Task.yield()
+                        continue
+                    }
                     do { try await reducer(&state, action) }
                     catch {
                         localChannel.finish();
                         for await _ in localChannel { continue; }
-                        onCompletion(state, .failure(error));
+                        await onCompletion(state, .failure(error));
                         throw error
                     }
                 }
                 guard !Task.isCancelled else {
-                    onCompletion(state, .cancel(state))
+                    await onCompletion(state, .cancel(state))
+                    await Task.yield()
                     throw Error.cancelled
                 }
-                onCompletion(state, .termination(state))
+                await onCompletion(state, .termination(state))
                 return state
             }
         }
