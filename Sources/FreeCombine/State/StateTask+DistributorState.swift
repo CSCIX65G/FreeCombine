@@ -99,32 +99,3 @@ public extension StateTask  {
         )
     }
 }
-
-public extension Publisher {
-    init(
-        onCancel: @Sendable @escaping () -> Void = { },
-        stateTask: StateTask<DistributorState<Output>, DistributorState<Output>.Action>
-    ) {
-        self = .init { continuation, downstream in
-            .init {
-                let innerTask: Task<Demand, Swift.Error> = try await withUnsafeThrowingContinuation { demandContinuation in
-                    let enqueueStatus = stateTask.send(.subscribe(downstream, continuation, demandContinuation))
-                    guard case .enqueued = enqueueStatus else {
-                        demandContinuation.resume(
-                            throwing: StateTask<DistributorState<Output>, DistributorState<Output>.Action>.Error.enqueueError(enqueueStatus)
-                        )
-                        return
-                    }
-                }
-                let cancellation: @Sendable () -> Void = {
-                    innerTask.cancel()
-                    onCancel()
-                }
-                return try await withTaskCancellationHandler(handler: cancellation) {
-                    continuation?.resume()
-                    return try await innerTask.value
-                }
-            }
-        }
-    }
-}
