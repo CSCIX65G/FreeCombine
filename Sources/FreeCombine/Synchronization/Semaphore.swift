@@ -24,6 +24,7 @@ public actor Semaphore<State, Action> {
         self.reducer = reducer
         self.state = initialState
         self.count = count
+        if count == 0 { continuation.resume(returning: initialState) }
     }
 
     public func decrement(with action: Action, function: String = #function, file: String = #file, line: Int = #line) -> Void {

@@ -17,7 +17,7 @@ public extension StateTask  {
     ) async -> Self where State == DistributorState<Output>, Action == DistributorState<Output>.Action {
         await .stateTask(
             initialState: { channel in
-                .init(channel: channel, currentValue: currentValue, nextKey: 0, downstreams: [:])
+                .init(currentValue: currentValue, nextKey: 0, downstreams: [:])
             },
             buffering: buffering,
             onCancel: onCancel,
@@ -38,7 +38,7 @@ public extension StateTask  {
     ) where State == DistributorState<Output>, Action == DistributorState<Output>.Action {
         self.init(
             initialState: { channel in
-                .init(channel: channel, currentValue: currentValue, nextKey: 0, downstreams: [:])
+                .init(currentValue: currentValue, nextKey: 0, downstreams: [:])
             },
             buffering: buffering,
             onStartup: onStartup,
@@ -49,13 +49,13 @@ public extension StateTask  {
     }
 
     func send<Output: Sendable>(_ value: Output) async throws -> Void where Action == DistributorState<Output>.Action {
-        let _: Void = try await withUnsafeThrowingContinuation { continuation in
-            let enqueueResult = yield(.receive(.value(value), continuation))
-            guard case .enqueued = enqueueResult else {
-                continuation.resume(throwing: Self.Error.enqueueError(enqueueResult))
-                return
-            }
-            continuation.resume()
+        var enqueueResult: AsyncStream<DistributorState<Output>.Action>.Continuation.YieldResult!
+        let _: Void = await withUnsafeContinuation { continuation in
+            enqueueResult = yield(.receive(.value(value), continuation))
+            guard case .enqueued = enqueueResult else { continuation.resume(); return }
+        }
+        guard case .enqueued = enqueueResult else {
+            throw Self.Error.enqueueError(enqueueResult)
         }
     }
 
