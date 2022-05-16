@@ -48,7 +48,7 @@ public extension Publisher {
                 }) {
                     continuation?.resume()
                     guard !Task.isCancelled else {
-                        throw Publisher<Output>.Error.cancelled
+                        throw PublisherError.cancelled
                     }
                     return try await stateTask.finalState.mostRecentDemand
                 }

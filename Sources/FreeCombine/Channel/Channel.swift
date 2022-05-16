@@ -67,10 +67,10 @@ public extension Channel {
                     case .enqueued:
                         return
                     case .dropped:
-                        continuation.resume(throwing: Publisher<Upstream>.Error.enqueueError(upstreamValue))
+                        continuation.resume(throwing: PublisherError.enqueueError)
                         return
                     case .terminated:
-                        continuation.resume(throwing: Publisher<Upstream>.Error.cancelled)
+                        continuation.resume(throwing: PublisherError.cancelled)
                         return
                     @unknown default:
                         fatalError("Unhandled continuation value")

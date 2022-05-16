@@ -28,14 +28,14 @@ public extension Publisher {
                 return try await withTaskCancellationHandler(handler: onCancel) {
                     do {
                         for a in sequence {
-                            guard !Task.isCancelled else { throw Publisher<Output>.Error.cancelled }
+                            guard !Task.isCancelled else { throw PublisherError.cancelled }
                             guard try await downstream(.value(a)) == .more else { return .done }
                         }
-                        guard !Task.isCancelled else { throw Publisher<Output>.Error.cancelled }
+                        guard !Task.isCancelled else { throw PublisherError.cancelled }
                         return try await downstream(.completion(.finished))
-                    } catch Publisher<Output>.Error.cancelled {
+                    } catch PublisherError.cancelled {
                         onCancel()
-                        throw Publisher<Output>.Error.cancelled
+                        throw PublisherError.cancelled
                     }
                 }
             }

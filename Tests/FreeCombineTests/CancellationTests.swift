@@ -52,11 +52,9 @@ class CancellationTests: XCTestCase {
                 }
                 return .more
             }
-        await Task.yield()
         // Sleep 1ms to allow several values to be sent
         try await Task.sleep(nanoseconds: 1_000_000)
         z2.cancel()
-        await Task.yield()
 
         do { try await FreeCombine.wait(for: expectation, timeout: 100_000_000) }
         catch { XCTFail("Timed out with count: \(await counter.count)") }

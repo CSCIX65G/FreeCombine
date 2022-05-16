@@ -17,11 +17,19 @@ public extension Publisher {
         _ a: Output
     ) {
         self = .init { continuation, downstream in
-            Task { try await withTaskCancellationHandler(handler: onCancel) {
+            Task {
                 continuation?.resume()
-                guard !Task.isCancelled else { return .done }
-                return try await downstream(.value(a)) == .more ? try await downstream(.completion(.finished)) : .done
-            } }
+                return try await withTaskCancellationHandler(handler: onCancel) {
+                    do {
+                        guard !Task.isCancelled else { return .done }
+                        return try await downstream(.value(a)) == .more ? try await downstream(.completion(.finished))
+                            : .done
+                    } catch PublisherError.cancelled {
+                        onCancel()
+                        throw PublisherError.cancelled
+                    }
+                }
+            }
         }
     }
 }

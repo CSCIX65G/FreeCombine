@@ -22,13 +22,13 @@ public extension AsyncStream where Element: Sendable {
     }
 }
 
-public struct Publisher<Output: Sendable> {
-    public enum Error: Swift.Error, Sendable {
-        case cancelled
-        case internalError
-        case enqueueError(AsyncStream<Output>.Result)
-    }
+public enum PublisherError: Swift.Error, Sendable, CaseIterable {
+    case cancelled
+    case internalError
+    case enqueueError
+}
 
+public struct Publisher<Output: Sendable> {
     private let call: (
         UnsafeContinuation<Void, Never>?,
         @Sendable @escaping (AsyncStream<Output>.Result) async throws -> Demand
@@ -61,7 +61,6 @@ public extension Publisher {
         call(onStartup, { result in
             guard !Task.isCancelled else { return .done }
             let demand = try await f(result)
-            await Task.yield()
             return demand
         })
     }
@@ -82,7 +81,6 @@ public extension Publisher {
             t = call(continuation, { result in
                 guard !Task.isCancelled else { return .done }
                 let demand = try await f(result)
-                await Task.yield()
                 return demand
             })
         }

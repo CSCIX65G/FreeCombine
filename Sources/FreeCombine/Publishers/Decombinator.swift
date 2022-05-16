@@ -30,7 +30,7 @@ public extension Publisher {
                     let enqueueStatus = stateTask.send(.subscribe(downstream, continuation, demandContinuation))
                     guard case .enqueued = enqueueStatus else {
                         demandContinuation.resume(
-                            throwing: StateTask<DistributorState<Output>, DistributorState<Output>.Action>.Error.enqueueError(enqueueStatus)
+                            throwing: PublisherError.enqueueError
                         )
                         return
                     }

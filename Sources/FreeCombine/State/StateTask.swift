@@ -33,12 +33,6 @@ public final class StateTask<State, Action: Sendable> {
         case cancel(State)
     }
 
-    public enum Error: Swift.Error {
-        case cancelled
-        case internalError
-        case enqueueError(AsyncStream<Action>.Continuation.YieldResult)
-    }
-
     private let channel: Channel<Action>
     public let task: Task<State, Swift.Error>
 
@@ -68,10 +62,7 @@ public final class StateTask<State, Action: Sendable> {
                 onStartup?.resume()
                 var state = await initialState(localChannel)
                 for await action in localChannel {
-                    guard !Task.isCancelled else {
-                        await Task.yield()
-                        continue
-                    }
+                    guard !Task.isCancelled else { continue }
                     do { try await reducer(&state, action) }
                     catch {
                         localChannel.finish();
@@ -82,8 +73,7 @@ public final class StateTask<State, Action: Sendable> {
                 }
                 guard !Task.isCancelled else {
                     await onCompletion(state, .cancel(state))
-                    await Task.yield()
-                    throw Error.cancelled
+                    throw PublisherError.cancelled
                 }
                 await onCompletion(state, .termination(state))
                 return state

@@ -14,7 +14,7 @@ public extension StateTask {
             guard case .enqueued = enqueueResult else { continuation.resume(); return }
         }
         guard case .enqueued = enqueueResult else {
-            throw Self.Error.enqueueError(enqueueResult)
+            throw PublisherError.enqueueError
         }
     }
 
@@ -27,7 +27,7 @@ public extension StateTask {
             guard case .enqueued = enqueueResult else { continuation.resume(); return }
         }
         guard case .enqueued = enqueueResult else {
-            throw Self.Error.enqueueError(enqueueResult)
+            throw PublisherError.enqueueError
         }
     }
 
@@ -38,7 +38,7 @@ public extension StateTask {
             guard case .enqueued = enqueueResult else { continuation.resume(); return }
         }
         guard case .enqueued = enqueueResult else {
-            throw Self.Error.enqueueError(enqueueResult)
+            throw PublisherError.enqueueError
         }
     }
 
@@ -51,7 +51,7 @@ public extension StateTask {
             guard case .enqueued = enqueueResult else { continuation.resume(); return }
         }
         guard case .enqueued = enqueueResult else {
-            throw Self.Error.enqueueError(enqueueResult)
+            throw PublisherError.enqueueError
         }
     }
 }

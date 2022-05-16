@@ -28,9 +28,9 @@ struct WaitState<FinalResult, PartialResult> {
     ) where S.Element == CheckedExpectation<PartialResult> {
         let tasks = expectations.enumerated().map { index, expectation in
             Task<PartialResult, Swift.Error> {
-                guard !Task.isCancelled else { throw ST.Error.cancelled }
+                guard !Task.isCancelled else { throw PublisherError.cancelled }
                 let pResult = try await expectation.value()
-                guard !Task.isCancelled else { throw ST.Error.cancelled }
+                guard !Task.isCancelled else { throw PublisherError.cancelled }
                 channel.yield(.complete(index, pResult))
                 return pResult
             }

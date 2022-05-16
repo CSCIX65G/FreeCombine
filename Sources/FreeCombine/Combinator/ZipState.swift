@@ -47,10 +47,10 @@ struct ZipState<Left: Sendable, Right: Sendable>: CombinatorState {
             case let .cancel(state):
                 state.leftCancellable.cancel()
                 state.left?.continuation.resume(returning: .done)
-                let leftResult = await state.leftCancellable.result
+                _ = await state.leftCancellable.result
                 state.rightCancellable.cancel()
                 state.right?.continuation.resume(returning: .done)
-                let rightResult = await state.rightCancellable.result
+                _ = await state.rightCancellable.result
             default:
                 ()
         }
@@ -78,7 +78,7 @@ struct ZipState<Left: Sendable, Right: Sendable>: CombinatorState {
         _ leftContinuation: UnsafeContinuation<Demand, Error>
     ) async throws -> Void {
         guard left == nil else {
-            throw StateTask<ZipState<Left, Right>, Self.Action>.Error.internalError
+            throw PublisherError.internalError
         }
         switch leftResult {
             case let .value((value)):
@@ -97,7 +97,7 @@ struct ZipState<Left: Sendable, Right: Sendable>: CombinatorState {
         _ rightContinuation: UnsafeContinuation<Demand, Error>
     ) async throws -> Void {
         guard right == nil else {
-            throw StateTask<ZipState<Left, Right>, Self.Action>.Error.internalError
+            throw PublisherError.internalError
         }
         switch rightResult {
             case let .value((value)):
