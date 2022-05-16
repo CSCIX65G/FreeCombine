@@ -47,9 +47,7 @@ public extension Publisher {
                     onCancel()
                 }) {
                     continuation?.resume()
-                    guard !Task.isCancelled else {
-                        throw PublisherError.cancelled
-                    }
+                    guard !Task.isCancelled else { throw PublisherError.cancelled }
                     return try await stateTask.finalState.mostRecentDemand
                 }
             }

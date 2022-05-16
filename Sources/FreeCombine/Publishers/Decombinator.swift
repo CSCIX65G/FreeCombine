@@ -29,10 +29,7 @@ public extension Publisher {
                 let innerTask: Task<Demand, Swift.Error> = try await withUnsafeThrowingContinuation { demandContinuation in
                     let enqueueStatus = stateTask.send(.subscribe(downstream, continuation, demandContinuation))
                     guard case .enqueued = enqueueStatus else {
-                        demandContinuation.resume(
-                            throwing: PublisherError.enqueueError
-                        )
-                        return
+                        return demandContinuation.resume(throwing: PublisherError.enqueueError)
                     }
                 }
                 let cancellation: @Sendable () -> Void = {
