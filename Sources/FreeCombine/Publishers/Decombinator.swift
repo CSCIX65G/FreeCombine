@@ -37,7 +37,14 @@ public extension Publisher {
                     onCancel()
                 }
                 return try await withTaskCancellationHandler(handler: cancellation) {
-                    return try await innerTask.value
+                    switch await innerTask.result {
+                        case let .failure(error):
+                            if let error = error as? PublisherError,
+                                case error = PublisherError.cancelled { cancellation() }
+                            throw error
+                        case let .success(value):
+                            return value
+                    }
                 }
             }
         }
