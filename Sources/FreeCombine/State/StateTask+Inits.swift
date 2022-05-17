@@ -11,6 +11,7 @@ public extension StateTask {
         buffering: AsyncStream<Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
         onCancel: @Sendable @escaping () -> Void = { },
         onCompletion: @escaping (State, Completion) async -> Void = { _, _ in },
+        disposer: @escaping (Action) -> Void = { _ in },
         reducer: @escaping (inout State, Action) async throws -> Void
     ) async -> Self {
         var stateTask: Self!
@@ -21,6 +22,7 @@ public extension StateTask {
                 onStartup: stateTaskContinuation,
                 onCancel: onCancel,
                 onCompletion: onCompletion,
+                disposer: disposer,
                 reducer: reducer
             )
         }
@@ -33,6 +35,7 @@ public extension StateTask {
         onStartup: UnsafeContinuation<Void, Never>? = .none,
         onCancel: @Sendable @escaping () -> Void = { },
         onCompletion: @escaping (State, Completion) async -> Void = { _, _ in },
+        disposer: @escaping (Action) -> Void = { _ in },
         reducer: @escaping (inout State, Action) async throws -> Void
     ) {
         self.init(
@@ -41,6 +44,7 @@ public extension StateTask {
             onStartup: onStartup,
             onCancel: onCancel,
             onCompletion: onCompletion,
+            disposer: disposer,
             reducer: reducer
         )
     }
@@ -52,6 +56,7 @@ public extension StateTask where State == Void {
         onStartup: UnsafeContinuation<Void, Never>? = .none,
         onCancel: @Sendable @escaping () -> Void = { },
         onCompletion: @escaping (Completion) async -> Void = {_ in },
+        disposer: @escaping (Action) -> Void = { _ in },
         reducer: @escaping (Action) async throws -> Void
     ) {
         self.init(
@@ -60,6 +65,7 @@ public extension StateTask where State == Void {
             onStartup: onStartup,
             onCancel: onCancel,
             onCompletion: { _, completion in await onCompletion(completion) },
+            disposer: disposer,
             reducer: { _, action in try await reducer(action) }
         )
     }

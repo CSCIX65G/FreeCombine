@@ -28,7 +28,6 @@
 public final class StateTask<State, Action: Sendable> {
     public enum Completion {
         case termination(State)
-        case exit(State)
         case failure(Swift.Error)
         case cancel(State)
     }
@@ -51,27 +50,28 @@ public final class StateTask<State, Action: Sendable> {
         onStartup: UnsafeContinuation<Void, Never>? = .none,
         onCancel: @Sendable @escaping () -> Void = { },
         onCompletion: @escaping (State, Completion) async -> Void = { _, _ in },
+        disposer: @escaping (Action) -> Void = { _ in },
         reducer: @escaping (inout State, Action) async throws -> Void
     ) {
         let localChannel = Channel<Action>(buffering: buffering)
+        let cancellation: @Sendable () -> Void = { localChannel.finish(); onCancel() }
         let localTask = Task<State, Swift.Error> {
-            return try await withTaskCancellationHandler(handler: {
-                localChannel.finish()
-                onCancel()
-            }) {
-                onStartup?.resume()
+            try await withTaskCancellationHandler(handler: cancellation) {
                 var state = await initialState(localChannel)
+                onStartup?.resume()
                 for await action in localChannel {
-                    guard !Task.isCancelled else { continue }
+                    guard !Task.isCancelled else { break }
                     do { try await reducer(&state, action) }
                     catch {
                         localChannel.finish();
-                        for await _ in localChannel { continue; }
+                        for await action in localChannel { disposer(action); continue }
                         await onCompletion(state, .failure(error));
                         throw error
                     }
                 }
                 guard !Task.isCancelled else {
+                    localChannel.finish();
+                    for await action in localChannel { disposer(action); continue }
                     await onCompletion(state, .cancel(state))
                     throw PublisherError.cancelled
                 }
@@ -107,8 +107,7 @@ public extension StateTask {
     var result: Result<State, Swift.Error> {
         get async {
             do {
-                let success = try await finalState
-                return .success(success)
+                return .success(try await finalState)
             } catch {
                 return .failure(error)
             }

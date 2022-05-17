@@ -79,4 +79,36 @@ class ZipTests: XCTestCase {
             XCTFail("Timed out, count = \(count)")
         }
     }
+
+    func testSimpleSequenceZip() async throws {
+        let expectation = await CheckedExpectation<Void>()
+
+        let publisher1 = (0 ... 100).asyncPublisher
+        let publisher2 = "abcdefghijklmnopqrstuvwxyz".asyncPublisher
+
+        let counter = Counter()
+        _ = await zip(publisher1, publisher2)
+            .sink { (result: AsyncStream<(Int, Character)>.Result) in
+                let count = await counter.count
+                switch result {
+                    case .value:
+                        _ = await counter.increment()
+                    case let .completion(.failure(error)):
+                        XCTFail("Got an error? \(error)")
+                    case .completion(.finished):
+                        XCTAssert(count == 26, "wrong number of values sent: \(count)")
+                        do {  try await expectation.complete() }
+                        catch { XCTFail("Failed to complete: \(error)") }
+                        return .done
+                }
+                return .more
+            }
+
+        do { try await FreeCombine.wait(for: expectation, timeout: 100_000_000) }
+        catch {
+            let count = await counter.count
+            XCTFail("Timed out, count = \(count)")
+        }
+    }
+
 }

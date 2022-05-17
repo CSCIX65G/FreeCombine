@@ -46,10 +46,10 @@ struct ZipState<Left: Sendable, Right: Sendable>: CombinatorState {
         switch completion {
             case let .cancel(state):
                 state.leftCancellable.cancel()
-                state.left?.continuation.resume(returning: .done)
+                state.left?.continuation.resume(throwing: PublisherError.cancelled)
                 _ = await state.leftCancellable.result
                 state.rightCancellable.cancel()
-                state.right?.continuation.resume(returning: .done)
+                state.right?.continuation.resume(throwing: PublisherError.cancelled)
                 _ = await state.rightCancellable.result
             default:
                 ()

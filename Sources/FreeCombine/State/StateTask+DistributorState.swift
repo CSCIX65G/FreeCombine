@@ -64,7 +64,8 @@ public extension StateTask  {
         onCompletion: @escaping (
             DistributorState<Output>,
             StateTask<DistributorState<Output>, DistributorState<Output>.Action>.Completion
-        ) async -> Void = { _, _ in }
+        ) async -> Void = { _, _ in },
+        disposer: @escaping (Action) -> Void = { _ in }
     ) async -> Self where State == DistributorState<Output>, Action == DistributorState<Output>.Action {
         await .stateTask(
             initialState: { channel in
@@ -73,6 +74,7 @@ public extension StateTask  {
             buffering: buffering,
             onCancel: onCancel,
             onCompletion: onCompletion,
+            disposer: disposer,
             reducer: DistributorState<Output>.reduce
         )
     }
