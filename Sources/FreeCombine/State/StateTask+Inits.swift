@@ -11,7 +11,7 @@ public extension StateTask {
         buffering: AsyncStream<Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
         onCancel: @Sendable @escaping () -> Void = { },
         onCompletion: @escaping (State, Completion) async -> Void = { _, _ in },
-        disposer: @escaping (Action) -> Void = { _ in },
+        disposer: @escaping (Action, Error) -> Void = { _, _ in },
         reducer: @escaping (inout State, Action) async throws -> Void
     ) async -> Self {
         var stateTask: Self!
@@ -35,12 +35,32 @@ public extension StateTask {
         onStartup: UnsafeContinuation<Void, Never>? = .none,
         onCancel: @Sendable @escaping () -> Void = { },
         onCompletion: @escaping (State, Completion) async -> Void = { _, _ in },
-        disposer: @escaping (Action) -> Void = { _ in },
+        disposer: @escaping (Action, Error) -> Void = { _, _ in },
         reducer: @escaping (inout State, Action) async throws -> Void
     ) {
         self.init(
             initialState: {_ in initialState},
             buffering: buffering,
+            onStartup: onStartup,
+            onCancel: onCancel,
+            onCompletion: onCompletion,
+            disposer: disposer,
+            reducer: reducer
+        )
+    }
+
+    convenience init(
+        initialState: @escaping (Channel<Action>) async -> State,
+        buffering: AsyncStream<Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
+        onStartup: UnsafeContinuation<Void, Never>? = .none,
+        onCancel: @Sendable @escaping () -> Void = { },
+        onCompletion: @escaping (State, Completion) async -> Void = { _, _ in },
+        disposer: @escaping (Action, Error) -> Void = { _, _ in },
+        reducer: @escaping (inout State, Action) async throws -> Void
+    ) {
+        self.init(
+            channel: Channel<Action>(buffering: buffering),
+            initialState: initialState,
             onStartup: onStartup,
             onCancel: onCancel,
             onCompletion: onCompletion,
@@ -56,7 +76,7 @@ public extension StateTask where State == Void {
         onStartup: UnsafeContinuation<Void, Never>? = .none,
         onCancel: @Sendable @escaping () -> Void = { },
         onCompletion: @escaping (Completion) async -> Void = {_ in },
-        disposer: @escaping (Action) -> Void = { _ in },
+        disposer: @escaping (Action, Error) -> Void = { _, _ in },
         reducer: @escaping (Action) async throws -> Void
     ) {
         self.init(

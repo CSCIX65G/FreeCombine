@@ -4,26 +4,34 @@
 //
 //  Created by Van Simmons on 5/13/22.
 //
+
+/* where State == DistributorState<Output>, Action == DistributorState<Output>.Action */
 public extension StateTask {
+    @inlinable
     func send<Output: Sendable>(
         _ value: Output
-    ) async throws -> Void where Action == DistributorState<Output>.Action {
-        var enqueueResult: AsyncStream<DistributorState<Output>.Action>.Continuation.YieldResult!
-        let _: Void = await withUnsafeContinuation { continuation in
-            enqueueResult = yield(.receive(.value(value), continuation))
-            guard case .enqueued = enqueueResult else { continuation.resume(); return }
-        }
-        guard case .enqueued = enqueueResult else {
-            throw PublisherError.enqueueError
-        }
+    ) async throws -> Void where State == DistributorState<Output>, Action == DistributorState<Output>.Action {
+        try await send(.value(value))
+    }
+
+    @inlinable
+    func finish<Output: Sendable>() async throws -> Void where State == DistributorState<Output>, Action == DistributorState<Output>.Action {
+        try await send(.completion(.finished))
+    }
+
+    @inlinable
+    func fail<Output: Sendable>(
+        _ error: Error
+    ) async throws -> Void where State == DistributorState<Output>, Action == DistributorState<Output>.Action {
+        try await send(.completion(.failure(error)))
     }
 
     func send<Output: Sendable>(
         _ result: AsyncStream<Output>.Result
-    ) async throws -> Void where Action == DistributorState<Output>.Action {
+    ) async throws -> Void where State == DistributorState<Output>, Action == DistributorState<Output>.Action {
         var enqueueResult: AsyncStream<DistributorState<Output>.Action>.Continuation.YieldResult!
         let _: Void = await withUnsafeContinuation { continuation in
-            enqueueResult = yield(.receive(result, continuation))
+            enqueueResult = send(.receive(result, continuation))
             guard case .enqueued = enqueueResult else { continuation.resume(); return }
         }
         guard case .enqueued = enqueueResult else {
@@ -31,32 +39,6 @@ public extension StateTask {
         }
     }
 
-    func complete<Output: Sendable>() async throws -> Void where Action == DistributorState<Output>.Action {
-        var enqueueResult: AsyncStream<DistributorState<Output>.Action>.Continuation.YieldResult!
-        let _: Void = await withUnsafeContinuation { continuation in
-            enqueueResult = yield(.receive(.completion(.finished), continuation))
-            guard case .enqueued = enqueueResult else { continuation.resume(); return }
-        }
-        guard case .enqueued = enqueueResult else {
-            throw PublisherError.enqueueError
-        }
-    }
-
-    func fail<Output: Sendable>(
-        _ error: Error
-    ) async throws -> Void where Action == DistributorState<Output>.Action {
-        var enqueueResult: AsyncStream<DistributorState<Output>.Action>.Continuation.YieldResult!
-        let _: Void = await withUnsafeContinuation { continuation in
-            enqueueResult = yield(.receive(.completion(.failure(error)), continuation))
-            guard case .enqueued = enqueueResult else { continuation.resume(); return }
-        }
-        guard case .enqueued = enqueueResult else {
-            throw PublisherError.enqueueError
-        }
-    }
-}
-
-public extension StateTask  {
     static func stateTask<Output: Sendable>(
         currentValue: Output,
         buffering: AsyncStream<DistributorState<Output>.Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
@@ -65,7 +47,7 @@ public extension StateTask  {
             DistributorState<Output>,
             StateTask<DistributorState<Output>, DistributorState<Output>.Action>.Completion
         ) async -> Void = { _, _ in },
-        disposer: @escaping (Action) -> Void = { _ in }
+        disposer: @escaping (Action, Error) -> Void = { _, _ in }
     ) async -> Self where State == DistributorState<Output>, Action == DistributorState<Output>.Action {
         await .stateTask(
             initialState: { channel in

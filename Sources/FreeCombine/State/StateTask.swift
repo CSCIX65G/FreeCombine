@@ -25,15 +25,21 @@
  5. some actions are blocking, these need special handling (think DO oneway keyword)
  */
 
+public enum StateTaskError: Swift.Error, Sendable, CaseIterable {
+    case cancelled
+    case completed
+}
+
 public final class StateTask<State, Action: Sendable> {
     public enum Completion {
         case termination(State)
+        case exit(State)
         case failure(Swift.Error)
         case cancel(State)
     }
 
     private let channel: Channel<Action>
-    public let task: Task<State, Swift.Error>
+    private let task: Task<State, Swift.Error>
 
     deinit {
         task.cancel()
@@ -45,48 +51,55 @@ public final class StateTask<State, Action: Sendable> {
     }
 
     public convenience init(
+        channel: Channel<Action>,
         initialState: @escaping (Channel<Action>) async -> State,
-        buffering: AsyncStream<Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
         onStartup: UnsafeContinuation<Void, Never>? = .none,
         onCancel: @Sendable @escaping () -> Void = { },
         onCompletion: @escaping (State, Completion) async -> Void = { _, _ in },
-        disposer: @escaping (Action) -> Void = { _ in },
+        disposer: @escaping (Action, Error) -> Void = { _, _ in },
         reducer: @escaping (inout State, Action) async throws -> Void
     ) {
-        let localChannel = Channel<Action>(buffering: buffering)
-        let cancellation: @Sendable () -> Void = { localChannel.finish(); onCancel() }
-        let localTask = Task<State, Swift.Error> {
-            try await withTaskCancellationHandler(handler: cancellation) {
-                var state = await initialState(localChannel)
+        self.init(
+            channel: channel,
+            task: .init { try await withTaskCancellationHandler(handler: onCancel) {
+                var state = await initialState(channel)
                 onStartup?.resume()
-                for await action in localChannel {
-                    guard !Task.isCancelled else { break }
-                    do { try await reducer(&state, action) }
-                    catch {
-                        localChannel.finish();
-                        for await action in localChannel { disposer(action); continue }
-                        await onCompletion(state, .failure(error));
+                var result = Completion.termination(state)
+                do {
+                    for await action in channel {
+                        guard !Task.isCancelled else { throw StateTaskError.cancelled }
+                        try await reducer(&state, action)
+                    }
+                    result = Completion.termination(state)
+                } catch {
+                    channel.finish()
+                    for await action in channel { disposer(action, error); continue }
+                    guard let completion = error as? StateTaskError else {
+                        await onCompletion(state, .failure(error))
                         throw error
                     }
+                    guard case .completed = completion else {
+                        await onCompletion(state, .cancel(state))
+                        throw error
+                    }
+                    result = .exit(state)
                 }
-                guard !Task.isCancelled else {
-                    localChannel.finish();
-                    for await action in localChannel { disposer(action); continue }
-                    await onCompletion(state, .cancel(state))
-                    throw PublisherError.cancelled
-                }
-                await onCompletion(state, .termination(state))
+                await onCompletion(state, result)
                 return state
-            }
-        }
-        self.init(channel: localChannel, task: localTask)
+            } }
+        )
+    }
+
+    public var isCancelled: Bool {
+        task.isCancelled
+    }
+
+    public var finalState: State {
+        get async throws { try await task.value }
     }
 }
 
 public extension StateTask {
-    @inlinable
-    var isCancelled: Bool { task.isCancelled }
-
     @Sendable func cancel() -> Void {
         task.cancel()
     }
@@ -95,27 +108,14 @@ public extension StateTask {
         channel.finish()
     }
 
-    @Sendable func yield(_ element: Action) -> AsyncStream<Action>.Continuation.YieldResult {
-        channel.yield(element)
-    }
-
     @Sendable func send(_ element: Action) -> AsyncStream<Action>.Continuation.YieldResult {
         channel.yield(element)
     }
 
-    @inlinable
     var result: Result<State, Swift.Error> {
         get async {
-            do {
-                return .success(try await finalState)
-            } catch {
-                return .failure(error)
-            }
+            do { return .success(try await finalState) }
+            catch { return .failure(error) }
         }
-    }
-
-    @inlinable
-    var finalState: State {
-        get async throws { try await task.value }
     }
 }

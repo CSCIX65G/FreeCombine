@@ -47,7 +47,7 @@ class SubjectTests: XCTestCase {
             try await subject.send(15)
             try await subject.send(16)
             try await subject.send(17)
-            try await subject.complete()
+            try await subject.finish()
         } catch {
             XCTFail("Caught error: \(error)")
         }
@@ -105,7 +105,7 @@ class SubjectTests: XCTestCase {
             try await subject.send(15)
             try await subject.send(16)
             try await subject.send(17)
-            try await subject.complete()
+            try await subject.finish()
         } catch {
             XCTFail("Caught error: \(error)")
         }

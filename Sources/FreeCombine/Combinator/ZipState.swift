@@ -46,10 +46,10 @@ struct ZipState<Left: Sendable, Right: Sendable>: CombinatorState {
         switch completion {
             case let .cancel(state):
                 state.leftCancellable.cancel()
-                state.left?.continuation.resume(throwing: PublisherError.cancelled)
+                state.left?.continuation.resume(throwing: StateTaskError.cancelled)
                 _ = await state.leftCancellable.result
                 state.rightCancellable.cancel()
-                state.right?.continuation.resume(throwing: PublisherError.cancelled)
+                state.right?.continuation.resume(throwing: StateTaskError.cancelled)
                 _ = await state.rightCancellable.result
             default:
                 ()
@@ -57,23 +57,28 @@ struct ZipState<Left: Sendable, Right: Sendable>: CombinatorState {
     }
 
     static func reduce(`self`: inout Self, action: Self.Action) async throws -> Void {
-        try await `self`.reduce(action: action)
+        do {
+            try await `self`.reduce(action: action)
+        } catch {
+            await complete(state: `self`, completion: .cancel(`self`))
+            throw error
+        }
     }
 
-    mutating func reduce(
+    private mutating func reduce(
         action: Self.Action
     ) async throws -> Void {
         switch action {
             case let .setLeft(leftResult, leftContinuation):
                 return mostRecentDemand == .done ? leftContinuation.resume(returning: .done)
-                    : try await handleLeft(leftResult, leftContinuation)
+                : try await handleLeft(leftResult, leftContinuation)
             case let .setRight(rightResult, rightContinuation):
                 return mostRecentDemand == .done ? rightContinuation.resume(returning: .done)
-                    : try await handleRight(rightResult, rightContinuation)
+                : try await handleRight(rightResult, rightContinuation)
         }
     }
 
-    mutating func handleLeft(
+    private mutating func handleLeft(
         _ leftResult: AsyncStream<Left>.Result,
         _ leftContinuation: UnsafeContinuation<Demand, Error>
     ) async throws -> Void {
@@ -85,14 +90,14 @@ struct ZipState<Left: Sendable, Right: Sendable>: CombinatorState {
                 left = (value, leftContinuation)
                 if let right = right {
                     mostRecentDemand = try await downstream(.value((value, right.value)))
-                    resume(returning: mostRecentDemand)
+                    try resume(returning: mostRecentDemand)
                 }
             case let .completion(finalState) :
                 try await terminate(with: finalState); return
         }
     }
 
-    mutating func handleRight(
+    private mutating func handleRight(
         _ rightResult: AsyncStream<Right>.Result,
         _ rightContinuation: UnsafeContinuation<Demand, Error>
     ) async throws -> Void {
@@ -104,14 +109,14 @@ struct ZipState<Left: Sendable, Right: Sendable>: CombinatorState {
                 right = (value, rightContinuation)
                 if let left = left{
                     mostRecentDemand = try await downstream(.value((left.value, value)))
-                    resume(returning: mostRecentDemand)
+                    try resume(returning: mostRecentDemand)
                 }
             case let .completion(finalState) :
                 try await terminate(with: finalState); return
         }
     }
 
-    mutating func resume(returning demand: Demand) {
+    private mutating func resume(returning demand: Demand) throws {
         if let left = left { left.continuation.resume(returning: demand) }
         else if demand == .done { leftCancellable.cancel() }
         left = .none
@@ -119,10 +124,12 @@ struct ZipState<Left: Sendable, Right: Sendable>: CombinatorState {
         if let right = right { right.continuation.resume(returning: demand) }
         else if demand == .done { rightCancellable.cancel() }
         right = .none
+
+        if demand == .done { throw StateTaskError.completed }
     }
 
-    mutating func terminate(with completion: Completion) async throws -> Void {
+    private mutating func terminate(with completion: Completion) async throws -> Void {
         mostRecentDemand = try await downstream(.completion(completion))
-        resume(returning: mostRecentDemand)
+        try resume(returning: mostRecentDemand)
     }
 }
