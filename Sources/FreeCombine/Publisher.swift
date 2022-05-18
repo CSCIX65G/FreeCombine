@@ -24,7 +24,6 @@ public extension AsyncStream where Element: Sendable {
 
 public enum PublisherError: Swift.Error, Sendable, CaseIterable {
     case cancelled
-    case completed
     case internalError
     case enqueueError
 }

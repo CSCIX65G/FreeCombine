@@ -45,7 +45,7 @@ public final class StateTask<State, Action: Sendable> {
         task.cancel()
     }
 
-    public init(channel: Channel<Action>, task: Task<State, Swift.Error>) {
+    init(channel: Channel<Action>, task: Task<State, Swift.Error>) {
         self.channel = channel
         self.task = task
     }
@@ -64,27 +64,25 @@ public final class StateTask<State, Action: Sendable> {
             task: .init { try await withTaskCancellationHandler(handler: onCancel) {
                 var state = await initialState(channel)
                 onStartup?.resume()
-                var result = Completion.termination(state)
                 do {
                     for await action in channel {
                         guard !Task.isCancelled else { throw StateTaskError.cancelled }
                         try await reducer(&state, action)
                     }
-                    result = Completion.termination(state)
+                    await onCompletion(state, .termination(state))
                 } catch {
                     channel.finish()
                     for await action in channel { disposer(action, error); continue }
                     guard let completion = error as? StateTaskError else {
-                        await onCompletion(state, .failure(error))
-                        throw error
+                        await onCompletion(state, .failure(error)); throw error
                     }
-                    guard case .completed = completion else {
-                        await onCompletion(state, .cancel(state))
-                        throw error
+                    switch completion {
+                        case .cancelled:
+                            await onCompletion(state, .cancel(state)); throw completion
+                        case .completed:
+                            await onCompletion(state, .exit(state))
                     }
-                    result = .exit(state)
                 }
-                await onCompletion(state, result)
                 return state
             } }
         )
