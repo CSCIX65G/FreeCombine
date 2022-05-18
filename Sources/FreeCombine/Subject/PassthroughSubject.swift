@@ -4,7 +4,6 @@
 //
 //  Created by Van Simmons on 5/11/22.
 //
-
 public func PassthroughSubject<Output>(
     type: Output.Type = Output.self,
     buffering: AsyncStream<DistributorState<Output>.Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
