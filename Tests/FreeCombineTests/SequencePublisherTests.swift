@@ -18,7 +18,7 @@ class SequencePublisherTests: XCTestCase {
         let expectation1 = await CheckedExpectation<Void>()
         let expectation2 = await CheckedExpectation<Void>()
 
-        let sequencePublisher = SequencePublisher(0 ..< 10)
+        let sequencePublisher = Sequenced(0 ..< 10)
 
         let counter1 = Counter()
         _ = await sequencePublisher.sink { (result: AsyncStream<Int>.Result) in
