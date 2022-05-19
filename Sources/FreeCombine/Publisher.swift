@@ -28,7 +28,7 @@ public enum PublisherError: Swift.Error, Sendable, CaseIterable {
     case enqueueError
 }
 
-public struct Publisher<Output: Sendable> {
+public struct Publisher<Output> {
     private let call: (
         UnsafeContinuation<Void, Never>?,
         @Sendable @escaping (AsyncStream<Output>.Result) async throws -> Demand
@@ -145,4 +145,15 @@ extension Publisher {
     ) async -> Task<Demand, Swift.Error> {
         await sink(lift(receiveCompletion, receiveValue))
     }
+}
+
+func flattener<B>(
+    _ downstream: @Sendable @escaping (AsyncStream<B>.Result) async throws -> Demand
+) -> @Sendable (AsyncStream<B>.Result) async throws -> Demand {
+    { b in switch b {
+        case .completion(.finished):
+            return .more
+        case .value, .completion(.failure):
+            return try await downstream(b)
+    } }
 }

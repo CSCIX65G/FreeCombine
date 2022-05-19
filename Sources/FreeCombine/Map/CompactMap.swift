@@ -13,10 +13,8 @@ public extension Publisher {
                 case .value(let a):
                     guard let b = await transform(a) else { return .more }
                     return try await downstream(.value(b))
-                case let .completion(.failure(error)):
-                    return try await downstream(.completion(.failure(error)))
-                case .completion(.finished):
-                    return try await downstream(.completion(.finished))
+                case let .completion(value):
+                    return try await downstream(.completion(value))
             } }
         }
     }

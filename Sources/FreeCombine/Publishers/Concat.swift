@@ -4,18 +4,6 @@
 //
 //  Created by Van Simmons on 5/17/22.
 //
-
-func flattener<B>(
-    _ downstream: @Sendable @escaping (AsyncStream<B>.Result) async throws -> Demand
-) -> @Sendable (AsyncStream<B>.Result) async throws -> Demand {
-    { b in switch b {
-        case .completion(.finished):
-            return .more
-        case .value, .completion(.failure):
-            return try await downstream(b)
-    } }
-}
-
 public extension Publisher  {
     func concat(_ other: Publisher<Output>) -> Publisher<Output> {
         .init(concatenating: [self, other])
