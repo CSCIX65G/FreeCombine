@@ -1,11 +1,12 @@
 //
-//  Scan.swift
+//  Reduce.swift
 //  
 //
-//  Created by Van Simmons on 5/18/22.
+//  Created by Van Simmons on 5/19/22.
 //
+
 public extension Publisher {
-    func scan<T>(
+    func reduce<T>(
         _ initialValue: T,
         _ transform: @escaping (T, Output) async -> T
     ) -> Publisher<T> {
@@ -15,8 +16,10 @@ public extension Publisher {
                 guard !Task.isCancelled else { return .done }
                 switch r {
                     case .value(let a):
-                        return try await downstream(.value(currentValue.set(value: transform(currentValue.value, a))))
+                        await currentValue.set(value: transform(currentValue.value, a))
+                        return .more
                     case let .completion(value):
+                        _ = try await downstream(.value(currentValue.value))
                         return try await downstream(.completion(value))
                 }
             }
