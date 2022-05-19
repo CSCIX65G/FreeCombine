@@ -79,7 +79,7 @@ public extension Publisher {
         var t: Task<Demand, Swift.Error>! = .none
         await withUnsafeContinuation { continuation in
             t = call(continuation, { result in
-                guard !Task.isCancelled else { return .done }
+                guard !Task.isCancelled else { throw PublisherError.cancelled }
                 let demand = try await f(result)
                 return demand
             })

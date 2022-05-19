@@ -18,24 +18,20 @@ class CancellationTests: XCTestCase {
         let expectation = await CheckedExpectation<Void>()
         let waiter = await CheckedExpectation<Void>()
 
-        let canRight: @Sendable () -> Void = {
-            Task {
-                do { try await expectation.complete() }
-                catch { XCTFail("Failed to complete: \(error)") }
-            }
-        }
-
         let publisher1 = (0 ... 100).asyncPublisher
         let publisher2 = "abcdefghijklmnopqrstuvwxyz".asyncPublisher
 
         let counter = Counter()
-        let z2 = await zip(onCancel: canRight, publisher1, publisher2)
+        let z2 = await zip(publisher1, publisher2)
             .map { ($0.0 + 100, $0.1.uppercased()) }
             .sink { (result: AsyncStream<(Int, String)>.Result) in
                 switch result {
                     case .value:
                         let count = await counter.increment()
-                        if count > 9 { try? await waiter.value(); return .more }
+                        if count > 9 {
+                            try? await waiter.value()
+                            return .more
+                        }
                         if Task.isCancelled {
                             XCTFail("Got values after cancellation")
                             do { try await expectation.complete() }
@@ -52,7 +48,11 @@ class CancellationTests: XCTestCase {
                 }
                 return .more
             }
+        // Provide time for some values to be sent so that the task hangs for cancellation
+        try await Task.sleep(nanoseconds: 1_000_000)
         z2.cancel()
+        await Task.yield()
+        try await expectation.complete()
 
         do { try await FreeCombine.wait(for: expectation, timeout: 100_000_000) }
         catch { XCTFail("Timed out with count: \(await counter.count)") }
@@ -124,5 +124,4 @@ class CancellationTests: XCTestCase {
             XCTFail("Timed out")
         }
     }
-
 }

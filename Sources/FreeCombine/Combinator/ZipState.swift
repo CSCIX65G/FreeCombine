@@ -58,6 +58,7 @@ struct ZipState<Left: Sendable, Right: Sendable>: CombinatorState {
 
     static func reduce(`self`: inout Self, action: Self.Action) async throws -> Void {
         do {
+            guard !Task.isCancelled else { throw StateTaskError.cancelled }
             try await `self`.reduce(action: action)
         } catch {
             await complete(state: `self`, completion: .cancel(`self`))
@@ -89,6 +90,11 @@ struct ZipState<Left: Sendable, Right: Sendable>: CombinatorState {
             case let .value((value)):
                 left = (value, leftContinuation)
                 if let right = right {
+                    guard !Task.isCancelled else {
+                        leftCancellable.cancel()
+                        rightCancellable.cancel()
+                        throw PublisherError.cancelled
+                    }
                     mostRecentDemand = try await downstream(.value((value, right.value)))
                     try resume(returning: mostRecentDemand)
                 }
@@ -107,7 +113,12 @@ struct ZipState<Left: Sendable, Right: Sendable>: CombinatorState {
         switch rightResult {
             case let .value((value)):
                 right = (value, rightContinuation)
-                if let left = left{
+                if let left = left {
+                    guard !Task.isCancelled else {
+                        leftCancellable.cancel()
+                        rightCancellable.cancel()
+                        throw PublisherError.cancelled
+                    }
                     mostRecentDemand = try await downstream(.value((left.value, value)))
                     try resume(returning: mostRecentDemand)
                 }
