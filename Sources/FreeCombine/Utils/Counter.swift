@@ -15,9 +15,22 @@ public actor Counter {
         count += 1
         return count
     }
+
+    @discardableResult
+    public func increment(by: Int) -> Int {
+        count += by
+        return count
+    }
+
     @discardableResult
     public func decrement() -> Int {
         count -= 1
+        return count
+    }
+
+    @discardableResult
+    public func decrement(by: Int) -> Int {
+        count -= by
         return count
     }
 }

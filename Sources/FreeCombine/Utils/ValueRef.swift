@@ -22,4 +22,9 @@ extension ValueRef {
     public func append<T>(_ t: T) where Value == [T] {
         value.append(t)
     }
+
+    public func next<T, U>() -> U? where Value == IndexingIterator<T>, T.Element == U {
+        value.next()
+    }
 }
+

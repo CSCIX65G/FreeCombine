@@ -52,11 +52,77 @@ class CancellationTests: XCTestCase {
                 }
                 return .more
             }
-        // Sleep 1ms to allow several values to be sent
-        try await Task.sleep(nanoseconds: 1_000_000)
         z2.cancel()
 
         do { try await FreeCombine.wait(for: expectation, timeout: 100_000_000) }
         catch { XCTFail("Timed out with count: \(await counter.count)") }
     }
+
+    func testMultiZipCancellation() async throws {
+        let expectation = await CheckedExpectation<Void>()
+        let expectation2 = await CheckedExpectation<Void>()
+        let waiter = await CheckedExpectation<Void>()
+
+        let canRight: @Sendable () -> Void = {
+            Task { try await expectation.complete() }
+        }
+
+        let publisher1 = Unfolded(0 ... 100)
+        let publisher2 = Unfolded(onCancel: canRight, "abcdefghijklmnopqrstuvwxyz")
+
+        let counter1 = Counter()
+        let counter2 = Counter()
+        let zipped = zip(publisher1, publisher2)
+            .map { ($0.0 + 100, $0.1.uppercased()) }
+
+        _ = await zipped.sink({ result in
+            switch result {
+                case .value:
+                    _ = await counter2.increment()
+                case let .completion(.failure(error)):
+                    XCTFail("Got an error? \(error)")
+                case .completion(.finished):
+                    let count2 = await counter2.count
+                    XCTAssertTrue(count2 == 26, "Incorrect count: \(count2)")
+                    do { try await expectation2.complete() }
+                    catch { XCTFail("Multiple terminations sent: \(error)") }
+                    return .done
+            }
+            return .more
+        })
+
+        let z2 = await zipped
+            .sink({ result in
+                switch result {
+                    case .value:
+                        let count1 = await counter1.increment()
+                        if count1 == 10 { try? await waiter.value() }
+                        if count1 > 10 { XCTFail("Received values after cancellation") }
+                    case let .completion(.failure(error)):
+                        XCTFail("Got an error? \(error)")
+                    case .completion(.finished):
+                        XCTFail("Got to end of task that should have been cancelled")
+                        do { try await expectation.complete() }
+                        catch { XCTFail("Multiple terminations sent: \(error)") }
+                        return .done
+                }
+                return .more
+            })
+        // Needs a sleep to allow some values to be sent.  1ms is plenty
+        try await Task.sleep(nanoseconds: 1_000_000)
+        await Task.yield()
+        z2.cancel()
+
+        try! await waiter.complete(())
+
+        do {
+            try await FreeCombine.wait(for: expectation, timeout: 100_000_000)
+            try await FreeCombine.wait(for: expectation2, timeout: 100_000_000)
+            let count1 = await counter1.count
+            XCTAssert(count1 == 10, "Wrong number in z2: \(count1)")
+        } catch {
+            XCTFail("Timed out")
+        }
+    }
+
 }

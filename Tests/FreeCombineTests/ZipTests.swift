@@ -13,7 +13,7 @@ class ZipTests: XCTestCase {
 
     override func tearDownWithError() throws { }
 
-    func testSimpleZip() async throws {
+    func testSimpleJustZip() async throws {
         let expectation = await CheckedExpectation<Void>()
 
         let publisher1 = Just(100)
@@ -111,4 +111,150 @@ class ZipTests: XCTestCase {
         }
     }
 
+ func testSimpleZip() async throws {
+        let expectation = await CheckedExpectation<Void>()
+
+     let publisher1 = (0 ... 100).asyncPublisher
+        let publisher2 = Unfolded("abcdefghijklmnopqrstuvwxyz")
+
+        let counter = Counter()
+
+        _ = await zip(publisher1, publisher2)
+            .map {value in (value.0 + 100, value.1.uppercased()) }
+            .sink({ result in
+                switch result {
+                    case .value:
+                        await counter.increment()
+                    case let .completion(.failure(error)):
+                        XCTFail("Got an error? \(error)")
+                    case .completion(.finished):
+                        let count = await counter.count
+                        XCTAssert(count == 26, "wrong number of values sent: \(count)")
+                        do { try await expectation.complete() }
+                        catch { XCTFail("Failed to complete: \(error)") }
+                        return .done
+                }
+                return .more
+            })
+
+        await Task.yield()
+        do { try await FreeCombine.wait(for: expectation, timeout: 100_000_000) }
+        catch {
+            let count = await counter.count
+            XCTFail("Timed out, count = \(count)")
+        }
+    }
+
+    func testComplexZip() async throws {
+        let expectation = await CheckedExpectation<Void>()
+
+        let p1 = Unfolded(0 ... 100)
+        let p2 = Unfolded("abcdefghijklmnopqrstuvwxyz")
+        let p3 = Unfolded(0 ... 100)
+        let p4 = Unfolded("abcdefghijklmnopqrstuvwxyz")
+        let p5 = Unfolded(0 ... 100)
+        let p6 = Unfolded("abcdefghijklmnopqrstuvwxyz")
+        let p7 = Unfolded(0 ... 100)
+        let p8 = Unfolded("abcdefghijklmnopqrstuvwxyz")
+
+        let counter = Counter()
+        _ = await zip(p1, p2, p3, p4, p5, p6, p7, p8)
+            .map { v in
+                (v.0 + 100, v.1.uppercased(), v.2 + 110, v.3, v.4 + 120, v.5.uppercased(), v.6 + 130, v.7 )
+            }
+            .sink({ result in
+                switch result {
+                    case .value:
+                        await counter.increment()
+                    case let .completion(.failure(error)):
+                        XCTFail("Got an error? \(error)")
+                    case .completion(.finished):
+                        let count = await counter.count
+                        XCTAssert(count == 26, "wrong number of values sent: \(count)")
+                        do { try await expectation.complete() }
+                        catch { XCTFail("Multiple terminations sent: \(error)") }
+                        return .done
+                }
+                return .more
+            })
+
+        do { try await FreeCombine.wait(for: expectation, timeout: 100_000_000) }
+        catch {
+            let count = await counter.count
+            XCTFail("Timed out, count = \(count)")
+        }
+    }
+
+    func testMultiComplexZip() async throws {
+        let expectation1 = await CheckedExpectation<Void>()
+        let expectation2 = await CheckedExpectation<Void>()
+
+        let p1 = Unfolded(0 ... 100)
+        let p2 = Unfolded("abcdefghijklmnopqrstuvwxyz")
+        let p3 = Unfolded(0 ... 100)
+        let p4 = Unfolded("abcdefghijklmnopqrstuvwxyz")
+        let p5 = Unfolded(0 ... 100)
+        let p6 = Unfolded("abcdefghijklmnopqrstuvwxyz")
+        let p7 = Unfolded(0 ... 100)
+        let p8 = Unfolded("abcdefghijklmnopqrstuvwxyz")
+
+        let zipped = zip(p1, p2, p3, p4, p5, p6, p7, p8)
+
+        let count1 = Counter()
+        _ = await zipped
+            .map { v in
+                (v.0 + 100, v.1.uppercased(), v.2 + 110, v.3, v.4 + 120, v.5.uppercased(), v.6 + 130, v.7 )
+            }
+            .sink({ result in
+                switch result {
+                    case .value:
+                        await count1.increment()
+                    case let .completion(.failure(error)):
+                        XCTFail("Got an error? \(error)")
+                    case .completion(.finished):
+                        let count = await count1.count
+                        XCTAssert(count == 26, "wrong number of values sent: \(count1)")
+                        do {
+                            try await expectation1.complete()
+                        } catch {
+                            // TODO: Investigate
+                            // XCTFail("Failed to complete with error: \(error)")
+                        }
+                        return .done
+                }
+                return .more
+            })
+
+        let count2 = Counter()
+        _ = await zipped
+            .map { v in
+                (v.0 + 100, v.1.uppercased(), v.2 + 110, v.3, v.4 + 120, v.5.uppercased(), v.6 + 130, v.7 )
+            }
+            .sink({ result in
+                switch result {
+                    case .value:
+                        await count2.increment()
+                    case let .completion(.failure(error)):
+                        XCTFail("Got an error? \(error)")
+                    case .completion(.finished):
+                        let count = await count2.count
+                        XCTAssert(count == 26, "wrong number of values sent: \(count)")
+                        do {
+                            try await expectation2.complete()
+                        } catch {
+                            // TODO: Investigate
+                            // XCTFail("Failed to complete with error: \(error)")
+                        }
+                        return .done
+                }
+                return .more
+            })
+
+        do {
+            try await FreeCombine.wait(for: expectation1, timeout: 100_000_000)
+            try await FreeCombine.wait(for: expectation2, timeout: 100_000_000)
+        } catch {
+            XCTFail("Timed out")
+        }
+    }
 }
