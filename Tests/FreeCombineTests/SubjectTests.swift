@@ -193,125 +193,127 @@ class SubjectTests: XCTestCase {
         }
     }
 
-//    func testSimpleTermination() async throws {
-//            let counter = Counter()
-//            let expectation = await CheckedExpectation<Void>()
-//
-//            let subject: Subject<Int> = .init()
-//            let p = subject.publisher()
-//
-//            _ = await p.subscribe { result in
-//                switch result {
-//                    case let .value(value):
-//                        let count = await counter.increment()
-//                        XCTAssertEqual(value, count, "Wrong value sent")
-//                        return .more
-//                    case let .failure(error):
-//                        XCTFail("Should not have gotten error: \(error)")
-//                        return .done
-//                    case .terminated:
-//                        do { try await expectation.complete() }
-//                        catch { XCTFail("Failed to complete expectation") }
-//                        return .done
-//                }
-//            }
-//
-//            await Task.yield()
-//            for i in 1 ... 1000 {
-//                do { try subject.send(i) }
-//                catch { XCTFail("Failed to enqueue") }
-//            }
-//            subject.finish()
-//
-//            do {
-//                try await FreeCombine.wait(for: expectation, timeout: 50_000_000)
-//            } catch {
-//                let count = await counter.count
-//                XCTFail("Timed out waiting for expectation.  processed: \(count)")
-//            }
-//        }
-//
-//        func testSimpleSubjectSend() async throws {
-//            let counter = Counter()
-//            let expectation = await CheckedExpectation<Void>()
-//
-//            let subject: Subject<Int> = .init()
-//            let p = subject.publisher()
-//
-//            _ = await p.subscribe { result in
-//                switch result {
-//                    case let .value(value):
-//                        let count = await counter.increment()
-//                        XCTAssertEqual(value, count, "Wrong value sent")
-//                        return .more
-//                    case let .failure(error):
-//                        XCTFail("Should not have gotten error: \(error)")
-//                        return .done
-//                    case .terminated:
-//                        do { try await expectation.complete() }
-//                        catch { XCTFail("Could not complete, error: \(error)") }
-//                        return .done
-//                }
-//            }
-//
-//            await Task.yield()
-//            (1 ... 5).forEach {
-//                do {  try subject.send($0) }
-//                catch { XCTFail("Failed to enqueue") }
-//            }
-//            subject.finish()
-//
-//            await Task.yield()
-//            do {
-//                try await FreeCombine.wait(for: expectation, timeout: 10_000_000)
-//            } catch {
-//                let count = await counter.count
-//                XCTFail("Timed out waiting for expectation.  processed: \(count)")
-//            }
-//        }
-//
-//        func testSyncAsync() async throws {
-//            let expectation = await CheckedExpectation<Void>()
-//            let fsubject1 = await FreeCombine.PassthroughSubject(Int.self)
-//            let fsubject2 = await FreeCombine.PassthroughSubject(String.self)
-//
-//            let fseq1 = "abcdefghijklmnopqrstuvwxyz".asyncPublisher
-//            let fseq2 = (1 ... 100).asyncPublisher
-//
-//            let fz1 = fseq1.zip(fseq2)
-//            let fz2 = fz1
-//                .map { left, right in String(left) + String(right) }
-//
-//            let fm1 = fsubject1.publisher()
-//                .map(String.init)
-//                .mapError { _ in fatalError() }
-//                .merge(with: fsubject2.publisher())
-//                .replaceError(with: "")
-//
-//            let fm2 = fz2.merge(with: fm1)
-//            _ = await fm2.subscribe { value in
-//                guard case .terminated = value else {
-//                    do {
-//                        if case let .value(value) = value, value == "hello, combined world!" {
-//                            try await expectation.complete()
-//                        }
-//                    }
-//                    catch { XCTFail("Should not have failed termination: \(error)") }
-//                    return .more
-//                }
-//                return .done
-//            }
-//
-//            try fsubject1.send(14)
-//            try fsubject2.send("hello, combined world!")
-//
-//            fsubject1.finish()
-//            fsubject2.finish()
-//
-//            do { try await FreeCombine.wait(for: expectation, timeout: 1_000_000) }
-//            catch { XCTFail("timed out") }
-//        }
-//
-//    }
+    func testSimpleTermination() async throws {
+        let counter = Counter()
+        let expectation = await CheckedExpectation<Void>()
 
+        let subject = await PassthroughSubject(type: Int.self)
+        let p = subject.publisher()
+
+        _ = await p.sink( { result in
+            switch result {
+                case let .value(value):
+                    let count = await counter.increment()
+                    XCTAssertEqual(value, count, "Wrong value sent")
+                    return .more
+                case let .completion(.failure(error)):
+                    XCTFail("Should not have gotten error: \(error)")
+                    return .done
+                case .completion(.finished):
+                    do { try await expectation.complete() }
+                    catch { XCTFail("Failed to complete expectation") }
+                    let count = await counter.count
+                    XCTAssert(count == 1000, "Received wrong number of invocations: \(count)")
+                    return .done
+            }
+        })
+
+        await Task.yield()
+        for i in 1 ... 1000 {
+            do { try await subject.send(i) }
+            catch { XCTFail("Failed to enqueue") }
+        }
+        try await subject.finish()
+
+        do {
+            try await FreeCombine.wait(for: expectation, timeout: 50_000_000)
+        } catch {
+            let count = await counter.count
+            XCTFail("Timed out waiting for expectation.  processed: \(count)")
+        }
+    }
+
+    func testSimpleSubjectSend() async throws {
+        let counter = Counter()
+        let expectation = await CheckedExpectation<Void>()
+
+        let subject = await PassthroughSubject(type: Int.self)
+        let p = subject.publisher()
+
+        _ = await p.sink({ result in
+            switch result {
+                case let .value(value):
+                    let count = await counter.increment()
+                    XCTAssertEqual(value, count, "Wrong value sent")
+                    return .more
+                case let .completion(.failure(error)):
+                    XCTFail("Should not have gotten error: \(error)")
+                    return .done
+                case .completion(.finished):
+                    do { try await expectation.complete() }
+                    catch { XCTFail("Could not complete, error: \(error)") }
+                    let count = await counter.count
+                    XCTAssert(count == 5, "Received wrong number of invocations: \(count)")
+                    return .done
+            }
+        })
+
+        await Task.yield()
+        for i in (1 ... 5) {
+            do { try await subject.send(i) }
+            catch { XCTFail("Failed to enqueue") }
+        }
+        try await subject.finish()
+
+        await Task.yield()
+        do {
+            try await FreeCombine.wait(for: expectation, timeout: 10_000_000)
+        } catch {
+            let count = await counter.count
+            XCTFail("Timed out waiting for expectation.  processed: \(count)")
+        }
+    }
+
+    func testSyncAsync() async throws {
+        let expectation = await CheckedExpectation<Void>()
+        let fsubject1 = await FreeCombine.PassthroughSubject(type: Int.self)
+        let fsubject2 = await FreeCombine.PassthroughSubject(type: String.self)
+        
+        let fseq1 = "abcdefghijklmnopqrstuvwxyz".asyncPublisher
+        let fseq2 = (1 ... 100).asyncPublisher
+
+        let fz1 = fseq1.zip(fseq2)
+        let fz2 = fz1
+            .map { left, right in String(left) + String(right) }
+
+        let fm1 = fsubject1.publisher()
+            .map(String.init)
+            .mapError { _ in fatalError() }
+            .merge(others: fsubject2.publisher())
+            .replaceError(with: "")
+
+        let fm2 = fz2.merge(others: fm1)
+        _ = await fm2.sink({ value in
+            guard case .completion(.finished) = value else {
+                do {
+                    if case let .value(value) = value, value == "hello, combined world!" {
+                        try await expectation.complete()
+                    }
+                }
+                catch { XCTFail("Should not have failed termination: \(error)") }
+                return .more
+            }
+            return .done
+        })
+
+        try await fsubject1.send(14)
+        try await fsubject2.send("hello, combined world!")
+
+        try await fsubject1.finish()
+        try await fsubject2.finish()
+
+        do { try await FreeCombine.wait(for: expectation, timeout: 1_000_000) }
+        catch { XCTFail("timed out") }
+    }
 }
+
