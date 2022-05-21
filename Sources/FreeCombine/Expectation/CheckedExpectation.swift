@@ -60,15 +60,24 @@ public class CheckedExpectation<Arg> {
     private let task: Task<Arg, Swift.Error>
     private let state: State
 
-    public init() async {
+    public init(name: String = "", debug: Bool = false) async {
         let localState = State()
         var localTask: Task<Arg, Swift.Error>!
         let localResumption: UnsafeContinuation<Arg, Swift.Error> = await withCheckedContinuation { cc in
-            localTask = Task<Arg, Swift.Error> { try await withTaskCancellationHandler(handler: {
-                Task { try await localState.cancel() }
-            }) {
-                try await withUnsafeThrowingContinuation(cc.resume)
-            } }
+            localTask = Task<Arg, Swift.Error> {
+                try await withTaskCancellationHandler(handler: {
+                    Task { try await localState.cancel() }
+                }) {
+                    do {
+                        let arg = try await withUnsafeThrowingContinuation(cc.resume)
+                        if (debug) { print("Exiting \(name) with value: \(arg)") }
+                        return arg
+                    } catch {
+                        if (debug) { print("Exiting \(name) with error: \(error)") }
+                        throw error
+                    }
+                }
+            }
         }
         await localState.set(resumption: localResumption)
         task = localTask
@@ -94,7 +103,11 @@ public class CheckedExpectation<Arg> {
 
     @discardableResult
     public func value() async throws -> Arg {
-        try await task.value
+        do {
+            return try await task.value
+        } catch {
+            throw error
+        }
     }
 
     public func cancel() -> Void {

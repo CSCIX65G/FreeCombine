@@ -125,11 +125,11 @@ class SubjectTests: XCTestCase {
 
     func testSimpleCancellation() async throws {
         let counter = Counter()
-        let expectation = await CheckedExpectation<Void>()
-        let expectation2 = await CheckedExpectation<Void>()
-        let release = await CheckedExpectation<Void>()
+        let expectation = await CheckedExpectation<Void>(name: "expectation")
+        let expectation2 = await CheckedExpectation<Void>(name: "expectation2")
+        let release = await CheckedExpectation<Void>(name: "release")
 
-        let subject = await PassthroughSubject(type: Int.self)
+        let subject = await PassthroughSubject(type: Int.self, buffering: .unbounded)
         let p = subject.publisher(
             onCancel: { Task { try await expectation2.complete() } }
         )
@@ -145,7 +145,10 @@ class SubjectTests: XCTestCase {
                         do {
                             try await FreeCombine.wait(for: release, timeout: 10_000_000)
                         } catch {
-                            XCTFail("Timed out waiting for release")
+                            guard let error = error as? PublisherError, case error = PublisherError.cancelled else {
+                                XCTFail("Timed out waiting for release")
+                                return .done
+                            }
                         }
                     } else if count > 8 {
                         if !Task.isCancelled { XCTFail("Should be cancelled") }
@@ -161,21 +164,20 @@ class SubjectTests: XCTestCase {
         })
 
         await Task.yield()
-        for i in 1 ... 8 {
+        for i in 1 ... 7 {
             do { try await subject.send(i) }
             catch { XCTFail("Failed to enqueue") }
         }
 
-        await Task.yield()
+        do { try subject.nonBlockingSend(8) }
+        catch { XCTFail("Failed to enqueue") }
 
         do { try await FreeCombine.wait(for: expectation, timeout: 100_000_000) }
         catch { XCTFail("Failed waiting for expectation") }
 
         can.cancel()
-
         try await release.complete()
 
-        await Task.yield()
         do {
             try await subject.send(9)
             try await subject.send(10)
@@ -183,8 +185,6 @@ class SubjectTests: XCTestCase {
             XCTFail("Failed to enqueue")
         }
         try await subject.finish()
-
-        await Task.yield()
 
         do {
             try await FreeCombine.wait(for: expectation2, timeout: 100_000_000)

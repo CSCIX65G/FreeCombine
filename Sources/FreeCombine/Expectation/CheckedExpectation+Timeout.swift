@@ -6,14 +6,14 @@
 //
 public func wait(
     for expectation: CheckedExpectation<Void>,
-    timeout: UInt64
+    timeout: UInt64 = .max
 ) async throws -> Void {
     try await wait(for: [expectation], timeout: timeout, reducing: (), with: {_, _ in })
 }
 
 public extension CheckedExpectation where Arg == Void {
     func timeout(
-        after timeout: UInt64
+        after timeout: UInt64 = .max
     ) async throws -> Void  {
         try await wait(for: self, timeout: timeout)
     }
@@ -21,7 +21,7 @@ public extension CheckedExpectation where Arg == Void {
 
 public func wait<FinalResult, PartialResult>(
     for expectation: CheckedExpectation<PartialResult>,
-    timeout: UInt64,
+    timeout: UInt64 = .max,
     reducing initialValue: FinalResult,
     with reducer: @escaping (inout FinalResult, PartialResult) throws -> Void
 ) async throws -> FinalResult {
@@ -30,7 +30,7 @@ public func wait<FinalResult, PartialResult>(
 
 public extension CheckedExpectation {
     func timeout<FinalResult>(
-        after timeout: UInt64,
+        after timeout: UInt64 = .max,
         reducing initialValue: FinalResult,
         with reducer: @escaping (inout FinalResult, Arg) throws -> Void
     ) async throws -> FinalResult  {
@@ -38,9 +38,19 @@ public extension CheckedExpectation {
     }
 }
 
+public extension Array {
+    func timeout<FinalResult, PartialResult>(
+        after timeout: UInt64 = .max,
+        reducing initialValue: FinalResult,
+        with reducer: @escaping (inout FinalResult, PartialResult) throws -> Void
+    ) async throws -> FinalResult where Element == CheckedExpectation<PartialResult> {
+        try await wait(for: self, timeout: timeout, reducing: initialValue, with: reducer)
+    }
+}
+
 public func wait<FinalResult, PartialResult, S: Sequence>(
     for expectations: S,
-    timeout: UInt64,
+    timeout: UInt64 = .max,
     reducing initialValue: FinalResult,
     with reducer: @escaping (inout FinalResult, PartialResult) throws -> Void
 ) async throws -> FinalResult where S.Element == CheckedExpectation<PartialResult> {
@@ -49,20 +59,10 @@ public func wait<FinalResult, PartialResult, S: Sequence>(
             initialState: { channel in
                 .init(with: channel, for: expectations, timeout: timeout, reducer: reducer, initialValue: initialValue)
             },
-            buffering: .bufferingOldest(expectations.underestimatedCount + 1),
+            buffering: .bufferingOldest(expectations.underestimatedCount * 2 + 1),
             reducer: WaitState<FinalResult, PartialResult>.reduce
         )
         return try await stateTask.finalState.finalResult
     }
     return try await reducingTask.value
-}
-
-public extension Array {
-    func timeout<FinalResult, PartialResult>(
-        after timeout: UInt64,
-        reducing initialValue: FinalResult,
-        with reducer: @escaping (inout FinalResult, PartialResult) throws -> Void
-    ) async throws -> FinalResult where Element == CheckedExpectation<PartialResult> {
-        try await wait(for: self, timeout: timeout, reducing: initialValue, with: reducer)
-    }
 }

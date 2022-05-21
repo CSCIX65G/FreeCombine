@@ -26,8 +26,8 @@ class MergeTests: XCTestCase {
             .map { $0.uppercased() }
             .sink({ result in
                 switch result {
-                    case .value(let value):
-                        let count = await counter.increment()
+                    case .value:
+                        await counter.increment()
                     case let .completion(.failure(error)):
                         XCTFail("Got an error? \(error)")
                     case .completion(.finished):

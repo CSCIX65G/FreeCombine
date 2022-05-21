@@ -51,7 +51,9 @@ struct MergeState<Output: Sendable>: CombinatorState {
         for (index, publisher) in upstreams.enumerated() {
             localCancellables[index] = Task {
                 let r = await channel.consume(publisher: publisher, using: MergeState<Output>.Action.setValue).result
-                channel.yield(.removeCancellable(index))
+                guard case .enqueued = channel.yield(.removeCancellable(index)) else {
+                    fatalError("Unable to process merge remove")
+                }
                 switch r {
                     case .success(let value): return value
                     case .failure(let error): throw error

@@ -29,10 +29,15 @@ struct WaitState<FinalResult, PartialResult> {
         let tasks = expectations.enumerated().map { index, expectation in
             Task<PartialResult, Swift.Error> {
                 guard !Task.isCancelled else { throw PublisherError.cancelled }
-                let pResult = try await expectation.value()
+                let pResult = await expectation.result()
+                guard case let .success(pValue) = pResult else {
+                    fatalError("Wait failed with: \(pResult)")
+                }
                 guard !Task.isCancelled else { throw PublisherError.cancelled }
-                channel.yield(.complete(index, pResult))
-                return pResult
+                guard case .enqueued = channel.yield(.complete(index, pValue)) else {
+                    throw PublisherError.internalError
+                }
+                return pValue
             }
         }
         let expectationDict: [Int: CheckedExpectation<PartialResult>] = .init(
@@ -45,8 +50,14 @@ struct WaitState<FinalResult, PartialResult> {
         self.expectations = expectationDict
         self.tasks = taskDict
         self.watchdog = .init {
-            try await Task.sleep(nanoseconds: timeout)
-            channel.yield(.timeout)
+            do {
+                try await Task.sleep(nanoseconds: timeout)
+                guard case .enqueued = channel.yield(.timeout) else {
+                    fatalError("Unable to process timeout")
+                }
+            } catch {
+                throw error
+            }
         }
         self.resultReducer = reducer
         self.finalResult = initialValue
@@ -82,6 +93,5 @@ struct WaitState<FinalResult, PartialResult> {
                 cancel()
                 throw CheckedExpectation<FinalResult>.Error.timedOut
         }
-
     }
 }

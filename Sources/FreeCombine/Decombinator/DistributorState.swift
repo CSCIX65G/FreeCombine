@@ -53,7 +53,9 @@ public struct DistributorState<Output: Sendable> {
                     let repeater = try await process(subscription: downstream, continuation: outerContinuation)
                     let key = nextKey
                     continuation?.resume(returning: Task { try await withTaskCancellationHandler(handler: {
-                        channel.yield(.unsubscribe(key))
+                        guard case .enqueued = channel.yield(.unsubscribe(key)) else {
+                            fatalError("Unable to remove subscriber for subject")
+                        }
                     }) {
                         try await repeater.finalState.mostRecentDemand
                     } } )
@@ -62,9 +64,8 @@ public struct DistributorState<Output: Sendable> {
                 }
             case let .unsubscribe(channelId):
                 guard let downstream = repeaters.removeValue(forKey: channelId) else {
-                    fatalError("could not remove requested value")
+                    return
                 }
-                repeaters.removeValue(forKey: channelId)
                 await process(currentRepeaters: [channelId: downstream], with: .completion(.finished))
         }
     }
