@@ -44,14 +44,14 @@ public extension StateTask {
         buffering: AsyncStream<DistributorState<Output>.Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
         onCancel: @Sendable @escaping () -> Void = { },
         onCompletion: @escaping (
-            DistributorState<Output>,
+            inout DistributorState<Output>,
             StateTask<DistributorState<Output>, DistributorState<Output>.Action>.Completion
         ) async -> Void = { _, _ in },
         disposer: @escaping (Action, Error) -> Void = { _, _ in }
     ) async -> Self where State == DistributorState<Output>, Action == DistributorState<Output>.Action {
         await .stateTask(
             initialState: { channel in
-                .init(currentValue: currentValue, nextKey: 0, downstreams: [:])
+                .init(channel: channel, currentValue: currentValue, nextKey: 0, downstreams: [:])
             },
             buffering: buffering,
             onCancel: onCancel,
@@ -67,13 +67,13 @@ public extension StateTask {
         onStartup: UnsafeContinuation<Void, Never>? = .none,
         onCancel: @Sendable @escaping () -> Void = { },
         onCompletion: @escaping (
-            DistributorState<Output>,
+            inout DistributorState<Output>,
             StateTask<DistributorState<Output>, DistributorState<Output>.Action>.Completion
         ) async -> Void = { _, _ in }
     ) where State == DistributorState<Output>, Action == DistributorState<Output>.Action {
         self.init(
             initialState: { channel in
-                .init(currentValue: currentValue, nextKey: 0, downstreams: [:])
+                .init(channel: channel, currentValue: currentValue, nextKey: 0, downstreams: [:])
             },
             buffering: buffering,
             onStartup: onStartup,

@@ -18,11 +18,9 @@ class RepeaterTests: XCTestCase {
         let expectation = await CheckedExpectation<Void>()
         let downstream: (AsyncStream<Int>.Result) async throws -> Demand = { result in
             switch result {
-                case let .value(value):
-                    print("Received value: \(value)")
+                case .value:
                     return .more
-                case let .completion(completion):
-                    print("received completion: \(completion)")
+                case .completion:
                     try await expectation.complete()
                     return .done
             }
@@ -83,7 +81,7 @@ class RepeaterTests: XCTestCase {
                     guard case .enqueued = queueStatus else {
                         fatalError("Internal failure in Subject reducer processing key, queueStatus: \(queueStatus)")
                     }
-                }.forEach { key in print("should remove downstream key: \(key)") }
+                }.forEach { _ in () }
 
             }
         }

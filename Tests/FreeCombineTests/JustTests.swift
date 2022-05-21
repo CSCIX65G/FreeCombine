@@ -99,7 +99,6 @@ class JustTests: XCTestCase {
 
         do {
             let finalDemand = try await t.value
-            print(finalDemand)
             XCTAssert(finalDemand == .done, "Incorrect return")
         } catch {
             XCTFail("Errored out")

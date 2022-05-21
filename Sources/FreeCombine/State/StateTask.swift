@@ -55,7 +55,7 @@ public final class StateTask<State, Action: Sendable> {
         initialState: @escaping (Channel<Action>) async -> State,
         onStartup: UnsafeContinuation<Void, Never>? = .none,
         onCancel: @Sendable @escaping () -> Void = { },
-        onCompletion: @escaping (State, Completion) async -> Void = { _, _ in },
+        onCompletion: @escaping (inout State, Completion) async -> Void = { _, _ in },
         disposer: @escaping (Action, Error) -> Void = { _, _ in },
         reducer: @escaping (inout State, Action) async throws -> Void
     ) {
@@ -69,18 +69,18 @@ public final class StateTask<State, Action: Sendable> {
                         guard !Task.isCancelled else { throw StateTaskError.cancelled }
                         try await reducer(&state, action)
                     }
-                    await onCompletion(state, .termination(state))
+                    await onCompletion(&state, .termination(state))
                 } catch {
                     channel.finish()
                     for await action in channel { disposer(action, error); continue }
                     guard let completion = error as? StateTaskError else {
-                        await onCompletion(state, .failure(error)); throw error
+                        await onCompletion(&state, .failure(error)); throw error
                     }
                     switch completion {
                         case .cancelled:
-                            await onCompletion(state, .cancel(state)); throw completion
+                            await onCompletion(&state, .cancel(state)); throw completion
                         case .completed:
-                            await onCompletion(state, .exit(state))
+                            await onCompletion(&state, .exit(state))
                     }
                 }
                 return state

@@ -17,6 +17,7 @@ class CancellationTests: XCTestCase {
     func testSimpleZipCancellation() async throws {
         let expectation = await CheckedExpectation<Void>()
         let waiter = await CheckedExpectation<Void>()
+        let startup = await CheckedExpectation<Void>()
 
         let publisher1 = (0 ... 100).asyncPublisher
         let publisher2 = "abcdefghijklmnopqrstuvwxyz".asyncPublisher
@@ -29,6 +30,7 @@ class CancellationTests: XCTestCase {
                     case .value:
                         let count = await counter.increment()
                         if count > 9 {
+                            try? await startup.complete()
                             try? await waiter.value()
                             return .more
                         }
@@ -49,7 +51,7 @@ class CancellationTests: XCTestCase {
                 return .more
             }
         // Provide time for some values to be sent so that the task hangs for cancellation
-        try await Task.sleep(nanoseconds: 1_000_000)
+        try await FreeCombine.wait(for: startup, timeout: 100_000_000)
         z2.cancel()
         await Task.yield()
         try await expectation.complete()
@@ -62,6 +64,7 @@ class CancellationTests: XCTestCase {
         let expectation = await CheckedExpectation<Void>()
         let expectation2 = await CheckedExpectation<Void>()
         let waiter = await CheckedExpectation<Void>()
+        let startup = await CheckedExpectation<Void>()
 
         let canRight: @Sendable () -> Void = {
             Task { try await expectation.complete() }
@@ -96,7 +99,10 @@ class CancellationTests: XCTestCase {
                 switch result {
                     case .value:
                         let count1 = await counter1.increment()
-                        if count1 == 10 { try? await waiter.value() }
+                        if count1 == 10 {
+                            try? await startup.complete()
+                            try? await waiter.value()
+                        }
                         if count1 > 10 { XCTFail("Received values after cancellation") }
                     case let .completion(.failure(error)):
                         XCTFail("Got an error? \(error)")
@@ -108,9 +114,8 @@ class CancellationTests: XCTestCase {
                 }
                 return .more
             })
-        // Needs a sleep to allow some values to be sent.  1ms is plenty
-        try await Task.sleep(nanoseconds: 1_000_000)
-        await Task.yield()
+        // Provide time for some values to be sent so that the task hangs for cancellation
+        try await FreeCombine.wait(for: startup, timeout: 100_000_000)
         z2.cancel()
 
         try! await waiter.complete(())

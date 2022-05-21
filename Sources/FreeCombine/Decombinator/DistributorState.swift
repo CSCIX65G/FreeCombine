@@ -5,6 +5,7 @@
 //  Created by Van Simmons on 5/10/22.
 //
 public struct DistributorState<Output: Sendable> {
+    let channel: Channel<DistributorState<Output>.Action>
     public private(set) var currentValue: Output?
     var nextKey: Int
     var repeaters: [Int: StateTask<RepeaterState<Int, Output>, RepeaterState<Int, Output>.Action>]
@@ -16,22 +17,24 @@ public struct DistributorState<Output: Sendable> {
             UnsafeContinuation<Void, Never>?,
             UnsafeContinuation<Task<Demand, Swift.Error>, Swift.Error>?
         )
-        case unsubscribe(Int, UnsafeContinuation<Void, Swift.Error>?)
+        case unsubscribe(Int)
     }
 
     static func reduce(`self`: inout Self, action: Self.Action) async throws -> Void {
         try await `self`.reduce(action: action)
     }
 
-    public init(channel _: Channel<DistributorState<Output>.Action>) {
-        self.init(currentValue: .none, nextKey: 0, downstreams: [:])
+    public init(channel: Channel<DistributorState<Output>.Action>) {
+        self.init(channel: channel, currentValue: .none, nextKey: 0, downstreams: [:])
     }
 
     public init(
+        channel: Channel<DistributorState<Output>.Action>,
         currentValue: Output?,
         nextKey: Int,
         downstreams: [Int: StateTask<RepeaterState<Int, Output>, RepeaterState<Int, Output>.Action>]
     ) {
+        self.channel = channel
         self.currentValue = currentValue
         self.nextKey = nextKey
         self.repeaters = downstreams
@@ -46,19 +49,23 @@ public struct DistributorState<Output: Sendable> {
                 continuation?.resume()
             case let .subscribe(downstream, outerContinuation, continuation):
                 do {
+                    let channel = self.channel
                     let repeater = try await process(subscription: downstream, continuation: outerContinuation)
-                    continuation?.resume(returning: Task { try await withTaskCancellationHandler(handler: repeater.cancel)  {
+                    let key = nextKey
+                    continuation?.resume(returning: Task { try await withTaskCancellationHandler(handler: {
+                        channel.yield(.unsubscribe(key))
+                    }) {
                         try await repeater.finalState.mostRecentDemand
                     } } )
                 } catch {
                     continuation?.resume(throwing: error)
                 }
-            case let .unsubscribe(channelId, continuation):
+            case let .unsubscribe(channelId):
                 guard let downstream = repeaters.removeValue(forKey: channelId) else {
                     fatalError("could not remove requested value")
                 }
+                repeaters.removeValue(forKey: channelId)
                 await process(currentRepeaters: [channelId: downstream], with: .completion(.finished))
-                continuation?.resume()
         }
     }
 
@@ -78,8 +85,9 @@ public struct DistributorState<Output: Sendable> {
             )
 
             currentRepeaters.forEach { (key, downstreamTask) in
-                guard case .enqueued = downstreamTask.send(.repeat(result, semaphore)) else {
-                    fatalError("Internal failure in Subject reducer processing key: \(key)")
+                let queueStatus = downstreamTask.send(.repeat(result, semaphore))
+                guard case .enqueued = queueStatus else {
+                    fatalError("Could not enqueue in Subject reducer while processing key: \(key), status = \(queueStatus)")
                 }
             }
         }

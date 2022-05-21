@@ -10,7 +10,7 @@ public extension StateTask {
         initialState: @escaping (Channel<Action>) async -> State,
         buffering: AsyncStream<Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
         onCancel: @Sendable @escaping () -> Void = { },
-        onCompletion: @escaping (State, Completion) async -> Void = { _, _ in },
+        onCompletion: @escaping (inout State, Completion) async -> Void = { _, _ in },
         disposer: @escaping (Action, Error) -> Void = { _, _ in },
         reducer: @escaping (inout State, Action) async throws -> Void
     ) async -> Self {
@@ -34,7 +34,7 @@ public extension StateTask {
         buffering: AsyncStream<Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
         onStartup: UnsafeContinuation<Void, Never>? = .none,
         onCancel: @Sendable @escaping () -> Void = { },
-        onCompletion: @escaping (State, Completion) async -> Void = { _, _ in },
+        onCompletion: @escaping (inout State, Completion) async -> Void = { _, _ in },
         disposer: @escaping (Action, Error) -> Void = { _, _ in },
         reducer: @escaping (inout State, Action) async throws -> Void
     ) {
@@ -54,7 +54,7 @@ public extension StateTask {
         buffering: AsyncStream<Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
         onStartup: UnsafeContinuation<Void, Never>? = .none,
         onCancel: @Sendable @escaping () -> Void = { },
-        onCompletion: @escaping (State, Completion) async -> Void = { _, _ in },
+        onCompletion: @escaping (inout State, Completion) async -> Void = { _, _ in },
         disposer: @escaping (Action, Error) -> Void = { _, _ in },
         reducer: @escaping (inout State, Action) async throws -> Void
     ) {

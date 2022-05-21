@@ -10,10 +10,10 @@ public extension Publisher  {
     }
 }
 
-public func Concat<Element>(
+public func Concat<Output, S: Sequence>(
     onCancel: @escaping () -> Void = { },
-    _ publishers: Publisher<Element>...
-) -> Publisher<Element> {
+    _ publishers: S
+) -> Publisher<Output> where S.Element == Publisher<Output>{
     .init(concatenating: publishers)
 }
 
@@ -37,6 +37,22 @@ public extension Publisher {
                 return try await downstream(.completion(.finished))
             } }
         }
+    }
+}
+
+public func Concat<Element>(
+    onCancel: @escaping () -> Void = { },
+    _ publishers: Publisher<Element>...
+) -> Publisher<Element> {
+    .init(concatenating: publishers)
+}
+
+public extension Publisher {
+    init(
+        onCancel: @Sendable @escaping () -> Void = {  },
+        concatenating publishers: Publisher<Output>...
+    ) {
+        self = .init(onCancel: onCancel, concatenating: publishers)
     }
 }
 

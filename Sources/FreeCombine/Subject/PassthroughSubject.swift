@@ -10,7 +10,7 @@ public func PassthroughSubject<Output>(
     onStartup: UnsafeContinuation<Void, Never>? = .none,
     onCancel: @Sendable @escaping () -> Void = { },
     onCompletion: @escaping (
-        DistributorState<Output>,
+        inout DistributorState<Output>,
         StateTask<DistributorState<Output>, DistributorState<Output>.Action>.Completion
     ) async -> Void = { _, _ in }
 ) -> StateTask<DistributorState<Output>, DistributorState<Output>.Action> {
@@ -29,7 +29,7 @@ public func PassthroughSubject<Output>(
     buffering: AsyncStream<DistributorState<Output>.Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
     onCancel: @Sendable @escaping () -> Void = { },
     onCompletion: @escaping (
-        DistributorState<Output>,
+        inout DistributorState<Output>,
         StateTask<DistributorState<Output>, DistributorState<Output>.Action>.Completion
     ) async -> Void = { _, _ in }
 ) async -> StateTask<DistributorState<Output>, DistributorState<Output>.Action> {
