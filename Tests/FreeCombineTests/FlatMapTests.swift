@@ -18,7 +18,7 @@ class FlatMapTests: XCTestCase {
         let expectation = await CheckedExpectation<Void>()
 
         let checksum = Counter()
-        _ = await Unfolded(0 ... 3)
+        let c1 = await Unfolded(0 ... 3)
             .map { $0 * 2 }
             .flatMap { (value) -> Publisher<Int> in
                 let iterator = ValueRef(value: [Int].init(repeating: value, count: value).makeIterator())
@@ -43,5 +43,6 @@ class FlatMapTests: XCTestCase {
         do {
             try await FreeCombine.wait(for: expectation, timeout: 100_000_000)
         }
+        c1.cancel()
     }
 }

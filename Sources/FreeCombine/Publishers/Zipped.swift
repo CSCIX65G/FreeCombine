@@ -23,6 +23,7 @@ public func Zipped<Left, Right>(
 }
 
 public func zip<Left, Right>(
+    onStartup: UnsafeContinuation<Void, Never>? = .none,
     onCancel: @escaping () -> Void = { },
     _ left: Publisher<Left>,
     _ right: Publisher<Right>

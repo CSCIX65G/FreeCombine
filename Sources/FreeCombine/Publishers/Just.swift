@@ -17,7 +17,7 @@ public extension Publisher {
         _ a: Output
     ) {
         self = .init { continuation, downstream in
-            Task {
+            .init {
                 continuation?.resume()
                 return try await withTaskCancellationHandler(handler: onCancel) {
                     guard !Task.isCancelled else { return .done }
@@ -41,7 +41,7 @@ public extension Publisher {
         _ result: AsyncStream<Output>.Result
     ) {
         self = .init { continuation, downstream in
-            Task { try await withTaskCancellationHandler(handler: onCancel) {
+            .init { try await withTaskCancellationHandler(handler: onCancel) {
                 continuation?.resume()
                 guard !Task.isCancelled else { return .done }
                 return try await downstream(result) == .more ? try await downstream(.completion(.finished)) : .done

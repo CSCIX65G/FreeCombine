@@ -32,7 +32,7 @@ public extension Publisher {
                     guard !Task.isCancelled else {
                         return .done
                     }
-                    guard try await t.value == .more else { return .done }
+                    guard try await t.task.value == .more else { return .done }
                 }
                 return try await downstream(.completion(.finished))
             } }
@@ -78,7 +78,7 @@ public extension Publisher {
                     guard !Task.isCancelled else {
                         return .done
                     }
-                    guard try await t.value == .more else { return .done }
+                    guard try await t.task.value == .more else { return .done }
                 }
                 return try await downstream(.completion(.finished))
             } }

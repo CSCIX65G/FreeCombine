@@ -31,7 +31,7 @@ struct WaitState<FinalResult, PartialResult> {
                 guard !Task.isCancelled else { throw PublisherError.cancelled }
                 let pResult = await expectation.result()
                 guard case let .success(pValue) = pResult else {
-                    fatalError("Wait failed with: \(pResult)")
+                    throw PublisherError.cancelled
                 }
                 guard !Task.isCancelled else { throw PublisherError.cancelled }
                 guard case .enqueued = channel.yield(.complete(index, pValue)) else {

@@ -23,7 +23,7 @@ public extension Publisher {
         _ sequence: S
     ) where S.Element == Output {
         self = .init { continuation, downstream in
-            Task<Demand, Swift.Error> {
+            Cancellable<Demand> {
                 continuation?.resume()
                 return try await withTaskCancellationHandler(handler: onCancel) {
                     for a in sequence {
@@ -51,7 +51,7 @@ public extension Publisher {
         _ generator: @escaping () async throws -> Output?
     ) {
         self = .init { continuation, downstream in
-            Task {
+            .init {
                 continuation?.resume()
                 return try await withTaskCancellationHandler(handler: onCancel) {
                     while let a = try await generator() {

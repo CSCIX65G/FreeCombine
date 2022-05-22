@@ -13,7 +13,7 @@ public extension Publisher {
                     case .value(let a):
                         return try await downstream(.value(a))
                     case .completion(.failure(let e)):
-                        return try await f(e)(flattener(downstream)).value
+                        return try await f(e)(flattener(downstream)).task.value
                     case .completion(.finished):
                         return try await downstream(.completion(.finished))
                 }

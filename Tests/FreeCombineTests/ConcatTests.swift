@@ -22,7 +22,7 @@ class ConcatTests: XCTestCase {
         let publisher3 = "ZYXWVU".asyncPublisher
 
         let count = Counter()
-        _ = await Concat(publisher1, publisher2, publisher3)
+        let c1 = await Concat(publisher1, publisher2, publisher3)
             .sink({ result in
                 switch result {
                     case .value:
@@ -47,6 +47,7 @@ class ConcatTests: XCTestCase {
         } catch {
             XCTFail("Timed out")
         }
+        c1.cancel()
     }
 
     func testMultiConcat() async throws {
@@ -60,7 +61,7 @@ class ConcatTests: XCTestCase {
         let publisher = Concat(publisher1, publisher2, publisher3)
 
         let count1 = Counter()
-        _ = await publisher
+        let c1 = await publisher
             .sink({ result in
                 switch result {
                     case .value:
@@ -81,7 +82,7 @@ class ConcatTests: XCTestCase {
             })
 
         let count2 = Counter()
-        _ = await publisher
+        let c2 = await publisher
             .sink({ result in
                 switch result {
                     case .value:
@@ -107,5 +108,7 @@ class ConcatTests: XCTestCase {
         } catch {
             XCTFail("Timed out")
         }
+        c1.cancel()
+        c2.cancel()
     }
 }

@@ -17,10 +17,10 @@ extension Publisher {
         from flattable: Publisher<Output>
     ) {
         self = .init { continuation, downstream in
-            Task{ try await withTaskCancellationHandler(handler: onCancel) {
+            .init{ try await withTaskCancellationHandler(handler: onCancel) {
                 continuation?.resume()
                 guard !Task.isCancelled else { throw PublisherError.cancelled }
-                return try await flattable(downstream).value
+                return try await flattable(downstream).task.value
             } }
         }
     }
@@ -42,7 +42,7 @@ extension Publisher {
             .init { try await withTaskCancellationHandler(handler: onCancel) {
                 continuation?.resume()
                 guard !Task.isCancelled else { throw PublisherError.cancelled }
-                return try await flattening()(downstream).value
+                return try await flattening()(downstream).task.value
             } }
         }
     }

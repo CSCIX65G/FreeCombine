@@ -11,9 +11,10 @@ struct ZipState<Left: Sendable, Right: Sendable>: CombinatorState {
         case setRight(AsyncStream<Right>.Result, UnsafeContinuation<Demand, Swift.Error>)
     }
 
+    let channel: Channel<ZipState<Left, Right>.Action>
     let downstream: (AsyncStream<(Left, Right)>.Result) async throws -> Demand
-    let leftCancellable: Task<Demand, Swift.Error>
-    let rightCancellable: Task<Demand, Swift.Error>
+    let leftCancellable: Cancellable<Demand>
+    let rightCancellable: Cancellable<Demand>
 
     var mostRecentDemand: Demand
     var left: (value: Left, continuation: UnsafeContinuation<Demand, Swift.Error>)? = .none
@@ -26,6 +27,7 @@ struct ZipState<Left: Sendable, Right: Sendable>: CombinatorState {
         left: Publisher<Left>,
         right: Publisher<Right>
     ) async {
+        self.channel = channel
         self.downstream = downstream
         self.mostRecentDemand = mostRecentDemand
         self.leftCancellable = await channel.consume(publisher: left, using: ZipState<Left, Right>.Action.setLeft)
@@ -47,10 +49,11 @@ struct ZipState<Left: Sendable, Right: Sendable>: CombinatorState {
             case let .cancel(state):
                 state.leftCancellable.cancel()
                 state.left?.continuation.resume(throwing: StateTaskError.cancelled)
-                _ = await state.leftCancellable.result
+                _ = await state.leftCancellable.task.result
                 state.rightCancellable.cancel()
                 state.right?.continuation.resume(throwing: StateTaskError.cancelled)
-                _ = await state.rightCancellable.result
+                _ = await state.rightCancellable.task.result
+                state.channel.finish()
             default:
                 ()
         }

@@ -53,14 +53,14 @@ public extension Channel where Element == Void {
 public extension Channel {
     func consume<Upstream>(
         publisher: Publisher<Upstream>
-    ) async -> Task<Demand, Swift.Error> where Element == (AsyncStream<Upstream>.Result, UnsafeContinuation<Demand, Error>) {
+    ) async -> Cancellable<Demand> where Element == (AsyncStream<Upstream>.Result, UnsafeContinuation<Demand, Error>) {
         await consume(publisher: publisher, using: { ($0, $1) })
     }
 
     func consume<Upstream>(
         publisher: Publisher<Upstream>,
         using action: @escaping (AsyncStream<Upstream>.Result, UnsafeContinuation<Demand, Swift.Error>) -> Element
-    ) async -> Task<Demand, Swift.Error>  {
+    ) async -> Cancellable<Demand>  {
         await publisher { upstreamValue in
             try await withUnsafeThrowingContinuation { continuation in
                 switch self.yield(action(upstreamValue, continuation)) {

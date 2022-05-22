@@ -38,8 +38,8 @@ public final class StateTask<State, Action: Sendable> {
         case cancel(State)
     }
 
-    private let channel: Channel<Action>
-    private let task: Task<State, Swift.Error>
+    let channel: Channel<Action>
+    let task: Task<State, Swift.Error>
 
     deinit {
         task.cancel()
@@ -93,7 +93,9 @@ public final class StateTask<State, Action: Sendable> {
     }
 
     public var finalState: State {
-        get async throws { try await task.value }
+        get async throws {
+            try await task.value
+        }
     }
 }
 

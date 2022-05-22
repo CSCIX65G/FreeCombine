@@ -39,7 +39,7 @@ class DistributorTests: XCTestCase {
 
         let _: Void = await withUnsafeContinuation { c in
             Task {
-                let _: Task<Demand, Swift.Error> = try await withUnsafeThrowingContinuation { taskC in
+                let _: Cancellable<Demand> = try await withUnsafeThrowingContinuation { taskC in
                     Task {
                         do {
                             var distributor = DistributorState(channel: channel, currentValue: 13, nextKey: 0, downstreams: [:])
@@ -92,7 +92,7 @@ class DistributorTests: XCTestCase {
 
         let _: Void = await withUnsafeContinuation { c in
             Task {
-                let _: Task<Demand, Swift.Error> = try await withUnsafeThrowingContinuation { taskC in
+                let _: Cancellable<Demand> = try await withUnsafeThrowingContinuation { taskC in
                     Task {
                         do {
                             var distributor = DistributorState(channel: channel, currentValue: 13, nextKey: 0, downstreams: [:])

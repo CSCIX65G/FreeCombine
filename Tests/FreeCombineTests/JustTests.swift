@@ -20,7 +20,7 @@ class JustTests: XCTestCase {
 
         let just = Just(7)
 
-        _ = await just.sink { (result: AsyncStream<Int>.Result) in
+        let c1 = await just.sink { (result: AsyncStream<Int>.Result) in
             switch result {
                 case let .value(value):
                     XCTAssert(value == 7, "wrong value sent: \(value)")
@@ -35,7 +35,7 @@ class JustTests: XCTestCase {
             }
         }
 
-        _ = await just.sink { (result: AsyncStream<Int>.Result) in
+        let c2 = await just.sink { (result: AsyncStream<Int>.Result) in
             switch result {
                 case let .value(value):
                     XCTAssert(value == 7, "wrong value sent: \(value)")
@@ -56,6 +56,8 @@ class JustTests: XCTestCase {
         } catch {
             XCTFail("Timed out")
         }
+        c1.cancel()
+        c2.cancel()
     }
 
     func testSimpleAsyncJust() async throws {
@@ -79,7 +81,7 @@ class JustTests: XCTestCase {
             }
         }
 
-        var t: Task<Demand, Swift.Error>! = .none
+        var t: Cancellable<Demand>! = .none
         _ = await withUnsafeContinuation { continuation in
             t = just.sink(onStartup: continuation, { result in
                 switch result {
@@ -98,7 +100,7 @@ class JustTests: XCTestCase {
         }
 
         do {
-            let finalDemand = try await t.value
+            let finalDemand = try await t.task.value
             XCTAssert(finalDemand == .done, "Incorrect return")
         } catch {
             XCTFail("Errored out")

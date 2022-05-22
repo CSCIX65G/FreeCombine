@@ -32,13 +32,13 @@ public struct Publisher<Output> {
     private let call: (
         UnsafeContinuation<Void, Never>?,
         @Sendable @escaping (AsyncStream<Output>.Result) async throws -> Demand
-    ) -> Task<Demand, Swift.Error>
+    ) -> Cancellable<Demand>
 
     internal init(
         _ call: @escaping (
             UnsafeContinuation<Void, Never>?,
             @Sendable @escaping (AsyncStream<Output>.Result) async throws -> Demand
-        ) -> Task<Demand, Swift.Error>
+        ) -> Cancellable<Demand>
     ) {
         self.call = call
     }
@@ -49,7 +49,7 @@ public extension Publisher {
     func sink(
         onStartup: UnsafeContinuation<Void, Never>?,
         _ f: @Sendable @escaping (AsyncStream<Output>.Result) async throws -> Demand
-    ) -> Task<Demand, Swift.Error> {
+    ) -> Cancellable<Demand> {
         self(onStartup: onStartup, f)
     }
 
@@ -57,7 +57,7 @@ public extension Publisher {
     func callAsFunction(
         onStartup: UnsafeContinuation<Void, Never>?,
         _ f: @Sendable @escaping (AsyncStream<Output>.Result) async throws -> Demand
-    ) -> Task<Demand, Swift.Error> {
+    ) -> Cancellable<Demand> {
         call(onStartup, { result in
             guard !Task.isCancelled else { return .done }
             let demand = try await f(result)
@@ -68,15 +68,15 @@ public extension Publisher {
     @discardableResult
     func sink(
         _ f: @Sendable @escaping (AsyncStream<Output>.Result) async throws -> Demand
-    ) async -> Task<Demand, Swift.Error> {
+    ) async -> Cancellable<Demand> {
         await self(f)
     }
 
     @discardableResult
     func callAsFunction(
         _ f: @Sendable @escaping (AsyncStream<Output>.Result) async throws -> Demand
-    ) async -> Task<Demand, Swift.Error> {
-        var t: Task<Demand, Swift.Error>! = .none
+    ) async -> Cancellable<Demand> {
+        var t: Cancellable<Demand>! = .none
         await withUnsafeContinuation { continuation in
             t = call(continuation, { result in
                 guard !Task.isCancelled else { throw PublisherError.cancelled }
@@ -104,13 +104,13 @@ extension Publisher {
     func sink(
         onStartup: UnsafeContinuation<Void, Never>?,
         receiveValue: @Sendable @escaping (Output) async throws -> Void
-    ) -> Task<Demand, Swift.Error> {
+    ) -> Cancellable<Demand> {
         sink(onStartup: onStartup, lift(receiveValue))
     }
 
     func sink(
         receiveValue: @Sendable @escaping (Output) async throws -> Void
-    ) async -> Task<Demand, Swift.Error> {
+    ) async -> Cancellable<Demand> {
         await sink(lift(receiveValue))
     }
 
@@ -135,14 +135,14 @@ extension Publisher {
         onStartup: UnsafeContinuation<Void, Never>?,
         receiveCompletion: @Sendable @escaping (Completion) async -> Void,
         receiveValue: @Sendable @escaping (Output) async -> Void
-    ) -> Task<Demand, Swift.Error> {
+    ) -> Cancellable<Demand> {
         sink(onStartup: onStartup, lift(receiveCompletion, receiveValue))
     }
 
     func sink(
         receiveCompletion: @Sendable @escaping (Completion) async -> Void,
         receiveValue: @Sendable @escaping (Output) async -> Void
-    ) async -> Task<Demand, Swift.Error> {
+    ) async -> Cancellable<Demand> {
         await sink(lift(receiveCompletion, receiveValue))
     }
 }

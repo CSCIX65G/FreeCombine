@@ -21,7 +21,7 @@ class ZipTests: XCTestCase {
 
         let counter = Counter()
 
-        _ = await zip(publisher1, publisher2)
+        let c1 = await zip(publisher1, publisher2)
             .sink { (result: AsyncStream<(Int, String)>.Result) in
                 let count = await counter.count
                 switch result {
@@ -45,6 +45,7 @@ class ZipTests: XCTestCase {
             let count = await counter.count
             XCTFail("Timed out, count = \(count)")
         }
+        _ = c1.cancel()
     }
 
     func testEmptyZip() async throws {
@@ -55,7 +56,7 @@ class ZipTests: XCTestCase {
 
         let counter = Counter()
 
-        _ = await zip(publisher1, publisher2)
+        let z1 = await zip(publisher1, publisher2)
             .sink { (result: AsyncStream<(Int, String)>.Result) in
                 let count = await counter.count
                 switch result {
@@ -78,6 +79,7 @@ class ZipTests: XCTestCase {
             let count = await counter.count
             XCTFail("Timed out, count = \(count)")
         }
+        _ = await z1.task.result
     }
 
     func testSimpleSequenceZip() async throws {
@@ -87,7 +89,7 @@ class ZipTests: XCTestCase {
         let publisher2 = "abcdefghijklmnopqrstuvwxyz".asyncPublisher
 
         let counter = Counter()
-        _ = await zip(publisher1, publisher2)
+        let z1 = await zip(publisher1, publisher2)
             .sink { (result: AsyncStream<(Int, Character)>.Result) in
                 let count = await counter.count
                 switch result {
@@ -109,17 +111,18 @@ class ZipTests: XCTestCase {
             let count = await counter.count
             XCTFail("Timed out, count = \(count)")
         }
+        z1.cancel()
     }
 
- func testSimpleZip() async throws {
+    func testSimpleZip() async throws {
         let expectation = await CheckedExpectation<Void>()
 
-     let publisher1 = (0 ... 100).asyncPublisher
+        let publisher1 = (0 ... 100).asyncPublisher
         let publisher2 = Unfolded("abcdefghijklmnopqrstuvwxyz")
 
         let counter = Counter()
 
-        _ = await zip(publisher1, publisher2)
+        let z1 = await zip(publisher1, publisher2)
             .map {value in (value.0 + 100, value.1.uppercased()) }
             .sink({ result in
                 switch result {
@@ -143,6 +146,7 @@ class ZipTests: XCTestCase {
             let count = await counter.count
             XCTFail("Timed out, count = \(count)")
         }
+        z1.cancel()
     }
 
     func testComplexZip() async throws {
@@ -158,7 +162,7 @@ class ZipTests: XCTestCase {
         let p8 = Unfolded("abcdefghijklmnopqrstuvwxyz")
 
         let counter = Counter()
-        _ = await zip(p1, p2, p3, p4, p5, p6, p7, p8)
+        let z1 = await zip(p1, p2, p3, p4, p5, p6, p7, p8)
             .map { v in
                 (v.0 + 100, v.1.uppercased(), v.2 + 110, v.3, v.4 + 120, v.5.uppercased(), v.6 + 130, v.7 )
             }
@@ -183,6 +187,7 @@ class ZipTests: XCTestCase {
             let count = await counter.count
             XCTFail("Timed out, count = \(count)")
         }
+        z1.cancel()
     }
 
     func testMultiComplexZip() async throws {
@@ -201,7 +206,7 @@ class ZipTests: XCTestCase {
         let zipped = zip(p1, p2, p3, p4, p5, p6, p7, p8)
 
         let count1 = Counter()
-        _ = await zipped
+        let z1 = await zipped
             .map { v in
                 (v.0 + 100, v.1.uppercased(), v.2 + 110, v.3, v.4 + 120, v.5.uppercased(), v.6 + 130, v.7 )
             }
@@ -226,7 +231,7 @@ class ZipTests: XCTestCase {
             })
 
         let count2 = Counter()
-        _ = await zipped
+        let z2 = await zipped
             .map { v in
                 (v.0 + 100, v.1.uppercased(), v.2 + 110, v.3, v.4 + 120, v.5.uppercased(), v.6 + 130, v.7 )
             }
@@ -256,5 +261,7 @@ class ZipTests: XCTestCase {
         } catch {
             XCTFail("Timed out")
         }
+        z1.cancel()
+        z2.cancel()
     }
 }

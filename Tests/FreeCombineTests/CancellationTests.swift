@@ -78,7 +78,7 @@ class CancellationTests: XCTestCase {
         let zipped = zip(publisher1, publisher2)
             .map { ($0.0 + 100, $0.1.uppercased()) }
 
-        _ = await zipped.sink({ result in
+        let z1 = await zipped.sink({ result in
             switch result {
                 case .value:
                     _ = await counter2.increment()
@@ -128,5 +128,7 @@ class CancellationTests: XCTestCase {
         } catch {
             XCTFail("Timed out")
         }
+        z1.cancel()
+        z2.cancel()
     }
 }

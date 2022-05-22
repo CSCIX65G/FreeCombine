@@ -15,7 +15,7 @@ public extension Publisher {
                     var bPub: Publisher<B>? = .none
                     do { bPub = try await f(a) }
                     catch { return try await downstream(.completion(.failure(error))) }
-                    return try await bPub!(flattener(downstream)).value
+                    return try await bPub!(flattener(downstream)).task.value
                 case let .completion(value):
                     return try await downstream(.completion(value))
             } }

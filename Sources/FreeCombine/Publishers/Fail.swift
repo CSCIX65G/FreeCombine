@@ -19,10 +19,12 @@ public extension Publisher {
         _ error: Swift.Error
     ) {
         self = .init { continuation, downstream in
-            Task { try await withTaskCancellationHandler(handler: onCancel) {
-                guard !Task.isCancelled else { throw PublisherError.cancelled }
-                return try await downstream(.completion(.failure(error)))
-            } }
+            .init {
+                try await withTaskCancellationHandler(handler: onCancel) {
+                    guard !Task.isCancelled else { throw PublisherError.cancelled }
+                    return try await downstream(.completion(.failure(error)))
+                }
+            }
         }
     }
 }

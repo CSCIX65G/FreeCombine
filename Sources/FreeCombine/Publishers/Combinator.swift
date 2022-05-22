@@ -48,7 +48,9 @@ public extension Publisher {
                 }) {
                     continuation?.resume()
                     guard !Task.isCancelled else { throw StateTaskError.cancelled }
-                    return try await stateTask.finalState.mostRecentDemand
+                    let finalState = try await stateTask.finalState
+                    let mostRecentDemand = finalState.mostRecentDemand
+                    return mostRecentDemand
                 }
             }
         }

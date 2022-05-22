@@ -17,7 +17,7 @@ public extension Publisher {
         _: Output.Type = Output.self
     ) {
         self = .init { continuation, downstream in
-            Task {
+            .init {
                 continuation?.resume()
                 return try await withTaskCancellationHandler(handler: onCancel) {
                     guard !Task.isCancelled else { return .done }
