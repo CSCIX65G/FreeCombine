@@ -28,11 +28,11 @@ public struct RepeaterState<ID: Hashable & Sendable, Output: Sendable>: Identifi
         self.mostRecentDemand = mostRecentDemand
     }
 
-    static func reduce(`self`: inout Self, action: Self.Action) async throws -> Void {
+    static func reduce(`self`: inout Self, action: Self.Action) async throws -> StateTask<Self, Action>.Effect {
         try await `self`.reduce(action: action)
     }
 
-    mutating func reduce(action: Self.Action) async throws -> Void {
+    mutating func reduce(action: Self.Action) async throws -> StateTask<Self, Action>.Effect {
         switch action {
             case let .repeat(output, semaphore):
                 do {
@@ -40,7 +40,8 @@ public struct RepeaterState<ID: Hashable & Sendable, Output: Sendable>: Identifi
                 } catch {
                     mostRecentDemand = .done
                 }
-                return await semaphore.decrement(with: .repeated(id, mostRecentDemand))
+                await semaphore.decrement(with: .repeated(id, mostRecentDemand))
+                return .none
         }
     }
 }

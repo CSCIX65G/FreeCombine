@@ -12,7 +12,7 @@ public extension StateTask {
         onCancel: @Sendable @escaping () -> Void = { },
         onCompletion: @escaping (inout State, Completion) async -> Void = { _, _ in },
         disposer: @escaping (Action, Error) -> Void = { _, _ in },
-        reducer: @escaping (inout State, Action) async throws -> Void
+        reducer: @escaping (inout State, Action) async throws -> Effect
     ) async -> Self {
         var stateTask: Self!
         await withUnsafeContinuation { stateTaskContinuation in
@@ -36,7 +36,7 @@ public extension StateTask {
         onCancel: @Sendable @escaping () -> Void = { },
         onCompletion: @escaping (inout State, Completion) async -> Void = { _, _ in },
         disposer: @escaping (Action, Error) -> Void = { _, _ in },
-        reducer: @escaping (inout State, Action) async throws -> Void
+        reducer: @escaping (inout State, Action) async throws -> Effect
     ) {
         self.init(
             initialState: {_ in initialState},
@@ -56,7 +56,7 @@ public extension StateTask {
         onCancel: @Sendable @escaping () -> Void = { },
         onCompletion: @escaping (inout State, Completion) async -> Void = { _, _ in },
         disposer: @escaping (Action, Error) -> Void = { _, _ in },
-        reducer: @escaping (inout State, Action) async throws -> Void
+        reducer: @escaping (inout State, Action) async throws -> Effect
     ) {
         self.init(
             channel: Channel<Action>(buffering: buffering),
@@ -77,7 +77,7 @@ public extension StateTask where State == Void {
         onCancel: @Sendable @escaping () -> Void = { },
         onCompletion: @escaping (Completion) async -> Void = {_ in },
         disposer: @escaping (Action, Error) -> Void = { _, _ in },
-        reducer: @escaping (Action) async throws -> Void
+        reducer: @escaping (Action) async throws -> Effect
     ) {
         self.init(
             initialState: {_ in },

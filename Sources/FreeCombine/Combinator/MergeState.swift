@@ -81,10 +81,13 @@ struct MergeState<Output: Sendable>: CombinatorState {
         state.channel.yield(.removeAll)
     }
 
-    static func reduce(`self`: inout Self, action: Self.Action) async throws -> Void {
+    static func reduce(
+        `self`: inout Self,
+        action: Self.Action
+    ) async throws -> StateTask<Self, Action>.Effect {
         do {
             guard !Task.isCancelled else { throw StateTaskError.cancelled }
-            try await `self`.reduce(action: action)
+            return try await `self`.reduce(action: action)
         } catch {
             await complete(state: &`self`, completion: .cancel(`self`))
             throw error
@@ -93,7 +96,7 @@ struct MergeState<Output: Sendable>: CombinatorState {
 
     private mutating func reduce(
         action: Self.Action
-    ) async throws -> Void {
+    ) async throws -> StateTask<Self, Action>.Effect {
         switch action {
             case let .setValue(value, continuation):
                 switch value {
@@ -118,7 +121,6 @@ struct MergeState<Output: Sendable>: CombinatorState {
                         catch {
                             continuation.resume(throwing: error)
                         }
-                        return
                     case .completion(.finished):
                         continuation.resume(returning: .done)
                 }
@@ -138,5 +140,6 @@ struct MergeState<Output: Sendable>: CombinatorState {
                 throw StateTaskError.completed
         }
         await Task.yield()
+        return .none
     }
 }

@@ -14,7 +14,7 @@ public func Combinator<Output: Sendable, State: CombinatorState, Action>(
     buffering: AsyncStream<Action>.Continuation.BufferingPolicy,
     onCancel: @escaping () -> Void,
     onCompletion: @escaping (inout State, StateTask<State, Action>.Completion) async -> Void,
-    operation: @escaping (inout State, Action) async throws -> Void
+    operation: @escaping (inout State, Action) async throws -> StateTask<State, Action>.Effect
 ) -> Publisher<Output> where State.CombinatorAction == Action {
     .init(
         initialState: initialState,
@@ -32,7 +32,7 @@ public extension Publisher {
         onCancel: @escaping () -> Void,
         onCompletion: @escaping (inout State, StateTask<State, Action>.Completion) async -> Void,
         disposer: @escaping (Action, Error) -> Void = { _, _ in },
-        operation: @escaping (inout State, Action) async throws -> Void
+        operation: @escaping (inout State, Action) async throws -> StateTask<State, Action>.Effect
     ) where State.CombinatorAction == Action {
         self = .init { continuation, downstream in
             .init {

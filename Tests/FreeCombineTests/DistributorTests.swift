@@ -19,7 +19,7 @@ class DistributorTests: XCTestCase {
         var distributor = DistributorState(channel: channel, currentValue: 13, nextKey: 0, downstreams: [:])
 
         do {
-            try await distributor.reduce(action: .receive(.value(15), .none))
+            _ = try await distributor.reduce(action: .receive(.value(15), .none))
             XCTAssert(distributor.currentValue == 15, "Did not set value")
         } catch {
             XCTFail("Failed with: \(error)")
@@ -44,7 +44,7 @@ class DistributorTests: XCTestCase {
                         do {
                             var distributor = DistributorState(channel: channel, currentValue: 13, nextKey: 0, downstreams: [:])
                             XCTAssert(distributor.repeaters.count == 0, "Incorrect number of repeaters = \(distributor.repeaters.count)")
-                            try await distributor.reduce(action: .subscribe(downstream, c, taskC))
+                            _ = try await distributor.reduce(action: .subscribe(downstream, c, taskC))
                             XCTAssert(distributor.repeaters.count == 1, "Incorrect number of repeaters = \(distributor.repeaters.count)")
                         } catch {
                             XCTFail("Caught: \(error)")
@@ -97,16 +97,16 @@ class DistributorTests: XCTestCase {
                         do {
                             var distributor = DistributorState(channel: channel, currentValue: 13, nextKey: 0, downstreams: [:])
                             XCTAssert(distributor.repeaters.count == 0, "Incorrect number of repeaters = \(distributor.repeaters.count)")
-                            try await distributor.reduce(action: .subscribe(downstream1, .none, .none))
+                            _ = try await distributor.reduce(action: .subscribe(downstream1, .none, .none))
                             XCTAssert(distributor.repeaters.count == 1, "Incorrect number of repeaters = \(distributor.repeaters.count)")
-                            try await distributor.reduce(action: .subscribe(downstream2, .none, taskC))
+                            _ = try await distributor.reduce(action: .subscribe(downstream2, .none, taskC))
                             XCTAssert(distributor.repeaters.count == 2, "Incorrect number of repeaters = \(distributor.repeaters.count)")
                             let count1 = await counter.count
                             XCTAssert(count1 == 2, "Incorrect number of sends: \(count1)")
-                            try await distributor.reduce(action: .receive(.value(15), .none))
+                            _ = try await distributor.reduce(action: .receive(.value(15), .none))
                             let count2 = await counter.count
                             XCTAssert(count2 == 4, "Incorrect number of sends: \(count2)")
-                            try await distributor.reduce(action: .receive(.completion(.finished), c))
+                            _ = try await distributor.reduce(action: .receive(.completion(.finished), c))
                             XCTAssert(distributor.repeaters.count == 0, "Incorrect number of repeaters = \(distributor.repeaters.count)")
                         } catch {
                             XCTFail("Caught: \(error)")

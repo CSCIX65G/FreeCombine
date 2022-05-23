@@ -59,10 +59,10 @@ struct ZipState<Left: Sendable, Right: Sendable>: CombinatorState {
         }
     }
 
-    static func reduce(`self`: inout Self, action: Self.Action) async throws -> Void {
+    static func reduce(`self`: inout Self, action: Self.Action) async throws -> StateTask<Self, Action>.Effect {
         do {
             guard !Task.isCancelled else { throw PublisherError.cancelled }
-            try await `self`.reduce(action: action)
+            return try await `self`.reduce(action: action)
         } catch {
             await complete(state: &`self`, completion: .cancel(`self`))
             throw error
@@ -71,15 +71,16 @@ struct ZipState<Left: Sendable, Right: Sendable>: CombinatorState {
 
     private mutating func reduce(
         action: Self.Action
-    ) async throws -> Void {
+    ) async throws -> StateTask<Self, Action>.Effect {
         switch action {
             case let .setLeft(leftResult, leftContinuation):
-                return mostRecentDemand == .done ? leftContinuation.resume(returning: .done)
+                mostRecentDemand == .done ? leftContinuation.resume(returning: .done)
                 : try await handleLeft(leftResult, leftContinuation)
             case let .setRight(rightResult, rightContinuation):
-                return mostRecentDemand == .done ? rightContinuation.resume(returning: .done)
+                mostRecentDemand == .done ? rightContinuation.resume(returning: .done)
                 : try await handleRight(rightResult, rightContinuation)
         }
+        return .none
     }
 
     private mutating func handleLeft(

@@ -20,7 +20,7 @@ public struct DistributorState<Output: Sendable> {
         case unsubscribe(Int)
     }
 
-    static func reduce(`self`: inout Self, action: Self.Action) async throws -> Void {
+    static func reduce(`self`: inout Self, action: Self.Action) async throws -> StateTask<Self, Action>.Effect {
         try await `self`.reduce(action: action)
     }
 
@@ -41,7 +41,7 @@ public struct DistributorState<Output: Sendable> {
     }
 
 
-    mutating func reduce(action: Action) async throws -> Void {
+    mutating func reduce(action: Action) async throws -> StateTask<Self, Action>.Effect {
         switch action {
             case let .receive(result, continuation):
                 if case let .value(newValue) = result, currentValue != nil { currentValue = newValue }
@@ -65,10 +65,11 @@ public struct DistributorState<Output: Sendable> {
                 }
             case let .unsubscribe(channelId):
                 guard let downstream = repeaters.removeValue(forKey: channelId) else {
-                    return
+                    return .none
                 }
                 await process(currentRepeaters: [channelId: downstream], with: .completion(.finished))
         }
+        return .none
     }
 
     mutating func process(

@@ -31,6 +31,13 @@ public enum StateTaskError: Swift.Error, Sendable, CaseIterable {
 }
 
 public final class StateTask<State, Action: Sendable> {
+    public enum Effect {
+        case none
+        case fireAndForget(() -> Void)
+        case published(Action)
+        case completion(Completion)
+    }
+
     public enum Completion {
         case termination(State)
         case exit(State)
@@ -57,7 +64,7 @@ public final class StateTask<State, Action: Sendable> {
         onCancel: @Sendable @escaping () -> Void = { },
         onCompletion: @escaping (inout State, Completion) async -> Void = { _, _ in },
         disposer: @escaping (Action, Error) -> Void = { _, _ in },
-        reducer: @escaping (inout State, Action) async throws -> Void
+        reducer: @escaping (inout State, Action) async throws -> Effect
     ) {
         self.init(
             channel: channel,
@@ -67,7 +74,7 @@ public final class StateTask<State, Action: Sendable> {
                 do {
                     for await action in channel {
                         guard !Task.isCancelled else { throw StateTaskError.cancelled }
-                        try await reducer(&state, action)
+                        _ = try await reducer(&state, action)
                     }
                     await onCompletion(&state, .termination(state))
                 } catch {
