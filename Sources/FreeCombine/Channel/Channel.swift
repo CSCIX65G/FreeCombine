@@ -65,13 +65,11 @@ public extension Channel {
             try await withUnsafeThrowingContinuation { continuation in
                 switch self.yield(action(upstreamValue, continuation)) {
                     case .enqueued:
-                        return
+                        ()
                     case .dropped:
                         continuation.resume(throwing: PublisherError.enqueueError)
-                        return
                     case .terminated:
                         continuation.resume(throwing: PublisherError.cancelled)
-                        return
                     @unknown default:
                         fatalError("Unhandled continuation value")
                 }

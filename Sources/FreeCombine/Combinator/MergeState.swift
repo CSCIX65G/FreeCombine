@@ -8,11 +8,11 @@ struct MergeState<Output: Sendable>: CombinatorState {
     typealias CombinatorAction = Self.Action
     enum Action {
         case setValue(AsyncStream<(Int, Output)>.Result, UnsafeContinuation<Demand, Swift.Error>)
-        case removeCancellable(Int)
+        case removeCancellable(Int, UnsafeContinuation<Demand, Swift.Error>)
         case removeAll
     }
 
-    let channel: Channel<MergeState<Output>.Action>
+//    let channel: Channel<MergeState<Output>.Action>
     let downstream: (AsyncStream<Output>.Result) async throws -> Demand
 
     var cancellables: [Int: Cancellable<Demand>]
@@ -41,7 +41,6 @@ struct MergeState<Output: Sendable>: CombinatorState {
         _ upstream2: Publisher<Output>,
         _ otherUpstreams: [Publisher<Output>]
     ) async {
-        self.channel = channel
         self.downstream = downstream
         self.mostRecentDemand = mostRecentDemand
         var localCancellables = [Int: Cancellable<Demand>]()
@@ -53,10 +52,7 @@ struct MergeState<Output: Sendable>: CombinatorState {
         for (index, publisher) in upstreams.enumerated() {
             let c = await channel.consume(publisher: publisher, using: { result, continuation in
                 if case AsyncStream<(Int, Output)>.Result.completion = result {
-                    let queueStatus = channel.yield(.removeCancellable(index))
-                    guard case .enqueued = queueStatus else {
-                        fatalError("could not enqueue exit")
-                    }
+                    return MergeState<Output>.Action.removeCancellable(index, continuation)
                 }
                 return MergeState<Output>.Action.setValue(result, continuation)
             })
@@ -78,7 +74,7 @@ struct MergeState<Output: Sendable>: CombinatorState {
 
     static func complete(state: inout Self, completion: StateTask<Self, Self.Action>.Completion) async -> Void {
         state.cancellables.values.forEach { cancellable in cancellable.cancel() }
-        state.channel.yield(.removeAll)
+        state.cancellables.removeAll()
     }
 
     static func reduce(
@@ -122,15 +118,13 @@ struct MergeState<Output: Sendable>: CombinatorState {
                             continuation.resume(throwing: error)
                         }
                     case .completion(.finished):
-                        continuation.resume(returning: .done)
+                        fatalError("Should never get here.")
                 }
-            case let .removeCancellable(index):
-                print("removing: \(index)")
+            case let .removeCancellable(index, continuation):
                 cancellables.removeValue(forKey: index)
+                continuation.resume(returning: .done)
                 if cancellables.count == 0 {
-                    print("finishing")
                     mostRecentDemand = try await downstream(.completion(.finished))
-                    await Task.yield()
                     throw StateTaskError.completed
                 }
             case .removeAll:
