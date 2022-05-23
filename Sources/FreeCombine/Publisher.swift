@@ -61,6 +61,7 @@ public extension Publisher {
         call(onStartup, { result in
             guard !Task.isCancelled else { return .done }
             let demand = try await f(result)
+            await Task.yield()
             return demand
         })
     }
@@ -81,6 +82,7 @@ public extension Publisher {
             t = call(continuation, { result in
                 guard !Task.isCancelled else { throw PublisherError.cancelled }
                 let demand = try await f(result)
+                await Task.yield()
                 return demand
             })
         }
@@ -95,6 +97,7 @@ extension Publisher {
         { result in switch result {
             case let .value(value):
                 try await receiveValue(value)
+                await Task.yield()
                 return .more
             case .completion:
                 return .done
@@ -121,12 +124,15 @@ extension Publisher {
         { result in switch result {
             case let .value(value):
                 try await receiveValue(value)
+                await Task.yield()
                 return .more
             case let .completion(.failure(error)):
                 try await receiveCompletion(.failure(error))
+                await Task.yield()
                 return .done
             case .completion(.finished):
                 try await receiveCompletion(.finished)
+                await Task.yield()
                 return .done
         } }
     }
@@ -152,8 +158,11 @@ func flattener<B>(
 ) -> @Sendable (AsyncStream<B>.Result) async throws -> Demand {
     { b in switch b {
         case .completion(.finished):
+            await Task.yield()
             return .more
         case .value, .completion(.failure):
-            return try await downstream(b)
+            let r = try await downstream(b)
+            await Task.yield()
+            return r
     } }
 }

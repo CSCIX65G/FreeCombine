@@ -66,7 +66,7 @@ class JustTests: XCTestCase {
 
         let just = Just(7)
 
-        _ = await just.sink { (result: AsyncStream<Int>.Result) in
+        let c1 = await just.sink { (result: AsyncStream<Int>.Result) in
             switch result {
                 case let .value(value):
                     XCTAssert(value == 7, "wrong value sent: \(value)")
@@ -76,7 +76,9 @@ class JustTests: XCTestCase {
                     return .done
                 case .completion(.finished):
                     do { try await expectation1.complete() }
-                    catch { XCTFail("Failed to complete with error: \(error)") }
+                    catch {
+                        XCTFail("Failed to complete with error: \(error)")
+                    }
                     return .done
             }
         }
@@ -93,7 +95,9 @@ class JustTests: XCTestCase {
                         return .done
                     case .completion(.finished):
                         do { try await expectation2.complete() }
-                        catch { XCTFail("Failed to complete with error: \(error)") }
+                        catch {
+                            XCTFail("Failed to complete with error: \(error)")
+                        }
                         return .done
                 }
             } )
@@ -106,10 +110,13 @@ class JustTests: XCTestCase {
             XCTFail("Errored out")
         }
         do {
-            try await FreeCombine.wait(for: expectation1, timeout: 1_000_000)
-            try await FreeCombine.wait(for: expectation2, timeout: 1_000_000)
+            try await FreeCombine.wait(for: expectation1, timeout: 10_000_000)
+            try await FreeCombine.wait(for: expectation2, timeout: 10_000_000)
         } catch {
             XCTFail("Timed out")
         }
+        await Task.yield()
+        c1.cancel()
+        t.cancel()
     }
 }

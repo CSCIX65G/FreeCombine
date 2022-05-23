@@ -35,7 +35,11 @@ public struct RepeaterState<ID: Hashable & Sendable, Output: Sendable>: Identifi
     mutating func reduce(action: Self.Action) async throws -> Void {
         switch action {
             case let .repeat(output, semaphore):
-                mostRecentDemand = (try? await downstream(output)) ?? .done
+                do {
+                    mostRecentDemand = try await downstream(output)
+                } catch {
+                    mostRecentDemand = .done
+                }
                 return await semaphore.decrement(with: .repeated(id, mostRecentDemand))
         }
     }

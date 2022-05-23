@@ -11,9 +11,10 @@ struct MergeState<Output: Sendable>: CombinatorState {
         case removeCancellable(Int)
     }
 
+    let channel: Channel<MergeState<Output>.Action>
     let downstream: (AsyncStream<Output>.Result) async throws -> Demand
 
-    var cancellables: [Int: Task<Demand, Swift.Error>]
+    var cancellables: [Int: Cancellable<Demand>]
     var mostRecentDemand: Demand
     var currentContinuation: UnsafeContinuation<Demand, Swift.Error>?
 
@@ -40,25 +41,23 @@ struct MergeState<Output: Sendable>: CombinatorState {
         _ upstream2: Publisher<Output>,
         _ otherUpstreams: [Publisher<Output>]
     ) async {
+        self.channel = channel
         self.downstream = downstream
         self.mostRecentDemand = mostRecentDemand
-        var localCancellables = [Int: Task<Demand, Swift.Error>]()
+        var localCancellables = [Int: Cancellable<Demand>]()
         let upstreams = ([upstream1, upstream2] + otherUpstreams)
             .enumerated()
             .map { (index: Int, publisher: Publisher<Output>) in
                 publisher.map { value in (index, value) }
             }
         for (index, publisher) in upstreams.enumerated() {
-            localCancellables[index] = Task {
-                let r = await channel.consume(publisher: publisher, using: MergeState<Output>.Action.setValue).result
-                guard case .enqueued = channel.yield(.removeCancellable(index)) else {
-                    fatalError("Unable to process merge remove")
+            let c = await channel.consume(publisher: publisher, using: { result, continuation in
+                if case AsyncStream<(Int, Output)>.Result.completion = result {
+                    channel.yield(.removeCancellable(index))
                 }
-                switch r {
-                    case .success(let value): return value
-                    case .failure(let error): throw error
-                }
-            }
+                return MergeState<Output>.Action.setValue(result, continuation)
+            })
+            localCancellables[index] = c
         }
         cancellables = localCancellables
     }
@@ -75,17 +74,23 @@ struct MergeState<Output: Sendable>: CombinatorState {
     }
 
     static func complete(state: inout Self, completion: StateTask<Self, Self.Action>.Completion) async -> Void {
-        for (_, task) in state.cancellables {
-            switch completion {
-                case let .cancel(state):
-                    state.currentContinuation?.resume(throwing: PublisherError.cancelled)
-                case .termination, .exit:
-                    state.currentContinuation?.resume(returning: .done)
-                case let .failure(error):
-                    state.currentContinuation?.resume(throwing: error)
+        for (_, cancellable) in state.cancellables {
+            do {
+                switch completion {
+                    case let .cancel(state):
+                        state.currentContinuation?.resume(throwing: PublisherError.cancelled)
+                    case .termination, .exit:
+                        _ = try await state.downstream(.completion(.finished))
+                        state.currentContinuation?.resume(returning: .done)
+                    case let .failure(error):
+                        _ = try await state.downstream(.completion(.failure(error)))
+                        state.currentContinuation?.resume(throwing: error)
+                }
+            } catch {
+                fatalError("downstream threw")
             }
-            task.cancel()
-            _ = await task.result
+            cancellable.cancel()
+            _ = await cancellable.task.result
         }
         state.removeAll()
     }
@@ -135,9 +140,11 @@ struct MergeState<Output: Sendable>: CombinatorState {
                 cancellables.removeValue(forKey: index)
                 if cancellables.count == 0 {
                     mostRecentDemand = try await downstream(.completion(.finished))
+                    channel.finish()
                     throw StateTaskError.completed
                 }
         }
+        await Task.yield()
     }
 
     private mutating func removeAll() -> Void {

@@ -36,13 +36,17 @@ public func Deferred<Element>(
 extension Publisher {
     init(
         onCancel: @Sendable @escaping () -> Void = { },
-        from flattening: @escaping () async throws -> Publisher<Output>
+        from flattener: @escaping () async throws -> Publisher<Output>
     ) {
         self = .init { continuation, downstream in
             .init { try await withTaskCancellationHandler(handler: onCancel) {
                 continuation?.resume()
                 guard !Task.isCancelled else { throw PublisherError.cancelled }
-                return try await flattening()(downstream).task.value
+                let p = try await flattener()
+                await Task.yield()
+                let c = await p(downstream)
+                await Task.yield()
+                return try await c.task.value
             } }
         }
     }

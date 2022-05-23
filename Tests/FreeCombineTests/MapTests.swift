@@ -19,7 +19,7 @@ class MapTests: XCTestCase {
 
         let just = Just(7)
 
-        _ = await just
+        let m1 = await just
             .map { $0 * 2 }
             .sink { (result: AsyncStream<Int>.Result) in
                 switch result {
@@ -41,5 +41,6 @@ class MapTests: XCTestCase {
         } catch {
             XCTFail("Timed out")
         }
+        m1.cancel()
     }
 }

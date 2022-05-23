@@ -15,7 +15,7 @@ public struct DistributorState<Output: Sendable> {
         case subscribe(
             @Sendable (AsyncStream<Output>.Result) async throws -> Demand,
             UnsafeContinuation<Void, Never>?,
-            UnsafeContinuation<Task<Demand, Swift.Error>, Swift.Error>?
+            UnsafeContinuation<Cancellable<Demand>, Swift.Error>?
         )
         case unsubscribe(Int)
     }
@@ -52,9 +52,10 @@ public struct DistributorState<Output: Sendable> {
                     let channel = self.channel
                     let repeater = try await process(subscription: downstream, continuation: outerContinuation)
                     let key = nextKey
-                    continuation?.resume(returning: Task { try await withTaskCancellationHandler(handler: {
-                        guard case .enqueued = channel.yield(.unsubscribe(key)) else {
-                            fatalError("Unable to remove subscriber for subject")
+                    continuation?.resume(returning: .init { try await withTaskCancellationHandler(handler: {
+                        let queueStatus = channel.yield(.unsubscribe(key))
+                        if case .dropped = queueStatus {
+                            fatalError("Unable to remove subscriber for subject due to: \(queueStatus)")
                         }
                     }) {
                         try await repeater.finalState.mostRecentDemand

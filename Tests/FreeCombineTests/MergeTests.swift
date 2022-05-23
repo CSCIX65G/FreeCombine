@@ -22,7 +22,7 @@ class MergeTests: XCTestCase {
         let publisher3 = "abcdefghijklmnopqrstuvwxyz".reversed().asyncPublisher
 
         let counter = Counter()
-        _ = await merge(publishers: publisher1, publisher2, publisher3)
+        let m1 = await merge(publishers: publisher1, publisher2, publisher3)
             .map { $0.uppercased() }
             .sink({ result in
                 switch result {
@@ -45,5 +45,6 @@ class MergeTests: XCTestCase {
         } catch {
             XCTFail("Timed out")
         }
+        m1.cancel()
     }
 }

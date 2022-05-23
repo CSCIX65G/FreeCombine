@@ -23,7 +23,7 @@ class CancellationTests: XCTestCase {
         let publisher2 = "abcdefghijklmnopqrstuvwxyz".asyncPublisher
 
         let counter = Counter()
-        let z2 = await zip(publisher1, publisher2)
+        let z1 = await zip(publisher1, publisher2)
             .map { ($0.0 + 100, $0.1.uppercased()) }
             .sink { (result: AsyncStream<(Int, String)>.Result) in
                 switch result {
@@ -52,7 +52,7 @@ class CancellationTests: XCTestCase {
             }
         // Provide time for some values to be sent so that the task hangs for cancellation
         try await FreeCombine.wait(for: startup, timeout: 100_000_000)
-        z2.cancel()
+        z1.cancel()
         await Task.yield()
         try await expectation.complete()
 
@@ -129,6 +129,5 @@ class CancellationTests: XCTestCase {
             XCTFail("Timed out")
         }
         z1.cancel()
-        z2.cancel()
     }
 }

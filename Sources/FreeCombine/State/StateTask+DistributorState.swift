@@ -21,9 +21,9 @@ public extension StateTask {
         try send(.value(value))
     }
 
-    @inlinable
     func finish<Output: Sendable>() async throws -> Void where State == DistributorState<Output>, Action == DistributorState<Output>.Action {
         try await send(.completion(.finished))
+        channel.finish()
     }
 
     @inlinable

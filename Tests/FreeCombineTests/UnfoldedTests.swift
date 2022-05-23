@@ -8,20 +8,20 @@
 import XCTest
 @testable import FreeCombine
 
-class SequencePublisherTests: XCTestCase {
+class UnfoldedTests: XCTestCase {
 
     override func setUpWithError() throws { }
 
     override func tearDownWithError() throws { }
 
-    func testSimpleSequencePublisher() async throws {
+    func testSimpleUnfolded() async throws {
         let expectation1 = await CheckedExpectation<Void>()
         let expectation2 = await CheckedExpectation<Void>()
 
-        let sequencePublisher = Unfolded(0 ..< 10)
+        let unfolded = Unfolded(0 ..< 10)
 
         let counter1 = Counter()
-        _ = await sequencePublisher.sink { (result: AsyncStream<Int>.Result) in
+        let u1 = await unfolded.sink { (result: AsyncStream<Int>.Result) in
             switch result {
                 case .value:
                     await counter1.increment()
@@ -42,7 +42,7 @@ class SequencePublisherTests: XCTestCase {
         }
 
         let counter2 = Counter()
-        _ = await sequencePublisher.sink { (result: AsyncStream<Int>.Result) in
+        let u2 = await unfolded.sink { (result: AsyncStream<Int>.Result) in
             switch result {
                 case .value:
                     await counter2.increment()
@@ -68,16 +68,18 @@ class SequencePublisherTests: XCTestCase {
         } catch {
             XCTFail("Timed out")
         }
+        u1.cancel()
+        u2.cancel()
     }
 
-    func testVariableSequencePublisher() async throws {
+    func testVariableUnfolded() async throws {
         let expectation1 = await CheckedExpectation<Void>()
         let expectation2 = await CheckedExpectation<Void>()
 
-        let sequencePublisher = (0 ..< 10).asyncPublisher
+        let unfolded = (0 ..< 10).asyncPublisher
 
         let counter1 = Counter()
-        _ = await sequencePublisher.sink { (result: AsyncStream<Int>.Result) in
+        let u1 = await unfolded.sink { (result: AsyncStream<Int>.Result) in
             switch result {
                 case .value:
                     await counter1.increment()
@@ -98,7 +100,7 @@ class SequencePublisherTests: XCTestCase {
         }
 
         let counter2 = Counter()
-        _ = await sequencePublisher.sink { (result: AsyncStream<Int>.Result) in
+        let u2 = await unfolded.sink { (result: AsyncStream<Int>.Result) in
             switch result {
                 case .value:
                     await counter2.increment()
@@ -124,6 +126,7 @@ class SequencePublisherTests: XCTestCase {
         } catch {
             XCTFail("Timed out")
         }
+        u1.cancel()
+        u2.cancel()
     }
-
 }
