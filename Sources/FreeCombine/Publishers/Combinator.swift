@@ -31,6 +31,7 @@ public extension Publisher {
         buffering: AsyncStream<Action>.Continuation.BufferingPolicy,
         onCancel: @escaping () -> Void,
         onCompletion: @escaping (inout State, StateTask<State, Action>.Completion) async -> Void,
+        disposer: @escaping (Action, Error) -> Void = { _, _ in },
         operation: @escaping (inout State, Action) async throws -> Void
     ) where State.CombinatorAction == Action {
         self = .init { continuation, downstream in
@@ -39,6 +40,7 @@ public extension Publisher {
                     initialState: initialState(downstream),
                     buffering: buffering,
                     onCompletion: onCompletion,
+                    disposer: disposer,
                     reducer: operation
                 )
 

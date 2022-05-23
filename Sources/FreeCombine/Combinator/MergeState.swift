@@ -9,6 +9,7 @@ struct MergeState<Output: Sendable>: CombinatorState {
     enum Action {
         case setValue(AsyncStream<(Int, Output)>.Result, UnsafeContinuation<Demand, Swift.Error>)
         case removeCancellable(Int)
+        case removeAll
     }
 
     let channel: Channel<MergeState<Output>.Action>
@@ -16,7 +17,6 @@ struct MergeState<Output: Sendable>: CombinatorState {
 
     var cancellables: [Int: Cancellable<Demand>]
     var mostRecentDemand: Demand
-    var currentContinuation: UnsafeContinuation<Demand, Swift.Error>?
 
     init(
         channel: Channel<MergeState<Output>.Action>,
@@ -53,7 +53,10 @@ struct MergeState<Output: Sendable>: CombinatorState {
         for (index, publisher) in upstreams.enumerated() {
             let c = await channel.consume(publisher: publisher, using: { result, continuation in
                 if case AsyncStream<(Int, Output)>.Result.completion = result {
-                    channel.yield(.removeCancellable(index))
+                    let queueStatus = channel.yield(.removeCancellable(index))
+                    guard case .enqueued = queueStatus else {
+                        fatalError("could not enqueue exit")
+                    }
                 }
                 return MergeState<Output>.Action.setValue(result, continuation)
             })
@@ -74,25 +77,8 @@ struct MergeState<Output: Sendable>: CombinatorState {
     }
 
     static func complete(state: inout Self, completion: StateTask<Self, Self.Action>.Completion) async -> Void {
-        for (_, cancellable) in state.cancellables {
-            do {
-                switch completion {
-                    case let .cancel(state):
-                        state.currentContinuation?.resume(throwing: PublisherError.cancelled)
-                    case .termination, .exit:
-                        _ = try await state.downstream(.completion(.finished))
-                        state.currentContinuation?.resume(returning: .done)
-                    case let .failure(error):
-                        _ = try await state.downstream(.completion(.failure(error)))
-                        state.currentContinuation?.resume(throwing: error)
-                }
-            } catch {
-                fatalError("downstream threw")
-            }
-            cancellable.cancel()
-            _ = await cancellable.task.result
-        }
-        state.removeAll()
+        state.cancellables.values.forEach { cancellable in cancellable.cancel() }
+        state.channel.yield(.removeAll)
     }
 
     static func reduce(`self`: inout Self, action: Self.Action) async throws -> Void {
@@ -110,7 +96,6 @@ struct MergeState<Output: Sendable>: CombinatorState {
     ) async throws -> Void {
         switch action {
             case let .setValue(value, continuation):
-                currentContinuation = continuation
                 switch value {
                     case let .value((index, output)):
                         guard let _ = cancellables[index] else {
@@ -122,6 +107,7 @@ struct MergeState<Output: Sendable>: CombinatorState {
                         }
                         catch {
                             continuation.resume(throwing: error)
+                            await Task.yield()
                             throw error
                         }
                     case let .completion(.failure(error)):
@@ -137,17 +123,20 @@ struct MergeState<Output: Sendable>: CombinatorState {
                         continuation.resume(returning: .done)
                 }
             case let .removeCancellable(index):
+                print("removing: \(index)")
                 cancellables.removeValue(forKey: index)
                 if cancellables.count == 0 {
+                    print("finishing")
                     mostRecentDemand = try await downstream(.completion(.finished))
-                    channel.finish()
+                    await Task.yield()
                     throw StateTaskError.completed
                 }
+            case .removeAll:
+                cancellables.removeAll()
+                mostRecentDemand = try await downstream(.completion(.finished))
+                await Task.yield()
+                throw StateTaskError.completed
         }
         await Task.yield()
-    }
-
-    private mutating func removeAll() -> Void {
-        cancellables.removeAll()
     }
 }

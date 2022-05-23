@@ -53,6 +53,12 @@ public func merge<Output>(
         buffering: .bufferingOldest(2 + otherUpstreams.count),
         onCancel: onCancel,
         onCompletion: MergeState<Output>.complete,
+        disposer: { action, error in
+            if case let .setValue(result, continuation) = action {
+                print("Disposing of: \(result)")
+                continuation.resume(returning: .done)
+            }
+        },
         operation: MergeState<Output>.reduce
     )
 }
