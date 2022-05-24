@@ -128,6 +128,7 @@ struct MergeState<Output: Sendable>: CombinatorState {
                     throw StateTaskError.completed
                 }
             case .removeAll:
+                cancellables.values.forEach { $0.cancel() }
                 cancellables.removeAll()
                 mostRecentDemand = try await downstream(.completion(.finished))
                 await Task.yield()
