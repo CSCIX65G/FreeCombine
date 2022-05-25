@@ -10,7 +10,7 @@ public extension Publisher {
         _ f: @escaping (Swift.Error) -> NewE
     ) -> Self {
         .init { continuation, downstream in
-            self(onStartup: continuation) { r in guard !Task.isCancelled else { return .done }; switch r {
+            self(onStartup: continuation) { r in switch r {
                 case .value:
                     return try await downstream(r)
                 case .completion(.failure(let e)):

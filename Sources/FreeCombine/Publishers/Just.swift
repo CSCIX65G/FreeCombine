@@ -20,7 +20,6 @@ public extension Publisher {
             .init {
                 continuation?.resume()
                 return try await withTaskCancellationHandler(handler: onCancel) {
-                    guard !Task.isCancelled else { return .done }
                     return try await downstream(.value(a)) == .more ? try await downstream(.completion(.finished)) : .done
                 }
             }
@@ -43,7 +42,6 @@ public extension Publisher {
         self = .init { continuation, downstream in
             .init { try await withTaskCancellationHandler(handler: onCancel) {
                 continuation?.resume()
-                guard !Task.isCancelled else { return .done }
                 return try await downstream(result) == .more ? try await downstream(.completion(.finished)) : .done
             } }
         }

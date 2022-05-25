@@ -59,7 +59,10 @@ public extension Publisher {
         _ f: @Sendable @escaping (AsyncStream<Output>.Result) async throws -> Demand
     ) -> Cancellable<Demand> {
         call(onStartup, { result in
-            guard !Task.isCancelled else { return .done }
+            guard !Task.isCancelled else {
+                _ = try await f(.completion(.failure(PublisherError.cancelled)))
+                throw PublisherError.cancelled
+            }
             let demand = try await f(result)
             return demand
         })
@@ -79,7 +82,10 @@ public extension Publisher {
         var cancellable: Cancellable<Demand>! = .none
         let _: Void = await withUnsafeContinuation { continuation in
             cancellable = call(continuation, { result in
-                guard !Task.isCancelled else { throw PublisherError.cancelled }
+                guard !Task.isCancelled else {
+                    _ = try await f(.completion(.failure(PublisherError.cancelled)))
+                    throw PublisherError.cancelled
+                }
                 return try await f(result)
             })
         }

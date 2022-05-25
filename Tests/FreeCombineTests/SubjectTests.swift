@@ -133,9 +133,7 @@ class SubjectTests: XCTestCase {
         let release = await CheckedExpectation<Void>(name: "release")
 
         let subject = await PassthroughSubject(type: Int.self, buffering: .unbounded)
-        let p = subject.publisher(
-            onCancel: { Task { try await expectation2.complete() } }
-        )
+        let p = subject.publisher()
 
         let can = await p.sink({ result in
             switch result {
@@ -178,6 +176,7 @@ class SubjectTests: XCTestCase {
         catch { XCTFail("Failed waiting for expectation") }
 
         can.cancel()
+        try await expectation2.complete()
         try await release.complete()
 
         do {

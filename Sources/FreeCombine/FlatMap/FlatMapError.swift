@@ -7,17 +7,15 @@
 public extension Publisher {
     func flatMapError(_ f: @escaping (Swift.Error) async -> Publisher<Output>) -> Publisher<Output> {
         .init { continuation, downstream in
-            self(onStartup: continuation) { r in
-                guard !Task.isCancelled else { throw PublisherError.cancelled }
-                switch r {
-                    case .value(let a):
-                        return try await downstream(.value(a))
-                    case .completion(.failure(let e)):
-                        return try await f(e)(flattener(downstream)).task.value
-                    case .completion(.finished):
-                        return try await downstream(.completion(.finished))
-                }
-            }
+            self(onStartup: continuation) { r in switch r {
+                case .value(let a):
+                    return try await downstream(.value(a))
+                case .completion(.failure(let e)):
+                    let c = await f(e)(flattener(downstream))
+                    return try await c.task.value
+                case .completion(.finished):
+                    return try await downstream(.completion(.finished))
+            } }
         }
     }
 }

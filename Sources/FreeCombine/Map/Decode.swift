@@ -20,13 +20,15 @@ public extension Publisher {
         decoder: TopLevelDecoder<Item>
     ) -> Publisher<Item> {
         .init { continuation, downstream in
-            self(onStartup: continuation) { r in guard !Task.isCancelled else { return .done }; switch r {
-                case .value(let data):
-                    do { return try await downstream(.value(decoder.decode(type, from: data))) }
-                    catch { return try await downstream(.completion(.failure(error))) }
-                case let .completion(value):
-                    return try await downstream(.completion(value))
-            } }
+            self(onStartup: continuation) { r in
+                switch r {
+                    case .value(let data):
+                        do { return try await downstream(.value(decoder.decode(type, from: data))) }
+                        catch { return try await downstream(.completion(.failure(error))) }
+                    case let .completion(value):
+                        return try await downstream(.completion(value))
+                }
+            }
         }
     }
 }

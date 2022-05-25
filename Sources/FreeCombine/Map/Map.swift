@@ -10,11 +10,9 @@ public extension Publisher {
         _ f: @escaping (Output) async -> B
     ) -> Publisher<B> {
         .init { continuation, downstream in
-            self(onStartup: continuation) { r in guard !Task.isCancelled else { return .done }; switch r {
+            self(onStartup: continuation) { r in switch r {
                 case .value(let a):
-                    let value = await f(a)
-                    guard !Task.isCancelled else { throw PublisherError.cancelled }
-                    return try await downstream(.value(value))
+                    return try await downstream(.value(f(a)))
                 case let .completion(value):
                     return try await downstream(.completion(value))
             } }

@@ -1,3 +1,8 @@
 # FreeCombine
 
-A description of this package.
+* Protocol-free.
+* Race-free.
+* Lock-free.
+* Dependency-free.
+
+

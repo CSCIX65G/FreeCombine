@@ -9,10 +9,10 @@ public extension Publisher {
         .init { continuation, downstream in
             self(onStartup: continuation) { r in guard !Task.isCancelled else { return .done }; switch r {
                 case .value(let a):
-                    var bOpt: B? = .none
-                    do { bOpt = try await f(a) }
+                    var c: B? = .none
+                    do { c = try await f(a) }
                     catch { return try await downstream(.completion(.failure(error))) }
-                    return try await downstream(.value(bOpt!))
+                    return try await downstream(.value(c!))
                 case let .completion(value):
                     return try await downstream(.completion(value))
             } }

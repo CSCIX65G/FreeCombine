@@ -26,12 +26,8 @@ public extension Publisher {
             let flattenedDownstream = flattener(downstream)
             return .init { try await withTaskCancellationHandler(handler: onCancel) {
                 continuation?.resume()
-                guard !Task.isCancelled else { return .done }
                 for p in publishers {
                     let t = await p(flattenedDownstream)
-                    guard !Task.isCancelled else {
-                        return .done
-                    }
                     guard try await t.task.value == .more else { return .done }
                 }
                 return try await downstream(.completion(.finished))
@@ -72,12 +68,8 @@ public extension Publisher {
             let flattenedDownstream = flattener(downstream)
             return .init { try await withTaskCancellationHandler(handler: onCancel) {
                 continuation?.resume()
-                guard !Task.isCancelled else { return .done }
                 while let p = await flattening() {
                     let t = await p(flattenedDownstream)
-                    guard !Task.isCancelled else {
-                        return .done
-                    }
                     guard try await t.task.value == .more else { return .done }
                 }
                 return try await downstream(.completion(.finished))

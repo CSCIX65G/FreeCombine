@@ -8,7 +8,7 @@
 public extension Publisher {
     func join<B>() -> Publisher<B> where Output == Publisher<B> {
         .init { continuation, downstream in
-            self(onStartup: continuation) { r in guard !Task.isCancelled else { return .done }; switch r {
+            self(onStartup: continuation) { r in switch r {
                 case .value(let a):
                     return try await a(downstream).task.value
                 case let .completion(.failure(error)):

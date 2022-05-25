@@ -30,8 +30,8 @@ class CancellationTests: XCTestCase {
                     case .value:
                         let count = await counter.increment()
                         if count > 9 {
-                            try? await startup.complete()
-                            try? await waiter.value()
+                            try await startup.complete()
+                            try await waiter.value()
                             return .more
                         }
                         if Task.isCancelled {
@@ -65,12 +65,8 @@ class CancellationTests: XCTestCase {
         let waiter = await CheckedExpectation<Void>()
         let startup = await CheckedExpectation<Void>()
 
-        let canRight: @Sendable () -> Void = {
-            Task { try await expectation.complete() }
-        }
-
         let publisher1 = Unfolded(0 ... 100)
-        let publisher2 = Unfolded(onCancel: canRight, "abcdefghijklmnopqrstuvwxyz")
+        let publisher2 = Unfolded("abcdefghijklmnopqrstuvwxyz")
 
         let counter1 = Counter()
         let counter2 = Counter()
@@ -99,8 +95,8 @@ class CancellationTests: XCTestCase {
                     case .value:
                         let count1 = await counter1.increment()
                         if count1 == 10 {
-                            try? await startup.complete()
-                            try? await waiter.value()
+                            try await startup.complete()
+                            try await waiter.value()
                         }
                         if count1 > 10 { XCTFail("Received values after cancellation") }
                     case let .completion(.failure(error)):
@@ -116,8 +112,8 @@ class CancellationTests: XCTestCase {
         // Provide time for some values to be sent so that the task hangs for cancellation
         try await FreeCombine.wait(for: startup, timeout: 100_000_000)
         z2.cancel()
-
-        try! await waiter.complete(())
+        try await expectation.complete()
+        try await waiter.complete(())
 
         do {
             try await FreeCombine.wait(for: expectation, timeout: 100_000_000)

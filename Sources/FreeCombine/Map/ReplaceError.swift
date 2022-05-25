@@ -8,7 +8,6 @@ public extension Publisher {
     func replaceError(_ f: @escaping (Swift.Error) -> Output) -> Publisher<Output> {
         .init { continuation, downstream in
             self(onStartup: continuation) { r in
-                guard !Task.isCancelled else { throw PublisherError.cancelled }
                 switch r {
                     case .value:
                         return try await downstream(r)
@@ -20,10 +19,10 @@ public extension Publisher {
             }
         }
     }
+    
     func replaceError(with value: Output) -> Publisher<Output> {
         .init { continuation, downstream in
             self(onStartup: continuation) { r in
-                guard !Task.isCancelled else { throw PublisherError.cancelled }
                 switch r {
                     case .value:
                         return try await downstream(r)

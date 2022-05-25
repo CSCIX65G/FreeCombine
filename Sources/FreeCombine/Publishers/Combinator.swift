@@ -50,7 +50,7 @@ public extension Publisher {
                 }) {
                     guard continuation != nil else { fatalError("Should have a continuation here") }
                     continuation?.resume()
-                    guard !Task.isCancelled else { throw StateTaskError.cancelled }
+                    guard !Task.isCancelled else { throw PublisherError.cancelled }
                     let finalState = try await stateTask.finalState
                     let mostRecentDemand = finalState.mostRecentDemand
                     return mostRecentDemand

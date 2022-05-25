@@ -79,7 +79,10 @@ struct MergeState<Output: Sendable>: CombinatorState {
         action: Self.Action
     ) async throws -> StateTask<Self, Action>.Effect {
         do {
-            guard !Task.isCancelled else { throw StateTaskError.cancelled }
+            guard !Task.isCancelled else {
+                _ = try await `self`.downstream(.completion(.failure(PublisherError.cancelled)))
+                throw PublisherError.cancelled
+            }
             return try await `self`.reduce(action: action)
         } catch {
             await complete(state: &`self`, completion: .cancel(`self`))

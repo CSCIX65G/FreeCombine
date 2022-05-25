@@ -12,7 +12,6 @@ public extension Publisher {
         return .init { continuation, downstream in
             let currentValue: ValueRef<T> = ValueRef(value: initialValue)
             return self(onStartup: continuation) { r in
-                guard !Task.isCancelled else { return .done }
                 switch r {
                     case .value(let a):
                         return try await downstream(.value(currentValue.set(value: transform(currentValue.value, a))))

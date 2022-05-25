@@ -61,7 +61,10 @@ struct ZipState<Left: Sendable, Right: Sendable>: CombinatorState {
 
     static func reduce(`self`: inout Self, action: Self.Action) async throws -> StateTask<Self, Action>.Effect {
         do {
-            guard !Task.isCancelled else { throw PublisherError.cancelled }
+            guard !Task.isCancelled else {
+                _ = try await `self`.downstream(.completion(.failure(PublisherError.cancelled)))
+                throw PublisherError.cancelled
+            }
             return try await `self`.reduce(action: action)
         } catch {
             await complete(state: &`self`, completion: .cancel(`self`))
@@ -97,6 +100,7 @@ struct ZipState<Left: Sendable, Right: Sendable>: CombinatorState {
                     guard !Task.isCancelled else {
                         leftCancellable.cancel()
                         rightCancellable.cancel()
+                        _ = try await downstream(.completion(.failure(PublisherError.cancelled)))
                         throw PublisherError.cancelled
                     }
                     mostRecentDemand = try await downstream(.value((value, right.value)))
@@ -121,6 +125,7 @@ struct ZipState<Left: Sendable, Right: Sendable>: CombinatorState {
                     guard !Task.isCancelled else {
                         leftCancellable.cancel()
                         rightCancellable.cancel()
+                        _ = try await downstream(.completion(.failure(PublisherError.cancelled)))
                         throw PublisherError.cancelled
                     }
                     mostRecentDemand = try await downstream(.value((left.value, value)))

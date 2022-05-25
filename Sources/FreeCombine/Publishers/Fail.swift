@@ -21,7 +21,6 @@ public extension Publisher {
         self = .init { continuation, downstream in
             .init {
                 try await withTaskCancellationHandler(handler: onCancel) {
-                    guard !Task.isCancelled else { throw PublisherError.cancelled }
                     return try await downstream(.completion(.failure(error)))
                 }
             }
