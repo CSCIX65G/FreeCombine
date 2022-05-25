@@ -12,7 +12,6 @@ struct MergeState<Output: Sendable>: CombinatorState {
         case removeAll
     }
 
-//    let channel: Channel<MergeState<Output>.Action>
     let downstream: (AsyncStream<Output>.Result) async throws -> Demand
 
     var cancellables: [Int: Cancellable<Demand>]
@@ -50,13 +49,12 @@ struct MergeState<Output: Sendable>: CombinatorState {
                 publisher.map { value in (index, value) }
             }
         for (index, publisher) in upstreams.enumerated() {
-            let c = await channel.consume(publisher: publisher, using: { result, continuation in
+            localCancellables[index] = await channel.consume(publisher: publisher, using: { result, continuation in
                 if case AsyncStream<(Int, Output)>.Result.completion = result {
                     return MergeState<Output>.Action.removeCancellable(index, continuation)
                 }
                 return MergeState<Output>.Action.setValue(result, continuation)
             })
-            localCancellables[index] = c
         }
         cancellables = localCancellables
     }

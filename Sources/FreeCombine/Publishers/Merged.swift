@@ -54,8 +54,7 @@ public func merge<Output>(
         onCancel: onCancel,
         onCompletion: MergeState<Output>.complete,
         disposer: { action, error in
-            if case let .setValue(result, continuation) = action {
-                print("Disposing of: \(result)")
+            if case let .setValue(_, continuation) = action {
                 continuation.resume(returning: .done)
             }
         },

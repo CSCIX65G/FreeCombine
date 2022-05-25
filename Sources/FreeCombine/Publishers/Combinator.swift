@@ -48,6 +48,7 @@ public extension Publisher {
                     stateTask.cancel()
                     onCancel()
                 }) {
+                    guard continuation != nil else { fatalError("Should have a continuation here") }
                     continuation?.resume()
                     guard !Task.isCancelled else { throw StateTaskError.cancelled }
                     let finalState = try await stateTask.finalState

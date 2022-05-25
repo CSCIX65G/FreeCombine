@@ -47,4 +47,33 @@ class MergeTests: XCTestCase {
         }
         m1.cancel()
     }
+
+    func testInlineMerge() async throws {
+        let expectation = await CheckedExpectation<Void>()
+
+        let fseq1 = (101 ... 150).asyncPublisher
+        let fseq2 = (1 ... 100).asyncPublisher
+
+        let fm1 = Merged(publishers: fseq1, fseq2)
+
+        let c1 = await fm1
+            .sink({ value in
+                switch value {
+                    case .value(_):
+                        return .more
+                    case let .completion(.failure(error)):
+                        XCTFail("Should not have received failure: \(error)")
+                        return .done
+                    case .completion(.finished):
+                        try await expectation.complete()
+                        return .done
+                }
+            })
+
+        do { try await FreeCombine.wait(for: expectation, timeout: 10_000_000_000) }
+        catch {
+            XCTFail("timed out")
+        }
+        c1.cancel()
+    }
 }

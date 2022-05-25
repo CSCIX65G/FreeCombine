@@ -77,16 +77,14 @@ public extension Publisher {
     func callAsFunction(
         _ f: @Sendable @escaping (AsyncStream<Output>.Result) async throws -> Demand
     ) async -> Cancellable<Demand> {
-        var t: Cancellable<Demand>! = .none
-        await withUnsafeContinuation { continuation in
-            t = call(continuation, { result in
+        var cancellable: Cancellable<Demand>! = .none
+        let _: Void = await withUnsafeContinuation { continuation in
+            cancellable = call(continuation, { result in
                 guard !Task.isCancelled else { throw PublisherError.cancelled }
-                let demand = try await f(result)
-                await Task.yield()
-                return demand
+                return try await f(result)
             })
         }
-        return t
+        return cancellable
     }
 }
 

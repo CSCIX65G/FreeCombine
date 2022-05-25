@@ -279,7 +279,7 @@ class SubjectTests: XCTestCase {
         c1.cancel()
     }
 
-    func xtestSyncAsync() async throws {
+    func testSyncAsync() async throws {
         let expectation = await CheckedExpectation<Void>()
         let fsubject1 = await FreeCombine.PassthroughSubject(type: Int.self)
         let fsubject2 = await FreeCombine.PassthroughSubject(type: String.self)
@@ -288,23 +288,26 @@ class SubjectTests: XCTestCase {
         let fseq2 = (1 ... 100).asyncPublisher
 
         let fz1 = fseq1.zip(fseq2)
-        let fz2 = fz1
-            .map { left, right in String(left) + String(right) }
+        let fz2 = fz1.map { left, right in String(left) + String(right) }
 
         let fm1 = fsubject1.publisher()
             .map(String.init)
             .merge(others: fsubject2.publisher())
 
-        let _ = await fz2
+        let counter = Counter()
+        let c1 = await fz2
             .merge(others: fm1)
             .sink({ value in
                 switch value {
                     case .value(_):
+                        await counter.increment()
                         return .more
                     case let .completion(.failure(error)):
                         XCTFail("Should not have received failure: \(error)")
                         return .done
                     case .completion(.finished):
+                        let count = await counter.count
+                        if count != 28  { XCTFail("Incorrect number of values") }
                         try await expectation.complete()
                         return .done
                 }
@@ -318,5 +321,7 @@ class SubjectTests: XCTestCase {
 
         do { try await FreeCombine.wait(for: expectation, timeout: 10_000_000_000) }
         catch { XCTFail("timed out") }
+
+        c1.cancel()
     }
 }
