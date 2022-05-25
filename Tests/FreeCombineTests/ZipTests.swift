@@ -140,7 +140,6 @@ class ZipTests: XCTestCase {
                 return .more
             })
 
-        await Task.yield()
         do { try await FreeCombine.wait(for: expectation, timeout: 100_000_000) }
         catch {
             let count = await counter.count

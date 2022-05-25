@@ -126,6 +126,5 @@ public class CheckedExpectation<Arg> {
 extension CheckedExpectation where Arg == Void {
     nonisolated public func complete() async throws -> Void {
         try await state.complete(())
-        await Task.yield()
     }
 }

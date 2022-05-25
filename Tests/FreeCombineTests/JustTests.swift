@@ -115,7 +115,7 @@ class JustTests: XCTestCase {
         } catch {
             XCTFail("Timed out")
         }
-        await Task.yield()
+
         c1.cancel()
         t.cancel()
     }

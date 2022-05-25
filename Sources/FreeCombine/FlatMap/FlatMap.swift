@@ -12,7 +12,6 @@ public extension Publisher {
             self(onStartup: continuation) { r in guard !Task.isCancelled else { return .done }; switch r {
                 case .value(let a):
                     let p = await f(a)
-                    await Task.yield()
                     let c = await p(flattener(downstream))
                     return try await c.task.value
                 case let .completion(value):

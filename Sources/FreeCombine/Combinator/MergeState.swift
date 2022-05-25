@@ -9,7 +9,6 @@ struct MergeState<Output: Sendable>: CombinatorState {
     enum Action {
         case setValue(AsyncStream<(Int, Output)>.Result, UnsafeContinuation<Demand, Swift.Error>)
         case removeCancellable(Int, UnsafeContinuation<Demand, Swift.Error>)
-        case removeAll
     }
 
     let downstream: (AsyncStream<Output>.Result) async throws -> Demand
@@ -104,7 +103,6 @@ struct MergeState<Output: Sendable>: CombinatorState {
                         }
                         catch {
                             continuation.resume(throwing: error)
-                            await Task.yield()
                             throw error
                         }
                     case let .completion(.failure(error)):
@@ -125,14 +123,7 @@ struct MergeState<Output: Sendable>: CombinatorState {
                     mostRecentDemand = try await downstream(.completion(.finished))
                     throw StateTaskError.completed
                 }
-            case .removeAll:
-                cancellables.values.forEach { $0.cancel() }
-                cancellables.removeAll()
-                mostRecentDemand = try await downstream(.completion(.finished))
-                await Task.yield()
-                throw StateTaskError.completed
         }
-        await Task.yield()
         return .none
     }
 }

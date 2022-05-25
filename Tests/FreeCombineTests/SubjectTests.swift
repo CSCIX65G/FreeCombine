@@ -166,7 +166,6 @@ class SubjectTests: XCTestCase {
             }
         })
 
-        await Task.yield()
         for i in 1 ... 7 {
             do { try await subject.send(i) }
             catch { XCTFail("Failed to enqueue") }
@@ -221,7 +220,6 @@ class SubjectTests: XCTestCase {
             }
         })
 
-        await Task.yield()
         for i in 1 ... 1000 {
             do { try await subject.send(i) }
             catch { XCTFail("Failed to enqueue") }
@@ -262,14 +260,12 @@ class SubjectTests: XCTestCase {
             }
         })
 
-        await Task.yield()
         for i in (1 ... 5) {
             do { try await subject.send(i) }
             catch { XCTFail("Failed to enqueue") }
         }
         try await subject.finish()
 
-        await Task.yield()
         do {
             try await FreeCombine.wait(for: expectation, timeout: 10_000_000)
         } catch {

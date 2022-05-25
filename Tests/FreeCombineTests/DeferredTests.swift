@@ -63,7 +63,6 @@ class DeferTests: XCTestCase {
             return .more
         })
 
-        await Task.yield()
         do {
             try await FreeCombine.wait(for: expectation1, timeout: 100_000_000)
             try await FreeCombine.wait(for: expectation2, timeout: 100_000_000)
@@ -124,7 +123,6 @@ class DeferTests: XCTestCase {
             return .more
         })
 
-        await Task.yield()
         do {
             try await FreeCombine.wait(for: expectation1, timeout: 100_000_000)
             try await FreeCombine.wait(for: expectation2, timeout: 100_000_000)

@@ -43,9 +43,7 @@ extension Publisher {
                 continuation?.resume()
                 guard !Task.isCancelled else { throw PublisherError.cancelled }
                 let p = try await flattener()
-                await Task.yield()
                 let c = await p(downstream)
-                await Task.yield()
                 return try await c.task.value
             } }
         }

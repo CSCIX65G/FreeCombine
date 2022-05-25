@@ -53,7 +53,6 @@ class CancellationTests: XCTestCase {
         // Provide time for some values to be sent so that the task hangs for cancellation
         try await FreeCombine.wait(for: startup, timeout: 100_000_000)
         z1.cancel()
-        await Task.yield()
         try await expectation.complete()
 
         do { try await FreeCombine.wait(for: expectation, timeout: 100_000_000) }
