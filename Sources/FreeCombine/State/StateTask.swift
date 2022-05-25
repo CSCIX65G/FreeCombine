@@ -79,15 +79,14 @@ public final class StateTask<State, Action: Sendable> {
                     await onCompletion(&state, .termination(state))
                 } catch {
                     channel.finish()
-                    for await action in channel {
-                        disposer(action, error); continue
-                    }
+                    for await action in channel { disposer(action, error); continue }
                     guard let completion = error as? StateTaskError else {
                         await onCompletion(&state, .failure(error)); throw error
                     }
                     switch completion {
                         case .cancelled:
-                            await onCompletion(&state, .cancel(state)); throw completion
+                            await onCompletion(&state, .cancel(state))
+                            throw completion
                         case .completed:
                             await onCompletion(&state, .exit(state))
                     }
