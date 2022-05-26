@@ -32,7 +32,7 @@ class RepeaterTests: XCTestCase {
                     initialState: .init(id: nextKey, downstream: downstream),
                     buffering: .bufferingOldest(1),
                     onStartup: continuation,
-                    reducer: RepeaterState.reduce
+                    reducer: Reducer(reducer: RepeaterState.reduce)
                 )
                 await withUnsafeContinuation { (completedContinuation: UnsafeContinuation<[Int], Never>) in
                     let semaphore = Semaphore.init(

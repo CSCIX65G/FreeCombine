@@ -62,7 +62,7 @@ public extension StateTask {
         onCancel: @Sendable @escaping () -> Void = { },
         onCompletion: @escaping (
             inout DistributorState<Output>,
-            StateTask<DistributorState<Output>, DistributorState<Output>.Action>.Completion
+            Reducer<DistributorState<Output>, DistributorState<Output>.Action>.Completion
         ) async -> Void = { _, _ in },
         disposer: @escaping (Action, Error) -> Void = { _, _ in }
     ) async -> Self where State == DistributorState<Output>, Action == DistributorState<Output>.Action {
@@ -73,8 +73,7 @@ public extension StateTask {
             buffering: buffering,
             onCancel: onCancel,
             onCompletion: onCompletion,
-            disposer: disposer,
-            reducer: DistributorState<Output>.reduce
+            reducer: Reducer(reducer: DistributorState<Output>.reduce)
         )
     }
 
@@ -85,7 +84,7 @@ public extension StateTask {
         onCancel: @Sendable @escaping () -> Void = { },
         onCompletion: @escaping (
             inout DistributorState<Output>,
-            StateTask<DistributorState<Output>, DistributorState<Output>.Action>.Completion
+            Reducer<DistributorState<Output>, DistributorState<Output>.Action>.Completion
         ) async -> Void = { _, _ in }
     ) where State == DistributorState<Output>, Action == DistributorState<Output>.Action {
         self.init(
@@ -96,7 +95,7 @@ public extension StateTask {
             onStartup: onStartup,
             onCancel: onCancel,
             onCompletion: onCompletion,
-            reducer: DistributorState<Output>.reduce
+            reducer: Reducer(reducer: DistributorState<Output>.reduce)
         )
     }
 }

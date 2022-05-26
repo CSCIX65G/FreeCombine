@@ -13,15 +13,15 @@ public func Combinator<Output: Sendable, State: CombinatorState, Action>(
     initialState: @escaping (@escaping (AsyncStream<Output>.Result) async throws -> Demand) -> (Channel<Action>) async -> State,
     buffering: AsyncStream<Action>.Continuation.BufferingPolicy,
     onCancel: @escaping () -> Void,
-    onCompletion: @escaping (inout State, StateTask<State, Action>.Completion) async -> Void,
-    operation: @escaping (inout State, Action) async throws -> StateTask<State, Action>.Effect
+    onCompletion: @escaping (inout State, Reducer<State, Action>.Completion) async -> Void,
+    reducer: Reducer<State, Action>
 ) -> Publisher<Output> where State.CombinatorAction == Action {
     .init(
         initialState: initialState,
         buffering: buffering,
         onCancel: onCancel,
         onCompletion: onCompletion,
-        operation: operation
+        reducer: reducer
     )
 }
 
@@ -30,9 +30,8 @@ public extension Publisher {
         initialState: @escaping (@escaping (AsyncStream<Output>.Result) async throws -> Demand) -> (Channel<Action>) async -> State,
         buffering: AsyncStream<Action>.Continuation.BufferingPolicy,
         onCancel: @escaping () -> Void,
-        onCompletion: @escaping (inout State, StateTask<State, Action>.Completion) async -> Void,
-        disposer: @escaping (Action, Error) -> Void = { _, _ in },
-        operation: @escaping (inout State, Action) async throws -> StateTask<State, Action>.Effect
+        onCompletion: @escaping (inout State, Reducer<State, Action>.Completion) async -> Void,
+        reducer: Reducer<State, Action>
     ) where State.CombinatorAction == Action {
         self = .init { continuation, downstream in
             .init {
@@ -40,8 +39,7 @@ public extension Publisher {
                     initialState: initialState(downstream),
                     buffering: buffering,
                     onCompletion: onCompletion,
-                    disposer: disposer,
-                    reducer: operation
+                    reducer: reducer
                 )
 
                 return try await withTaskCancellationHandler(handler: {

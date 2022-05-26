@@ -31,20 +31,20 @@ public enum StateTaskError: Swift.Error, Sendable, CaseIterable {
 }
 
 public final class StateTask<State, Action: Sendable> {
-    public enum Effect {
-        case none
-        case fireAndForget(() -> Void)
-        case published(Action)
-        case completion(Completion)
-    }
-
-    public enum Completion {
-        case termination(State)
-        case exit(State)
-        case failure(Swift.Error)
-        case cancel(State)
-    }
-
+//    public enum Effect {
+//        case none
+//        case fireAndForget(() -> Void)
+//        case published(Action)
+//        case completion(Completion)
+//    }
+//
+//    public enum Completion {
+//        case termination(State)
+//        case exit(State)
+//        case failure(Swift.Error)
+//        case cancel(State)
+//    }
+//
     let channel: Channel<Action>
     let task: Task<State, Swift.Error>
 
@@ -62,9 +62,8 @@ public final class StateTask<State, Action: Sendable> {
         initialState: @escaping (Channel<Action>) async -> State,
         onStartup: UnsafeContinuation<Void, Never>? = .none,
         onCancel: @Sendable @escaping () -> Void = { },
-        onCompletion: @escaping (inout State, Completion) async -> Void = { _, _ in },
-        disposer: @escaping (Action, Error) -> Void = { _, _ in },
-        reducer: @escaping (inout State, Action) async throws -> Effect
+        onCompletion: @escaping (inout State, Reducer<State, Action>.Completion) async -> Void = { _, _ in },
+        reducer: Reducer<State, Action>
     ) {
         self.init(
             channel: channel,
@@ -79,7 +78,7 @@ public final class StateTask<State, Action: Sendable> {
                     await onCompletion(&state, .termination(state))
                 } catch {
                     channel.finish()
-                    for await action in channel { disposer(action, error); continue }
+                    for await action in channel { reducer(action, error); continue }
                     guard let completion = error as? StateTaskError else {
                         await onCompletion(&state, .failure(error)); throw error
                     }

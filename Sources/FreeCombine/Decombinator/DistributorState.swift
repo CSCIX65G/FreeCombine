@@ -20,10 +20,6 @@ public struct DistributorState<Output: Sendable> {
         case unsubscribe(Int)
     }
 
-    static func reduce(`self`: inout Self, action: Self.Action) async throws -> StateTask<Self, Action>.Effect {
-        try await `self`.reduce(action: action)
-    }
-
     public init(channel: Channel<DistributorState<Output>.Action>) {
         self.init(channel: channel, currentValue: .none, nextKey: 0, downstreams: [:])
     }
@@ -41,7 +37,11 @@ public struct DistributorState<Output: Sendable> {
     }
 
 
-    mutating func reduce(action: Action) async throws -> StateTask<Self, Action>.Effect {
+    static func reduce(`self`: inout Self, action: Self.Action) async throws -> Reducer<Self, Action>.Effect {
+        try await `self`.reduce(action: action)
+    }
+
+    mutating func reduce(action: Action) async throws -> Reducer<Self, Action>.Effect {
         switch action {
             case let .receive(result, continuation):
                 if case let .value(newValue) = result, currentValue != nil { currentValue = newValue }
@@ -106,7 +106,7 @@ public struct DistributorState<Output: Sendable> {
             initialState: .init(id: nextKey, downstream: downstream),
             buffering: .bufferingOldest(1),
             onStartup: continuation,
-            reducer: RepeaterState.reduce
+            reducer: Reducer(reducer: RepeaterState.reduce)
         )
         if let currentValue = currentValue, try await downstream(.value(currentValue)) == .done {
             return repeater

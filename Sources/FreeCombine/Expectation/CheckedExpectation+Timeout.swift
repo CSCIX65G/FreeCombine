@@ -60,7 +60,7 @@ public func wait<FinalResult, PartialResult, S: Sequence>(
                 .init(with: channel, for: expectations, timeout: timeout, reducer: reducer, initialValue: initialValue)
             },
             buffering: .bufferingOldest(expectations.underestimatedCount * 2 + 1),
-            reducer: WaitState<FinalResult, PartialResult>.reduce
+            reducer: Reducer(reducer: WaitState<FinalResult, PartialResult>.reduce)
         )
         return try await stateTask.finalState.finalResult
     }

@@ -12,7 +12,7 @@ public func CurrentValueSubject<Output>(
     onCancel: @Sendable @escaping () -> Void = { },
     onCompletion: @escaping (
         inout DistributorState<Output>,
-        StateTask<DistributorState<Output>, DistributorState<Output>.Action>.Completion
+        Reducer<DistributorState<Output>, DistributorState<Output>.Action>.Completion
     ) -> Void = { _, _ in }
 ) -> StateTask<DistributorState<Output>, DistributorState<Output>.Action> {
     .init(
@@ -30,7 +30,7 @@ public func CurrentValueSubject<Output>(
     onCancel: @Sendable @escaping () -> Void = { },
     onCompletion: @escaping (
         inout DistributorState<Output>,
-        StateTask<DistributorState<Output>, DistributorState<Output>.Action>.Completion
+        Reducer<DistributorState<Output>, DistributorState<Output>.Action>.Completion
     ) -> Void = { _, _ in }
 ) async -> StateTask<DistributorState<Output>, DistributorState<Output>.Action> {
     await .stateTask(

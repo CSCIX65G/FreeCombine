@@ -23,7 +23,7 @@ extension ValueRef {
         value.append(t)
     }
 
-    public func next<T, U>() -> U? where Value == IndexingIterator<T>, T.Element == U {
+    public func next<T>() -> T? where Value: IteratorProtocol, Value.Element == T {
         value.next()
     }
 }

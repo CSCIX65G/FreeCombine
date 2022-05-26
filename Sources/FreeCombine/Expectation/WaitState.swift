@@ -69,11 +69,11 @@ struct WaitState<FinalResult, PartialResult> {
         tasks.removeAll()
     }
 
-    static func reduce(`self`: inout Self, action: Self.Action) throws -> StateTask<Self, Action>.Effect {
+    static func reduce(`self`: inout Self, action: Self.Action) throws -> Reducer<Self, Action>.Effect {
         try `self`.reduce(action: action)
     }
 
-    mutating func reduce(action: Action) throws -> StateTask<Self, Action>.Effect {
+    mutating func reduce(action: Action) throws -> Reducer<Self, Action>.Effect {
         switch action {
             case let .complete(index, partialResult):
                 guard let _ = expectations.removeValue(forKey: index),

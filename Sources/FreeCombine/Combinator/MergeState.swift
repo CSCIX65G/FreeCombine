@@ -69,7 +69,7 @@ struct MergeState<Output: Sendable>: CombinatorState {
         } }
     }
 
-    static func complete(state: inout Self, completion: StateTask<Self, Self.Action>.Completion) async -> Void {
+    static func complete(state: inout Self, completion: Reducer<Self, Self.Action>.Completion) async -> Void {
         state.cancellables.values.forEach { cancellable in cancellable.cancel() }
         state.cancellables.removeAll()
     }
@@ -77,7 +77,7 @@ struct MergeState<Output: Sendable>: CombinatorState {
     static func reduce(
         `self`: inout Self,
         action: Self.Action
-    ) async throws -> StateTask<Self, Action>.Effect {
+    ) async throws -> Reducer<Self, Action>.Effect {
         do {
             guard !Task.isCancelled else {
                 _ = try await `self`.downstream(.completion(.failure(PublisherError.cancelled)))
@@ -92,7 +92,7 @@ struct MergeState<Output: Sendable>: CombinatorState {
 
     private mutating func reduce(
         action: Self.Action
-    ) async throws -> StateTask<Self, Action>.Effect {
+    ) async throws -> Reducer<Self, Action>.Effect {
         switch action {
             case let .setValue(value, continuation):
                 switch value {
