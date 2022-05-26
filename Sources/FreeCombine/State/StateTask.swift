@@ -25,26 +25,12 @@
  5. some actions are blocking, these need special handling (think DO oneway keyword)
  */
 
-public enum StateTaskError: Swift.Error, Sendable, CaseIterable {
-    case cancelled
-    case completed
-}
+//public enum StateTaskError: Swift.Error, Sendable, CaseIterable {
+//    case cancelled
+//    case completed
+//}
 
 public final class StateTask<State, Action: Sendable> {
-//    public enum Effect {
-//        case none
-//        case fireAndForget(() -> Void)
-//        case published(Action)
-//        case completion(Completion)
-//    }
-//
-//    public enum Completion {
-//        case termination(State)
-//        case exit(State)
-//        case failure(Swift.Error)
-//        case cancel(State)
-//    }
-//
     let channel: Channel<Action>
     let task: Task<State, Swift.Error>
 
@@ -72,14 +58,14 @@ public final class StateTask<State, Action: Sendable> {
                 onStartup?.resume()
                 do {
                     for await action in channel {
-                        guard !Task.isCancelled else { throw StateTaskError.cancelled }
+                        guard !Task.isCancelled else { throw PublisherError.cancelled }
                         _ = try await reducer(&state, action)
                     }
                     await onCompletion(&state, .termination(state))
                 } catch {
                     channel.finish()
                     for await action in channel { reducer(action, error); continue }
-                    guard let completion = error as? StateTaskError else {
+                    guard let completion = error as? PublisherError else {
                         await onCompletion(&state, .failure(error)); throw error
                     }
                     switch completion {
@@ -88,6 +74,8 @@ public final class StateTask<State, Action: Sendable> {
                             throw completion
                         case .completed:
                             await onCompletion(&state, .exit(state))
+                        default:
+                            fatalError("Should only get cancelled or complete")
                     }
                 }
                 return state

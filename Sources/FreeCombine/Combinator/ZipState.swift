@@ -48,10 +48,10 @@ struct ZipState<Left: Sendable, Right: Sendable>: CombinatorState {
         switch completion {
             case let .cancel(state):
                 state.leftCancellable.cancel()
-                state.left?.continuation.resume(throwing: StateTaskError.cancelled)
+                state.left?.continuation.resume(throwing: PublisherError.cancelled)
                 _ = await state.leftCancellable.task.result
                 state.rightCancellable.cancel()
-                state.right?.continuation.resume(throwing: StateTaskError.cancelled)
+                state.right?.continuation.resume(throwing: PublisherError.cancelled)
                 _ = await state.rightCancellable.task.result
                 state.channel.finish()
             default:
@@ -77,11 +77,11 @@ struct ZipState<Left: Sendable, Right: Sendable>: CombinatorState {
     ) async throws -> Reducer<Self, Action>.Effect {
         switch action {
             case let .setLeft(leftResult, leftContinuation):
-                mostRecentDemand == .done ? leftContinuation.resume(returning: .done)
-                : try await handleLeft(leftResult, leftContinuation)
+                if mostRecentDemand == .done { leftContinuation.resume(returning: .done) }
+                else { return try await handleLeft(leftResult, leftContinuation) }
             case let .setRight(rightResult, rightContinuation):
-                mostRecentDemand == .done ? rightContinuation.resume(returning: .done)
-                : try await handleRight(rightResult, rightContinuation)
+                if mostRecentDemand == .done { rightContinuation.resume(returning: .done) }
+                else { return try await handleRight(rightResult, rightContinuation) }
         }
         return .none
     }
@@ -89,7 +89,7 @@ struct ZipState<Left: Sendable, Right: Sendable>: CombinatorState {
     private mutating func handleLeft(
         _ leftResult: AsyncStream<Left>.Result,
         _ leftContinuation: UnsafeContinuation<Demand, Error>
-    ) async throws -> Void {
+    ) async throws -> Reducer<Self, Action>.Effect {
         guard left == nil else {
             throw PublisherError.internalError
         }
@@ -107,14 +107,15 @@ struct ZipState<Left: Sendable, Right: Sendable>: CombinatorState {
                     try resume(returning: mostRecentDemand)
                 }
             case let .completion(finalState) :
-                try await terminate(with: finalState); return
+                try await terminate(with: finalState)
         }
+        return .none
     }
 
     private mutating func handleRight(
         _ rightResult: AsyncStream<Right>.Result,
         _ rightContinuation: UnsafeContinuation<Demand, Error>
-    ) async throws -> Void {
+    ) async throws -> Reducer<Self, Self.Action>.Effect {
         guard right == nil else {
             throw PublisherError.internalError
         }
@@ -132,8 +133,9 @@ struct ZipState<Left: Sendable, Right: Sendable>: CombinatorState {
                     try resume(returning: mostRecentDemand)
                 }
             case let .completion(finalState) :
-                try await terminate(with: finalState); return
+                try await terminate(with: finalState)
         }
+        return .none
     }
 
     private mutating func resume(returning demand: Demand) throws {
@@ -145,7 +147,9 @@ struct ZipState<Left: Sendable, Right: Sendable>: CombinatorState {
         else if demand == .done { rightCancellable.cancel() }
         right = .none
 
-        if demand == .done { throw StateTaskError.completed }
+        if demand == .done {
+            throw PublisherError.completed
+        }
     }
 
     private mutating func terminate(with completion: Completion) async throws -> Void {

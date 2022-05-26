@@ -124,7 +124,7 @@ struct MergeState<Output: Sendable>: CombinatorState {
                 continuation.resume(returning: .done)
                 if cancellables.count == 0 {
                     mostRecentDemand = try await downstream(.completion(.finished))
-                    throw StateTaskError.completed
+                    return .completion(.termination(self))
                 }
         }
         return .none
