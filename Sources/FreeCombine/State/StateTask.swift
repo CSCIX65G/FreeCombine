@@ -61,7 +61,7 @@ public final class StateTask<State, Action: Sendable> {
                         guard !Task.isCancelled else { throw PublisherError.cancelled }
                         _ = try await reducer(&state, action)
                     }
-                    await onCompletion(&state, .termination(state))
+                    await onCompletion(&state, .termination)
                 } catch {
                     channel.finish()
                     for await action in channel { reducer(action, error); continue }
@@ -70,10 +70,10 @@ public final class StateTask<State, Action: Sendable> {
                     }
                     switch completion {
                         case .cancelled:
-                            await onCompletion(&state, .cancel(state))
+                            await onCompletion(&state, .cancel)
                             throw completion
                         case .completed:
-                            await onCompletion(&state, .exit(state))
+                            await onCompletion(&state, .exit)
                         default:
                             fatalError("Should only get cancelled or complete")
                     }

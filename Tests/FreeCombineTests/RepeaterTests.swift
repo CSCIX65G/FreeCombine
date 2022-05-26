@@ -46,7 +46,7 @@ class RepeaterTests: XCTestCase {
                     )
                     let queueStatus = repeater.send(.repeat(.value(14), semaphore))
                     guard case .enqueued = queueStatus else {
-                        fatalError("Internal failure in Subject reducer processing key, queueStatus: \(queueStatus)")
+                        fatalError("Internal failure in Repeater reducer processing key, queueStatus: \(queueStatus)")
                     }
                 }.forEach { key in fatalError("should not have key") }
 
@@ -62,7 +62,7 @@ class RepeaterTests: XCTestCase {
                     )
                     let queueStatus = repeater.send(.repeat(.value(15), semaphore))
                     guard case .enqueued = queueStatus else {
-                        fatalError("Internal failure in Subject reducer processing key, queueStatus: \(queueStatus)")
+                        fatalError("Internal failure in Repeater reducer processing key, queueStatus: \(queueStatus)")
                     }
                 }.forEach { key in fatalError("should not have key") }
 
@@ -79,10 +79,9 @@ class RepeaterTests: XCTestCase {
 
                     let queueStatus = repeater.send(.repeat(.completion(.finished), semaphore))
                     guard case .enqueued = queueStatus else {
-                        fatalError("Internal failure in Subject reducer processing key, queueStatus: \(queueStatus)")
+                        fatalError("Internal failure in Repeater reducer processing key, queueStatus: \(queueStatus)")
                     }
                 }.forEach { _ in () }
-
             }
         }
         do {

@@ -14,10 +14,10 @@ public struct Reducer<State, Action> {
     }
 
     public enum Completion {
-        case termination(State)
-        case exit(State)
+        case termination
+        case exit
         case failure(Swift.Error)
-        case cancel(State)
+        case cancel
     }
 
     let disposer: (Action, Error) -> Void

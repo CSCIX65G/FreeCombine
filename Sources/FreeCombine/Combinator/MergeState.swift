@@ -85,7 +85,7 @@ struct MergeState<Output: Sendable>: CombinatorState {
             }
             return try await `self`.reduce(action: action)
         } catch {
-            await complete(state: &`self`, completion: .cancel(`self`))
+            await complete(state: &`self`, completion: .cancel)
             throw error
         }
     }
@@ -124,7 +124,7 @@ struct MergeState<Output: Sendable>: CombinatorState {
                 continuation.resume(returning: .done)
                 if cancellables.count == 0 {
                     mostRecentDemand = try await downstream(.completion(.finished))
-                    return .completion(.termination(self))
+                    return .completion(.termination)
                 }
         }
         return .none

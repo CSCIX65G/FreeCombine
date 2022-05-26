@@ -46,7 +46,7 @@ struct ZipState<Left: Sendable, Right: Sendable>: CombinatorState {
 
     static func complete(state: inout Self, completion: Reducer<Self, Self.Action>.Completion) async -> Void {
         switch completion {
-            case let .cancel(state):
+            case .cancel:
                 state.leftCancellable.cancel()
                 state.left?.continuation.resume(throwing: PublisherError.cancelled)
                 _ = await state.leftCancellable.task.result
@@ -67,7 +67,7 @@ struct ZipState<Left: Sendable, Right: Sendable>: CombinatorState {
             }
             return try await `self`.reduce(action: action)
         } catch {
-            await complete(state: &`self`, completion: .cancel(`self`))
+            await complete(state: &`self`, completion: .cancel)
             throw error
         }
     }
