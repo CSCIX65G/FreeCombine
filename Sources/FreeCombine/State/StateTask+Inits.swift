@@ -6,6 +6,45 @@
 //
 
 public extension StateTask {
+    convenience init(
+        channel: Channel<Action>,
+        initialState: State,
+        onStartup: UnsafeContinuation<Void, Never>? = .none,
+        onCancel: @Sendable @escaping () -> Void = { },
+        onCompletion: @escaping (inout State, Reducer<State, Action>.Completion) async -> Void = { _, _ in },
+        reducer: Reducer<State, Action>
+    ) {
+        self.init(
+            channel: channel,
+            initialState: {_ in initialState },
+            onStartup: onStartup,
+            onCancel: onCancel,
+            onCompletion: onCompletion,
+            reducer: reducer
+        )
+    }
+
+    static func stateTask(
+        initialState: State,
+        buffering: AsyncStream<Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
+        onCancel: @Sendable @escaping () -> Void = { },
+        onCompletion: @escaping (inout State, Reducer<State, Action>.Completion) async -> Void = { _, _ in },
+        reducer: Reducer<State, Action>
+    ) async -> Self {
+        var stateTask: Self!
+        await withUnsafeContinuation { stateTaskContinuation in
+            stateTask = Self.init(
+                initialState: {_ in initialState },
+                buffering: buffering,
+                onStartup: stateTaskContinuation,
+                onCancel: onCancel,
+                onCompletion: onCompletion,
+                reducer: reducer
+            )
+        }
+        return stateTask
+    }
+
     static func stateTask(
         initialState: @escaping (Channel<Action>) async -> State,
         buffering: AsyncStream<Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
