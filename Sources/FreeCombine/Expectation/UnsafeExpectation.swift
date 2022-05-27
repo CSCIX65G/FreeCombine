@@ -29,14 +29,12 @@ public class UnsafeExpectation<Arg> {
         task.isCancelled
     }
 
-    @discardableResult
-    public func result() async -> Result<Arg, Swift.Error> {
-        await task.result
+    public var result: Result<Arg, Swift.Error> {
+        get async { await task.result }
     }
 
-    @discardableResult
-    public func value() async throws -> Arg {
-        try await task.value
+    public var value: Arg {
+        get async throws { try await task.value }
     }
 
     public func cancel() -> Void {

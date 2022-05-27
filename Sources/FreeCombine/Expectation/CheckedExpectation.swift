@@ -60,66 +60,38 @@ public class CheckedExpectation<Arg> {
     private let task: Task<Arg, Swift.Error>
     private let state: State
 
-    public init(name: String = "", debug: Bool = false) async {
+    public init(name: String = "") async {
         let localState = State()
         var localTask: Task<Arg, Swift.Error>!
-        let localResumption: UnsafeContinuation<Arg, Swift.Error> = await withCheckedContinuation { cc in
+        await localState.set(resumption: await withCheckedContinuation { cc in
             localTask = Task<Arg, Swift.Error> {
-                try await withTaskCancellationHandler(handler: {
-                    Task { try await localState.cancel() }
-                }) {
-                    do {
-                        let arg = try await withUnsafeThrowingContinuation(cc.resume)
-                        if (debug) { print("Exiting \(name) with value: \(arg)") }
-                        return arg
-                    } catch {
-                        if (debug) { print("Exiting \(name) with error: \(error)") }
-                        throw error
-                    }
+                try await withTaskCancellationHandler(handler: { Task { try await localState.cancel() } }) {
+                    do { return try await withUnsafeThrowingContinuation(cc.resume) }
+                    catch { throw error }
                 }
             }
-        }
-        await localState.set(resumption: localResumption)
+        })
         task = localTask
         state = localState
     }
 
-    deinit {
-        cancel()
-    }
+    deinit { cancel() }
+    public var isCancelled: Bool { task.isCancelled }
+    public func cancel() -> Void { task.cancel() }
 
-    public var isCancelled: Bool {
-        task.isCancelled
-    }
+    public func status() async -> Status { await state.status }
+    public func complete(_ arg: Arg) async throws -> Void { try await state.complete(arg) }
+    public func fail(_ error: Error) async throws -> Void { try await state.fail(error) }
 
-    public func status() async -> Status {
-        await state.status
+    public var result: Result<Arg, Swift.Error> {
+        get async { await task.result }
     }
-
-    @discardableResult
-    public func result() async -> Result<Arg, Swift.Error> {
-        await task.result
-    }
-
-    @discardableResult
-    public func value() async throws -> Arg {
-        do {
-            return try await task.value
-        } catch {
-            throw error
+    
+    public var value: Arg {
+        get async throws {
+            do { return try await task.value }
+            catch { throw error }
         }
-    }
-
-    public func cancel() -> Void {
-        task.cancel()
-    }
-
-    public func complete(_ arg: Arg) async throws -> Void {
-        try await state.complete(arg)
-    }
-
-    public func fail(_ error: Error) async throws -> Void {
-        try await state.fail(error)
     }
 }
 

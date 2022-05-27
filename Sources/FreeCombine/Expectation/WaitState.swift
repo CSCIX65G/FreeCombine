@@ -29,7 +29,7 @@ struct WaitState<FinalResult, PartialResult> {
         let tasks = expectations.enumerated().map { index, expectation in
             Task<PartialResult, Swift.Error> {
                 guard !Task.isCancelled else { throw PublisherError.cancelled }
-                let pResult = await expectation.result()
+                let pResult = await expectation.result
                 guard case let .success(pValue) = pResult else {
                     throw PublisherError.cancelled
                 }

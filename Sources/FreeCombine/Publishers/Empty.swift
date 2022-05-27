@@ -12,6 +12,10 @@ public func Empty<Element>(
 }
 
 public extension Publisher {
+    static var none: Self {
+        Empty(Output.self)
+    }
+
     init(
         onCancel: @Sendable @escaping () -> Void = { },
         _: Output.Type = Output.self

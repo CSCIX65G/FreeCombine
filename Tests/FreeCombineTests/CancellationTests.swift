@@ -31,7 +31,7 @@ class CancellationTests: XCTestCase {
                         let count = await counter.increment()
                         if count > 9 {
                             try await startup.complete()
-                            try await waiter.value()
+                            try await waiter.value
                             return .more
                         }
                         if Task.isCancelled {
@@ -96,7 +96,7 @@ class CancellationTests: XCTestCase {
                         let count1 = await counter1.increment()
                         if count1 == 10 {
                             try await startup.complete()
-                            try await waiter.value()
+                            try await waiter.value
                         }
                         if count1 > 10 { XCTFail("Received values after cancellation") }
                     case let .completion(.failure(error)):
