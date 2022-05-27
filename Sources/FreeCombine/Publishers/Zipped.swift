@@ -32,8 +32,10 @@ public func zip<Left, Right>(
         initialState: ZipState<Left, Right>.create(left: left, right: right),
         buffering: .bufferingOldest(2),
         onCancel: onCancel,
-        onCompletion: ZipState<Left, Right>.complete,
-        reducer: Reducer(reducer: ZipState<Left, Right>.reduce)
+        reducer: Reducer(
+            onCompletion: ZipState<Left, Right>.complete,
+            reducer: ZipState<Left, Right>.reduce
+        )
     )
 }
 

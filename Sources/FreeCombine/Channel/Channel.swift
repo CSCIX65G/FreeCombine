@@ -80,7 +80,6 @@ public extension Channel {
     func stateTask<State>(
         initialState: @escaping (Self) async -> State,
         onCancel: @Sendable @escaping () -> Void = { },
-        onCompletion: @escaping (inout State, Reducer<State, Self.Element>.Completion) async -> Void = { _, _ in },
         reducer: Reducer<State, Self.Element>
     ) async -> StateTask<State, Self.Element> {
         var stateTask: StateTask<State, Self.Element>!
@@ -90,7 +89,6 @@ public extension Channel {
                 initialState: initialState,
                 onStartup: stateTaskContinuation,
                 onCancel: onCancel,
-                onCompletion: onCompletion,
                 reducer: reducer
             )
         }

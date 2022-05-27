@@ -52,8 +52,8 @@ public func merge<Output>(
         initialState: MergeState<Output>.create(upstreams: upstream1, upstream2, otherUpstreams),
         buffering: .bufferingOldest(2 + otherUpstreams.count),
         onCancel: onCancel,
-        onCompletion: MergeState<Output>.complete,
         reducer: Reducer(
+            onCompletion: MergeState<Output>.complete,
             disposer: { action, error in
                 if case let .setValue(_, continuation) = action {
                     continuation.resume(returning: .done)

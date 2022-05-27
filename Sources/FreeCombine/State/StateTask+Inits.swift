@@ -11,7 +11,6 @@ public extension StateTask {
         initialState: State,
         onStartup: UnsafeContinuation<Void, Never>? = .none,
         onCancel: @Sendable @escaping () -> Void = { },
-        onCompletion: @escaping (inout State, Reducer<State, Action>.Completion) async -> Void = { _, _ in },
         reducer: Reducer<State, Action>
     ) {
         self.init(
@@ -19,7 +18,6 @@ public extension StateTask {
             initialState: {_ in initialState },
             onStartup: onStartup,
             onCancel: onCancel,
-            onCompletion: onCompletion,
             reducer: reducer
         )
     }
@@ -28,7 +26,6 @@ public extension StateTask {
         initialState: State,
         buffering: AsyncStream<Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
         onCancel: @Sendable @escaping () -> Void = { },
-        onCompletion: @escaping (inout State, Reducer<State, Action>.Completion) async -> Void = { _, _ in },
         reducer: Reducer<State, Action>
     ) async -> Self {
         var stateTask: Self!
@@ -38,7 +35,6 @@ public extension StateTask {
                 buffering: buffering,
                 onStartup: stateTaskContinuation,
                 onCancel: onCancel,
-                onCompletion: onCompletion,
                 reducer: reducer
             )
         }
@@ -49,7 +45,6 @@ public extension StateTask {
         initialState: @escaping (Channel<Action>) async -> State,
         buffering: AsyncStream<Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
         onCancel: @Sendable @escaping () -> Void = { },
-        onCompletion: @escaping (inout State, Reducer<State, Action>.Completion) async -> Void = { _, _ in },
         reducer: Reducer<State, Action>
     ) async -> Self {
         var stateTask: Self!
@@ -59,7 +54,6 @@ public extension StateTask {
                 buffering: buffering,
                 onStartup: stateTaskContinuation,
                 onCancel: onCancel,
-                onCompletion: onCompletion,
                 reducer: reducer
             )
         }
@@ -71,7 +65,6 @@ public extension StateTask {
         buffering: AsyncStream<Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
         onStartup: UnsafeContinuation<Void, Never>? = .none,
         onCancel: @Sendable @escaping () -> Void = { },
-        onCompletion: @escaping (inout State, Reducer<State, Action>.Completion) async -> Void = { _, _ in },
         reducer: Reducer<State, Action>
     ) {
         self.init(
@@ -79,7 +72,6 @@ public extension StateTask {
             buffering: buffering,
             onStartup: onStartup,
             onCancel: onCancel,
-            onCompletion: onCompletion,
             reducer: reducer
         )
     }
@@ -89,7 +81,6 @@ public extension StateTask {
         buffering: AsyncStream<Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
         onStartup: UnsafeContinuation<Void, Never>? = .none,
         onCancel: @Sendable @escaping () -> Void = { },
-        onCompletion: @escaping (inout State, Reducer<State, Action>.Completion) async -> Void = { _, _ in },
         reducer: Reducer<State, Action>
     ) {
         self.init(
@@ -97,7 +88,6 @@ public extension StateTask {
             initialState: initialState,
             onStartup: onStartup,
             onCancel: onCancel,
-            onCompletion: onCompletion,
             reducer: reducer
         )
     }

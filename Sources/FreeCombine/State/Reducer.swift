@@ -25,11 +25,14 @@ public struct Reducer<State, Action> {
 
     let disposer: (Action, Completion) -> Void
     let reducer: (inout State, Action) async throws -> Effect
+    let onCompletion: (inout State,Completion) async -> Void
 
     public init(
+        onCompletion: @escaping (inout State,Completion) async -> Void = { _, _ in },
         disposer: @escaping (Action, Completion) -> Void = { _, _ in },
         reducer: @escaping (inout State, Action) async throws -> Effect
     ) {
+        self.onCompletion = onCompletion
         self.disposer = disposer
         self.reducer = reducer
     }
@@ -40,6 +43,10 @@ public struct Reducer<State, Action> {
 
     public func callAsFunction(_ action: Action, _ completion: Completion) -> Void {
         disposer(action, completion)
+    }
+
+    public func callAsFunction(_ state: inout State, _ completion: Completion) async -> Void {
+        await onCompletion(&state, completion)
     }
 }
 

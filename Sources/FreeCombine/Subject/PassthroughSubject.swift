@@ -8,18 +8,13 @@ public func PassthroughSubject<Output>(
     type: Output.Type = Output.self,
     buffering: AsyncStream<DistributorState<Output>.Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
     onStartup: UnsafeContinuation<Void, Never>? = .none,
-    onCancel: @Sendable @escaping () -> Void = { },
-    onCompletion: @escaping (
-        inout DistributorState<Output>,
-        Reducer<DistributorState<Output>, DistributorState<Output>.Action>.Completion
-    ) async -> Void = { _, _ in }
+    onCancel: @Sendable @escaping () -> Void = { }
 ) -> StateTask<DistributorState<Output>, DistributorState<Output>.Action> {
     .init(
         initialState: DistributorState<Output>.init,
         buffering: buffering,
         onStartup: onStartup,
         onCancel: onCancel,
-        onCompletion: onCompletion,
         reducer: Reducer(reducer: DistributorState<Output>.reduce)
     )
 }
@@ -27,17 +22,12 @@ public func PassthroughSubject<Output>(
 public func PassthroughSubject<Output>(
     type: Output.Type = Output.self,
     buffering: AsyncStream<DistributorState<Output>.Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
-    onCancel: @Sendable @escaping () -> Void = { },
-    onCompletion: @escaping (
-        inout DistributorState<Output>,
-        Reducer<DistributorState<Output>, DistributorState<Output>.Action>.Completion
-    ) async -> Void = { _, _ in }
+    onCancel: @Sendable @escaping () -> Void = { }
 ) async -> StateTask<DistributorState<Output>, DistributorState<Output>.Action> {
     await .stateTask(
         initialState: DistributorState<Output>.init,
         buffering: buffering,
         onCancel: onCancel,
-        onCompletion: onCompletion,
         reducer: Reducer(reducer: DistributorState<Output>.reduce)
     )
 }

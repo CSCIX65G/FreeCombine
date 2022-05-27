@@ -48,7 +48,6 @@ public final class StateTask<State, Action: Sendable> {
         initialState: @escaping (Channel<Action>) async -> State,
         onStartup: UnsafeContinuation<Void, Never>? = .none,
         onCancel: @Sendable @escaping () -> Void = { },
-        onCompletion: @escaping (inout State, Reducer<State, Action>.Completion) async -> Void = { _, _ in },
         reducer: Reducer<State, Action>
     ) {
         self.init(
@@ -69,19 +68,19 @@ public final class StateTask<State, Action: Sendable> {
                             case .completion(.cancel): throw PublisherError.cancelled
                         }
                     }
-                    await onCompletion(&state, .termination)
+                    await reducer(&state, .termination)
                 } catch {
                     channel.finish()
                     for await action in channel { reducer(action, .failure(error)); continue }
                     guard let completion = error as? PublisherError else {
-                        await onCompletion(&state, .failure(error)); throw error
+                        await reducer(&state, .failure(error)); throw error
                     }
                     switch completion {
                         case .cancelled:
-                            await onCompletion(&state, .cancel)
+                            await reducer(&state, .cancel)
                             throw completion
                         case .completed:
-                            await onCompletion(&state, .exit)
+                            await reducer(&state, .exit)
                         case .internalError:
                             fatalError("Got internal error")
                         case .enqueueError:
