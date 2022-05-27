@@ -59,12 +59,20 @@ public final class StateTask<State, Action: Sendable> {
                 do {
                     for await action in channel {
                         guard !Task.isCancelled else { throw PublisherError.cancelled }
-                        _ = try await reducer(&state, action)
+                        let effect = try await reducer(&state, action)
+                        switch effect {
+                            case .none: continue
+                            case .published(_): continue // FIXME: Handle future mutation
+                            case .completion(.exit): throw PublisherError.completed
+                            case let .completion(.failure(error)): throw error
+                            case .completion(.termination): throw PublisherError.internalError
+                            case .completion(.cancel): throw PublisherError.cancelled
+                        }
                     }
                     await onCompletion(&state, .termination)
                 } catch {
                     channel.finish()
-                    for await action in channel { reducer(action, error); continue }
+                    for await action in channel { reducer(action, .failure(error)); continue }
                     guard let completion = error as? PublisherError else {
                         await onCompletion(&state, .failure(error)); throw error
                     }
@@ -74,8 +82,10 @@ public final class StateTask<State, Action: Sendable> {
                             throw completion
                         case .completed:
                             await onCompletion(&state, .exit)
-                        default:
-                            fatalError("Should only get cancelled or complete")
+                        case .internalError:
+                            fatalError("Got internal error")
+                        case .enqueueError:
+                            fatalError("Enqueue error from upstream")
                     }
                 }
                 return state

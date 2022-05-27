@@ -8,9 +8,12 @@
 public struct Reducer<State, Action> {
     public enum Effect {
         case none
-        case fireAndForget(() -> Void)
-        case published(Action)
+        case published(Publisher<Action>)
         case completion(Completion)
+
+        static func fireAndForget(_ f: @escaping () async throws -> Void) -> Self {
+            .published(FireAndForget(operation: f))
+        }
     }
 
     public enum Completion {
@@ -20,11 +23,11 @@ public struct Reducer<State, Action> {
         case cancel
     }
 
-    let disposer: (Action, Error) -> Void
+    let disposer: (Action, Completion) -> Void
     let reducer: (inout State, Action) async throws -> Effect
 
     public init(
-        disposer: @escaping (Action, Error) -> Void = { _, _ in },
+        disposer: @escaping (Action, Completion) -> Void = { _, _ in },
         reducer: @escaping (inout State, Action) async throws -> Effect
     ) {
         self.disposer = disposer
@@ -35,14 +38,14 @@ public struct Reducer<State, Action> {
         try await reducer(&state, action)
     }
 
-    public func callAsFunction(_ action: Action, _ error: Error) -> Void {
-        disposer(action, error)
+    public func callAsFunction(_ action: Action, _ completion: Completion) -> Void {
+        disposer(action, completion)
     }
 }
 
 extension Reducer where State == Void {
     init(
-        disposer: @escaping (Action, Error) -> Void = { _, _ in },
+        disposer: @escaping (Action, Completion) -> Void = { _, _ in },
         reducer: @escaping (Action) async throws -> Effect
     ) {
         self.init(
