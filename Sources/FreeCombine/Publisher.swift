@@ -64,9 +64,17 @@ public extension Publisher {
                 _ = try await f(.completion(.failure(PublisherError.cancelled)))
                 throw PublisherError.cancelled
             }
-            let demand = try await f(result)
-            return demand
-        })
+            switch result {
+                case let .value(value):
+                    return try await f(.value(value))
+                case let .completion(.failure(error)):
+                    do { return try await f(.completion(.failure(error))) }
+                    catch { throw error }
+                case .completion(.finished):
+                    do { return try await f(.completion(.finished)) }
+                    catch { return .done }
+            }
+        } )
     }
 
     @discardableResult
@@ -98,13 +106,11 @@ extension Publisher {
                 try await receiveValue(value)
                 return .more
             case let .completion(.failure(error)):
-                do { try await receiveCompletion(.failure(error)) }
-                catch { /* doesn't matter what the final returns, we throw our error */ }
-                throw error
+                do { try await receiveCompletion(.failure(error)); return .done }
+                catch { throw error }
             case .completion(.finished):
-                do { try await receiveCompletion(.finished) }
-                catch { /* doesn't matter if the final throws, we return done  */ }
-                return .done
+                do { try await receiveCompletion(.finished); return .done }
+                catch { return .done }
         } }
     }
 
@@ -137,7 +143,7 @@ extension Publisher {
     }
 }
 
-func flattener<B>(
+public func flattener<B>(
     _ downstream: @Sendable @escaping (AsyncStream<B>.Result) async throws -> Demand
 ) -> @Sendable (AsyncStream<B>.Result) async throws -> Demand {
     { b in switch b {

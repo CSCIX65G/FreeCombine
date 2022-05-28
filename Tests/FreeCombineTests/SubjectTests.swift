@@ -152,8 +152,9 @@ class SubjectTests: XCTestCase {
                             }
                         }
                     } else if count > 8 {
-                        if !Task.isCancelled { XCTFail("Should be cancelled") }
+                        if !Task.isCancelled { XCTFail("Should be cancelled"); throw PublisherError.internalError }
                         XCTFail("Got value after cancellation")
+                        throw PublisherError.internalError
                     }
                     return .more
                 case let .completion(.failure(error)):
@@ -172,11 +173,10 @@ class SubjectTests: XCTestCase {
         do { try subject.nonBlockingSend(8) }
         catch { XCTFail("Failed to enqueue") }
 
-        do { try await FreeCombine.wait(for: expectation, timeout: 100_000_000) }
+        do { try await FreeCombine.wait(for: expectation, timeout: 1_000_000_000) }
         catch { XCTFail("Failed waiting for expectation") }
 
         can.cancel()
-        try await expectation2.complete()
         try await release.complete()
 
         do {
@@ -186,6 +186,7 @@ class SubjectTests: XCTestCase {
             XCTFail("Failed to enqueue")
         }
         try await subject.finish()
+        try await expectation2.complete()
 
         do {
             try await FreeCombine.wait(for: expectation2, timeout: 100_000_000)
