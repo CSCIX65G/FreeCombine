@@ -82,44 +82,13 @@ public extension Publisher {
     ) async -> Cancellable<Demand> {
         var cancellable: Cancellable<Demand>! = .none
         let _: Void = await withUnsafeContinuation { continuation in
-            cancellable = call(continuation, { result in
-                guard !Task.isCancelled else {
-                    _ = try await f(.completion(.failure(PublisherError.cancelled)))
-                    throw PublisherError.cancelled
-                }
-                return try await f(result)
-            })
+            cancellable = self(onStartup: continuation, f)
         }
         return cancellable
     }
 }
 
 extension Publisher {
-    @Sendable private func lift(
-        _ receiveValue: @Sendable @escaping (Output) async throws -> Void
-    ) -> @Sendable (AsyncStream<Output>.Result) async throws -> Demand {
-        { result in switch result {
-            case let .value(value):
-                try await receiveValue(value)
-                return .more
-            case .completion:
-                return .done
-        }  }
-    }
-
-    func sink(
-        onStartup: UnsafeContinuation<Void, Never>?,
-        receiveValue: @Sendable @escaping (Output) async throws -> Void
-    ) -> Cancellable<Demand> {
-        sink(onStartup: onStartup, lift(receiveValue))
-    }
-
-    func sink(
-        receiveValue: @Sendable @escaping (Output) async throws -> Void
-    ) async -> Cancellable<Demand> {
-        await sink(lift(receiveValue))
-    }
-
     @Sendable private func lift(
         _ receiveCompletion: @Sendable @escaping (Completion) async throws -> Void,
         _ receiveValue: @Sendable @escaping (Output) async throws -> Void
@@ -129,12 +98,27 @@ extension Publisher {
                 try await receiveValue(value)
                 return .more
             case let .completion(.failure(error)):
-                try await receiveCompletion(.failure(error))
+                do { try await receiveCompletion(.failure(error)) }
+                catch { /* doesn't matter what the final returns, we throw our error */ }
                 return .done
             case .completion(.finished):
-                try await receiveCompletion(.finished)
+                do { try await receiveCompletion(.finished) }
+                catch { /* doesn't matter if the final throws, we return done  */ }
                 return .done
         } }
+    }
+
+    func sink(
+        onStartup: UnsafeContinuation<Void, Never>?,
+        receiveValue: @Sendable @escaping (Output) async -> Void
+    ) -> Cancellable<Demand> {
+        sink(onStartup: onStartup, receiveCompletion: void, receiveValue: receiveValue)
+    }
+
+    func sink(
+        receiveValue: @Sendable @escaping (Output) async -> Void
+    ) async -> Cancellable<Demand> {
+        await sink(receiveCompletion: void, receiveValue: receiveValue)
     }
 
     func sink(
@@ -160,7 +144,6 @@ func flattener<B>(
         case .completion(.finished):
             return .more
         case .value, .completion(.failure):
-            let r = try await downstream(b)
-            return r
+            return try await downstream(b)
     } }
 }
