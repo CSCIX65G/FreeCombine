@@ -123,8 +123,6 @@ class DistributorTests: XCTestCase {
                 with: { _, _ in }
             )
         }
-        catch {
-            XCTFail("Timed out")
-        }
+        catch { XCTFail("Timed out") }
     }
 }
