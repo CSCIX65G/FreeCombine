@@ -28,14 +28,12 @@ public extension Publisher {
                 return try await withTaskCancellationHandler(handler: onCancel) {
                     for a in sequence {
                         guard !Task.isCancelled else {
-                            _ = try await downstream(.completion(.failure(PublisherError.cancelled)))
-                            throw PublisherError.cancelled
+                            return try await downstream(.completion(.failure(PublisherError.cancelled)))
                         }
                         guard try await downstream(.value(a)) == .more else { return .done }
                     }
                     guard !Task.isCancelled else {
-                        _ = try await downstream(.completion(.failure(PublisherError.cancelled)))
-                        throw PublisherError.cancelled
+                        return try await downstream(.completion(.failure(PublisherError.cancelled)))
                     }
                     return try await downstream(.completion(.finished))
                 }
@@ -62,14 +60,12 @@ public extension Publisher {
                 return try await withTaskCancellationHandler(handler: onCancel) {
                     while let a = try await generator() {
                         guard !Task.isCancelled else {
-                            _ = try await downstream(.completion(.failure(PublisherError.cancelled)))
-                            throw PublisherError.cancelled
+                            return try await downstream(.completion(.failure(PublisherError.cancelled)))
                         }
                         guard try await downstream(.value(a)) == .more else { return .done }
                     }
                     guard !Task.isCancelled else {
-                        _ = try await downstream(.completion(.failure(PublisherError.cancelled)))
-                        throw PublisherError.cancelled
+                        return try await downstream(.completion(.failure(PublisherError.cancelled)))
                     }
                     return try await downstream(.completion(.finished))
                 }

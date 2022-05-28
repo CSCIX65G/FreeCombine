@@ -13,8 +13,7 @@ public extension Publisher {
             let currentValue: ValueRef<[Output]> = ValueRef(value: [])
             return self(onStartup: continuation) { r in
                 guard !Task.isCancelled else {
-                    _ = try await downstream(.completion(.failure(PublisherError.cancelled)))
-                    throw PublisherError.cancelled
+                    return try await downstream(.completion(.failure(PublisherError.cancelled)))
                 }
                 switch r {
                     case .value(let a):

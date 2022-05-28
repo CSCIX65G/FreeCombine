@@ -43,8 +43,7 @@ extension Publisher {
             let deduplicator = Deduplicator<Output>(predicate)
             return self(onStartup: continuation) { r in
                 guard !Task.isCancelled else {
-                    _ = try await downstream(.completion(.failure(PublisherError.cancelled)))
-                    throw PublisherError.cancelled
+                    return try await downstream(.completion(.failure(PublisherError.cancelled)))
                 }
                 switch r {
                     case .value(let a):

@@ -12,16 +12,14 @@ public extension Publisher {
         .init { continuation, downstream in
             self(onStartup: continuation) { r in
                 guard !Task.isCancelled else {
-                    _ = try await downstream(.completion(.failure(PublisherError.cancelled)))
-                    throw PublisherError.cancelled
+                    return try await downstream(.completion(.failure(PublisherError.cancelled)))
                 }
                 switch r {
                     case .value:
                         do { try await Task.sleep(nanoseconds: interval.inNanoseconds) }
                         catch {
                             guard !Task.isCancelled else {
-                                _ = try await downstream(.completion(.failure(PublisherError.cancelled)))
-                                throw PublisherError.cancelled
+                                return try await downstream(.completion(.failure(PublisherError.cancelled)))
                             }
                             return try await downstream(.completion(.failure(error)))
                         }
