@@ -10,9 +10,9 @@ public func PassthroughSubject<Output>(
     onStartup: UnsafeContinuation<Void, Never>? = .none,
     onCancel: @Sendable @escaping () -> Void = { }
 ) -> StateTask<DistributorState<Output>, DistributorState<Output>.Action> {
-    .init(
+    Channel.init(buffering: buffering)
+    .stateTask(
         initialState: DistributorState<Output>.init,
-        buffering: buffering,
         onStartup: onStartup,
         onCancel: onCancel,
         reducer: Reducer(reducer: DistributorState<Output>.reduce)
@@ -24,10 +24,10 @@ public func PassthroughSubject<Output>(
     buffering: AsyncStream<DistributorState<Output>.Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
     onCancel: @Sendable @escaping () -> Void = { }
 ) async -> StateTask<DistributorState<Output>, DistributorState<Output>.Action> {
-    await .stateTask(
-        initialState: DistributorState<Output>.init,
-        buffering: buffering,
-        onCancel: onCancel,
-        reducer: Reducer(reducer: DistributorState<Output>.reduce)
-    )
+    await Channel(buffering: buffering)
+        .stateTask(
+            initialState: DistributorState<Output>.init,
+            onCancel: onCancel,
+            reducer: Reducer(reducer: DistributorState<Output>.reduce)
+        )
 }

@@ -32,9 +32,8 @@ public extension Publisher {
     ) where State.CombinatorAction == Action {
         self = .init { continuation, downstream in
             .init {
-                let stateTask = await StateTask.stateTask(
+                let stateTask = await Channel(buffering: buffering).stateTask(
                     initialState: initialState(downstream),
-                    buffering: buffering,
                     reducer: reducer
                 )
 

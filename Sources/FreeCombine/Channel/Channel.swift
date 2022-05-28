@@ -94,4 +94,19 @@ public extension Channel {
         }
         return stateTask
     }
+
+    func stateTask<State>(
+        initialState: @escaping (Self) async -> State,
+        onStartup: UnsafeContinuation<Void, Never>? = .none,
+        onCancel: @Sendable @escaping () -> Void = { },
+        reducer: Reducer<State, Self.Element>
+    ) -> StateTask<State, Self.Element> {
+        .init(
+            channel: self,
+            initialState: initialState,
+            onStartup: onStartup,
+            onCancel: onCancel,
+            reducer: reducer
+        )
+    }
 }
