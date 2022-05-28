@@ -102,9 +102,10 @@ public struct DistributorState<Output: Sendable> {
         continuation: UnsafeContinuation<Void, Never>?
     ) async throws -> StateTask<RepeaterState<Int, Output>, RepeaterState<Int, Output>.Action> {
         nextKey += 1
-        let repeater: StateTask<RepeaterState<Int, Output>, RepeaterState<Int, Output>.Action> = await .init(
-            initialState: .init(id: nextKey, downstream: downstream),
-            buffering: .bufferingOldest(1),
+        let repeaterState = await RepeaterState(id: nextKey, downstream: downstream)
+        let repeater: StateTask<RepeaterState<Int, Output>, RepeaterState<Int, Output>.Action> = .init(
+            channel: .init(buffering: .bufferingOldest(1)),
+            initialState: { _ in repeaterState },
             onStartup: continuation,
             reducer: Reducer(reducer: RepeaterState.reduce)
         )

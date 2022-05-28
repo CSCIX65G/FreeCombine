@@ -118,3 +118,24 @@ extension StateTask {
         }
     }
 }
+
+public extension StateTask {
+    static func stateTask(
+        channel: Channel<Action>,
+        initialState: @escaping (Channel<Action>) async -> State,
+        onCancel: @Sendable @escaping () -> Void = { },
+        reducer: Reducer<State, Action>
+    ) async -> Self {
+        var stateTask: Self!
+        await withUnsafeContinuation { stateTaskContinuation in
+            stateTask = Self.init(
+                channel: channel,
+                initialState: initialState,
+                onStartup: stateTaskContinuation,
+                onCancel: onCancel,
+                reducer: reducer
+            )
+        }
+        return stateTask
+    }
+}

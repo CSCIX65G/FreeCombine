@@ -56,10 +56,10 @@ public func wait<FinalResult, PartialResult, S: Sequence>(
 ) async throws -> FinalResult where S.Element == CheckedExpectation<PartialResult> {
     let reducingTask = Task<FinalResult, Error>.init {
         let stateTask = await StateTask<WaitState<FinalResult, PartialResult>, WaitState<FinalResult, PartialResult>.Action>.stateTask(
+            channel: .init(buffering: .bufferingOldest(expectations.underestimatedCount * 2 + 1)),
             initialState: { channel in
                 .init(with: channel, for: expectations, timeout: timeout, reducer: reducer, initialValue: initialValue)
             },
-            buffering: .bufferingOldest(expectations.underestimatedCount * 2 + 1),
             reducer: Reducer(reducer: WaitState<FinalResult, PartialResult>.reduce)
         )
         return try await stateTask.finalState.finalResult

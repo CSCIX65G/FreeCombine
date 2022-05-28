@@ -9,34 +9,34 @@ public func CurrentValueSubject<Output>(
     currentValue: Output,
     buffering: AsyncStream<DistributorState<Output>.Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
     onStartup: UnsafeContinuation<Void, Never>? = .none,
-    onCancel: @Sendable @escaping () -> Void = { },
-    onCompletion: @escaping (
-        inout DistributorState<Output>,
-        Reducer<DistributorState<Output>, DistributorState<Output>.Action>.Completion
-    ) -> Void = { _, _ in }
+    onCancel: @Sendable @escaping () -> Void = { }
 ) -> StateTask<DistributorState<Output>, DistributorState<Output>.Action> {
     .init(
-        currentValue: currentValue,
-        buffering: buffering,
+        channel: .init(buffering: buffering),
+        initialState: { channel in .init(channel: channel, currentValue: currentValue, nextKey: 0, downstreams: [:]) },
         onStartup: onStartup,
         onCancel: onCancel,
-        onCompletion: onCompletion
+        reducer: Reducer.init(
+            onCompletion: { _, _ in },
+            disposer: { _, _ in },
+            reducer: DistributorState<Output>.reduce
+        )
     )
 }
 
 public func CurrentValueSubject<Output>(
     currentValue: Output,
     buffering: AsyncStream<DistributorState<Output>.Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
-    onCancel: @Sendable @escaping () -> Void = { },
-    onCompletion: @escaping (
-        inout DistributorState<Output>,
-        Reducer<DistributorState<Output>, DistributorState<Output>.Action>.Completion
-    ) -> Void = { _, _ in }
+    onCancel: @Sendable @escaping () -> Void = { }
 ) async -> StateTask<DistributorState<Output>, DistributorState<Output>.Action> {
     await .stateTask(
-        currentValue: currentValue,
-        buffering: buffering,
+        channel: .init(buffering: buffering),
+        initialState: { channel in .init(channel: channel, currentValue: currentValue, nextKey: 0, downstreams: [:]) },
         onCancel: onCancel,
-        onCompletion: onCompletion
+        reducer: Reducer.init(
+            onCompletion: { _, _ in },
+            disposer: { _, _ in },
+            reducer: DistributorState<Output>.reduce
+        )
     )
 }

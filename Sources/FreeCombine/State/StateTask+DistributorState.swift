@@ -26,6 +26,11 @@ public extension StateTask {
         channel.finish()
     }
 
+    func nonBlockingFinish<Output: Sendable>() throws -> Void where State == DistributorState<Output>, Action == DistributorState<Output>.Action {
+        try send(.completion(.finished))
+        channel.finish()
+    }
+
     @inlinable
     func fail<Output: Sendable>(
         _ error: Error
@@ -54,56 +59,5 @@ public extension StateTask {
         guard case .enqueued = enqueueResult else {
             throw PublisherError.enqueueError
         }
-    }
-
-    static func stateTask<Output: Sendable>(
-        currentValue: Output,
-        buffering: AsyncStream<DistributorState<Output>.Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
-        onCancel: @Sendable @escaping () -> Void = { },
-        onCompletion: @escaping (
-            inout DistributorState<Output>,
-            Reducer<DistributorState<Output>, DistributorState<Output>.Action>.Completion
-        ) async -> Void = { _, _ in },
-        disposer: @escaping (
-            Action,
-            Reducer<DistributorState<Output>, DistributorState<Output>.Action>.Completion
-        ) -> Void = { _, _ in }
-    ) async -> Self where State == DistributorState<Output>, Action == DistributorState<Output>.Action {
-        await .stateTask(
-            initialState: { channel in
-                .init(channel: channel, currentValue: currentValue, nextKey: 0, downstreams: [:])
-            },
-            buffering: buffering,
-            onCancel: onCancel,
-            reducer: Reducer(
-                onCompletion: onCompletion,
-                disposer: disposer,
-                reducer: DistributorState<Output>.reduce
-            )
-        )
-    }
-
-    convenience init<Output: Sendable>(
-        currentValue: Output,
-        buffering: AsyncStream<DistributorState<Output>.Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
-        onStartup: UnsafeContinuation<Void, Never>? = .none,
-        onCancel: @Sendable @escaping () -> Void = { },
-        onCompletion: @escaping (
-            inout DistributorState<Output>,
-            Reducer<DistributorState<Output>, DistributorState<Output>.Action>.Completion
-        ) async -> Void = { _, _ in }
-    ) where State == DistributorState<Output>, Action == DistributorState<Output>.Action {
-        self.init(
-            initialState: { channel in
-                .init(channel: channel, currentValue: currentValue, nextKey: 0, downstreams: [:])
-            },
-            buffering: buffering,
-            onStartup: onStartup,
-            onCancel: onCancel,
-            reducer: Reducer(
-                onCompletion: onCompletion,
-                reducer: DistributorState<Output>.reduce
-            )
-        )
     }
 }
