@@ -12,7 +12,7 @@
  4. no concept of cancellation
  5. execute on global actor queues (generally not needed or desirable)
 
- #actor solutions: statetasks
+ #actor solutions: StateTask - a swift implementation of the Haskell ST monad
 
  1. LOCK FREE CHANNELS
  2. Haskell translation: ∀s in Rank-N types becomes a Task
@@ -25,24 +25,38 @@
  5. some actions are blocking, these need special handling (think DO oneway keyword)
  */
 
-//public enum StateTaskError: Swift.Error, Sendable, CaseIterable {
-//    case cancelled
-//    case completed
-//}
-
 public final class StateTask<State, Action: Sendable> {
     let channel: Channel<Action>
     let task: Task<State, Swift.Error>
 
-    deinit {
-        task.cancel()
-    }
-
-    init(channel: Channel<Action>, task: Task<State, Swift.Error>) {
+    fileprivate init(channel: Channel<Action>, task: Task<State, Swift.Error>) {
         self.channel = channel
         self.task = task
     }
 
+    deinit { task.cancel() }
+
+    @Sendable func cancel() -> Void {
+        task.cancel()
+    }
+
+    @Sendable func finish() -> Void {
+        channel.finish()
+    }
+
+    @Sendable func send(_ element: Action) -> AsyncStream<Action>.Continuation.YieldResult {
+        channel.yield(element)
+    }
+
+    var result: Result<State, Swift.Error> {
+        get async {
+            do { return .success(try await finalState) }
+            catch { return .failure(error) }
+        }
+    }
+}
+
+extension StateTask {
     public convenience init(
         channel: Channel<Action>,
         initialState: @escaping (Channel<Action>) async -> State,
@@ -57,9 +71,11 @@ public final class StateTask<State, Action: Sendable> {
                 onStartup?.resume()
                 do {
                     for await action in channel {
-                        guard !Task.isCancelled else { throw PublisherError.cancelled }
-                        let effect = try await reducer(&state, action)
-                        switch effect {
+                        guard !Task.isCancelled else {
+                            await reducer(&state, .cancel)
+                            throw PublisherError.cancelled
+                        }
+                        switch try await reducer(&state, action) {
                             case .none: continue
                             case .published(_): continue // FIXME: Handle future mutation
                             case .completion(.exit): throw PublisherError.completed
@@ -82,7 +98,7 @@ public final class StateTask<State, Action: Sendable> {
                         case .completed:
                             await reducer(&state, .exit)
                         case .internalError:
-                            fatalError("Got internal error")
+                            fatalError("StateTask internal error")
                         case .enqueueError:
                             fatalError("Enqueue error from upstream")
                     }
@@ -99,27 +115,6 @@ public final class StateTask<State, Action: Sendable> {
     public var finalState: State {
         get async throws {
             try await task.value
-        }
-    }
-}
-
-public extension StateTask {
-    @Sendable func cancel() -> Void {
-        task.cancel()
-    }
-
-    @Sendable func finish() -> Void {
-        channel.finish()
-    }
-
-    @Sendable func send(_ element: Action) -> AsyncStream<Action>.Continuation.YieldResult {
-        channel.yield(element)
-    }
-
-    var result: Result<State, Swift.Error> {
-        get async {
-            do { return .success(try await finalState) }
-            catch { return .failure(error) }
         }
     }
 }

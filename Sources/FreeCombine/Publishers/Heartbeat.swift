@@ -23,7 +23,10 @@ public extension Publisher where Output == UInt64 {
                 var ticks: UInt64 = 0
                 continuation?.resume()
                 while true {
-                    guard !Task.isCancelled else { return .done }
+                    guard !Task.isCancelled else {
+                        _ = try await downstream(.completion(.failure(PublisherError.cancelled)))
+                        throw PublisherError.cancelled
+                    }
                     ticks += 1
                     let nextTime = startTime + (ticks * interval.inNanoseconds)
                     let currentTime = DispatchTime.now().uptimeNanoseconds

@@ -7,15 +7,21 @@
 public extension Publisher {
     func tryMap<B>(_ f: @escaping (Output) async throws -> B) -> Publisher<B> {
         .init { continuation, downstream in
-            self(onStartup: continuation) { r in guard !Task.isCancelled else { return .done }; switch r {
-                case .value(let a):
-                    var c: B? = .none
-                    do { c = try await f(a) }
-                    catch { return try await downstream(.completion(.failure(error))) }
-                    return try await downstream(.value(c!))
-                case let .completion(value):
-                    return try await downstream(.completion(value))
-            } }
+            self(onStartup: continuation) { r in
+                guard !Task.isCancelled else {
+                    _ = try await downstream(.completion(.failure(PublisherError.cancelled)))
+                    throw PublisherError.cancelled
+                }
+                switch r {
+                    case .value(let a):
+                        var b: B? = .none
+                        do { b = try await f(a) }
+                        catch { return try await downstream(.completion(.failure(error))) }
+                        return try await downstream(.value(b!))
+                    case let .completion(value):
+                        return try await downstream(.completion(value))
+                }
+            }
         }
     }
 }

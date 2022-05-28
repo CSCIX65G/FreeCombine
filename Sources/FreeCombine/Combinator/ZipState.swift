@@ -98,8 +98,7 @@ struct ZipState<Left: Sendable, Right: Sendable>: CombinatorState {
                 left = (value, leftContinuation)
                 if let right = right {
                     guard !Task.isCancelled else {
-                        leftCancellable.cancel()
-                        rightCancellable.cancel()
+                        await Self.complete(state: &self, completion: .failure(PublisherError.cancelled))
                         _ = try await downstream(.completion(.failure(PublisherError.cancelled)))
                         throw PublisherError.cancelled
                     }

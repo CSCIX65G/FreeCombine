@@ -33,7 +33,10 @@ public extension Publisher {
                         }
                         guard try await downstream(.value(a)) == .more else { return .done }
                     }
-                    guard !Task.isCancelled else { throw PublisherError.cancelled }
+                    guard !Task.isCancelled else {
+                        _ = try await downstream(.completion(.failure(PublisherError.cancelled)))
+                        throw PublisherError.cancelled
+                    }
                     return try await downstream(.completion(.finished))
                 }
             }
@@ -64,7 +67,10 @@ public extension Publisher {
                         }
                         guard try await downstream(.value(a)) == .more else { return .done }
                     }
-                    guard !Task.isCancelled else { throw PublisherError.cancelled }
+                    guard !Task.isCancelled else {
+                        _ = try await downstream(.completion(.failure(PublisherError.cancelled)))
+                        throw PublisherError.cancelled
+                    }
                     return try await downstream(.completion(.finished))
                 }
             }

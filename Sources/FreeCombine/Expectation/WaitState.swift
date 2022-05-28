@@ -28,7 +28,9 @@ struct WaitState<FinalResult, PartialResult> {
     ) where S.Element == CheckedExpectation<PartialResult> {
         let tasks = expectations.enumerated().map { index, expectation in
             Task<PartialResult, Swift.Error> {
-                guard !Task.isCancelled else { throw PublisherError.cancelled }
+                guard !Task.isCancelled else {
+                    throw PublisherError.cancelled
+                }
                 let pResult = await expectation.result
                 guard case let .success(pValue) = pResult else {
                     throw PublisherError.cancelled

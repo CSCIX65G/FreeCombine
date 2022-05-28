@@ -41,14 +41,20 @@ extension Publisher {
     ) -> Publisher<Output> {
         .init { continuation, downstream in
             let deduplicator = Deduplicator<Output>(predicate)
-            return self(onStartup: continuation) { r in guard !Task.isCancelled else { return .done }; switch r {
-                case .value(let a):
-                    return try await deduplicator.forward(value: a, with: downstream)
-                case .completion(.failure(let e)):
-                    return try await downstream(.completion(.failure(e)))
-                case .completion(.finished):
-                    return try await downstream(.completion(.finished))
-            } }
+            return self(onStartup: continuation) { r in
+                guard !Task.isCancelled else {
+                    _ = try await downstream(.completion(.failure(PublisherError.cancelled)))
+                    throw PublisherError.cancelled
+                }
+                switch r {
+                    case .value(let a):
+                        return try await deduplicator.forward(value: a, with: downstream)
+                    case .completion(.failure(let e)):
+                        return try await downstream(.completion(.failure(e)))
+                    case .completion(.finished):
+                        return try await downstream(.completion(.finished))
+                }
+            }
         }
     }
 }
