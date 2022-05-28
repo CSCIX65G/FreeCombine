@@ -38,6 +38,13 @@ public extension StateTask {
         try await send(.completion(.failure(error)))
     }
 
+    @inlinable
+    func nonBlockingFail<Output: Sendable>(
+        _ error: Error
+    ) throws -> Void where State == DistributorState<Output>, Action == DistributorState<Output>.Action {
+        try send(.completion(.failure(error)))
+    }
+
     func send<Output: Sendable>(
         _ result: AsyncStream<Output>.Result
     ) throws -> Void where State == DistributorState<Output>, Action == DistributorState<Output>.Action {

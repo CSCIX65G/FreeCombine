@@ -87,7 +87,10 @@ extension StateTask {
                     await reducer(&state, .termination)
                 } catch {
                     channel.finish()
-                    for await action in channel { reducer(action, .failure(error)); continue }
+                    for await action in channel {
+                        reducer(action, .failure(error))
+                        continue
+                    }
                     guard let completion = error as? PublisherError else {
                         await reducer(&state, .failure(error)); throw error
                     }

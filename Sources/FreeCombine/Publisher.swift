@@ -142,7 +142,7 @@ extension Publisher {
     }
 }
 
-public func flattener<B>(
+func flattener<B>(
     _ downstream: @Sendable @escaping (AsyncStream<B>.Result) async throws -> Demand
 ) -> @Sendable (AsyncStream<B>.Result) async throws -> Demand {
     { b in switch b {
