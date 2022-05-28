@@ -100,7 +100,7 @@ extension Publisher {
             case let .completion(.failure(error)):
                 do { try await receiveCompletion(.failure(error)) }
                 catch { /* doesn't matter what the final returns, we throw our error */ }
-                return .done
+                throw error
             case .completion(.finished):
                 do { try await receiveCompletion(.finished) }
                 catch { /* doesn't matter if the final throws, we return done  */ }
