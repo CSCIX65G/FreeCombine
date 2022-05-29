@@ -73,8 +73,11 @@ class DeferTests: XCTestCase {
         } catch {
             XCTFail("Timed out")
         }
-        c1.cancel()
-        c2.cancel()
+        do {
+            _ = try await c1.task.value
+            _ = try await c2.task.value
+        }
+        catch { XCTFail("Should have completed") }
     }
 
     func testDeferredDefer() async throws {
@@ -141,7 +144,10 @@ class DeferTests: XCTestCase {
         } catch {
             XCTFail("Timed out")
         }
-        c1.cancel()
-        c2.cancel()
+        do {
+            _ = try await c1.task.value
+            _ = try await c2.task.value
+        }
+        catch { XCTFail("Should have completed") }
     }
 }

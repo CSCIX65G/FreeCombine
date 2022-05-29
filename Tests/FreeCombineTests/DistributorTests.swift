@@ -37,8 +37,9 @@ class DistributorTests: XCTestCase {
             }
         }
 
+        var t: Task<Void, Swift.Error>!
         let _: Void = await withUnsafeContinuation { c in
-            Task {
+            t = Task {
                 let _: Cancellable<Demand> = try await withUnsafeThrowingContinuation { taskC in
                     Task {
                         do {
@@ -53,6 +54,10 @@ class DistributorTests: XCTestCase {
                 }
             }
         }
+        do {
+            _ = try await t.value
+        }
+        catch { XCTFail("Should have completed") }
     }
 
     func testSimpleSubscribeAndSend() async throws {
@@ -90,8 +95,9 @@ class DistributorTests: XCTestCase {
             }
         }
 
+        var t: Task<Void, Swift.Error>!
         let _: Void = await withUnsafeContinuation { c in
-            Task {
+            t = Task {
                 let _: Cancellable<Demand> = try await withUnsafeThrowingContinuation { taskC in
                     Task {
                         do {
@@ -124,5 +130,9 @@ class DistributorTests: XCTestCase {
             )
         }
         catch { XCTFail("Timed out") }
+        do {
+            _ = try await t.value
+        }
+        catch { XCTFail("Should have completed") }
     }
 }

@@ -51,7 +51,8 @@ class ConcatTests: XCTestCase {
         } catch {
             XCTFail("Timed out")
         }
-        _ = await c1.task.result
+        do {  _ = try await c1.task.value }
+        catch { XCTFail("Should have completed") }
     }
 
     func testMultiConcat() async throws {
@@ -120,7 +121,10 @@ class ConcatTests: XCTestCase {
         } catch {
             XCTFail("Timed out")
         }
-        _ = await c1.task.result
-        _ = await c2.task.result
+        do {
+            _ = try await c1.task.value
+            _ = try await c2.task.value
+        }
+        catch { XCTFail("Should have completed") }
     }
 }
