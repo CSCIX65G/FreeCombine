@@ -28,16 +28,20 @@ class ScanTests: XCTestCase {
                         let count = await counter.count
                         XCTAssert(value == count, "Wrong value: \(value), count: \(count)")
                         await counter.increment()
+                        return .more
                     case let .completion(.failure(error)):
                         XCTFail("Got an error? \(error)")
+                        return .done
                     case .completion(.finished):
                         let count = await counter.count
                         XCTAssert(count == 5, "wrong number of values sent: \(count)")
                         do { try await expectation.complete() }
                         catch { XCTFail("Failed to complete: \(error)") }
                         return .done
+                    case .completion(.cancelled):
+                        XCTFail("Should not have cancelled")
+                        return .done
                 }
-                return .more
             })
         do { try await FreeCombine.wait(for: expectation, timeout: 1_000_000) }
         catch {

@@ -71,11 +71,10 @@ extension StateTask {
                 onStartup?.resume()
                 do {
                     for await action in channel {
-                        guard !Task.isCancelled else {
-                            await reducer(&state, .cancel)
-                            throw PublisherError.cancelled
-                        }
-                        switch try await reducer(&state, action) {
+                        guard !Task.isCancelled else { throw PublisherError.cancelled }
+                        let effect = try await reducer(&state, action)
+                        guard !Task.isCancelled else { throw PublisherError.cancelled }
+                        switch effect {
                             case .none: continue
                             case .published(_): continue // FIXME: Handle future mutation
                             case .completion(.exit): throw PublisherError.completed

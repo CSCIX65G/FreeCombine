@@ -13,7 +13,7 @@ public extension Publisher {
                         return try await downstream(r)
                     case .completion(.failure(let e)):
                         return try await downstream(.value(f(e)))
-                    case .completion(.finished):
+                    case .completion(.finished), .completion(.cancelled):
                         return try await downstream(r)
                 }
             }
@@ -28,7 +28,7 @@ public extension Publisher {
                         return try await downstream(r)
                     case .completion(.failure):
                         return try await downstream(.value(value))
-                    case .completion(.finished):
+                    case .completion(.finished), .completion(.cancelled):
                         return try await downstream(r)
                 }
             }

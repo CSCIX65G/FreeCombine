@@ -32,6 +32,9 @@ class JustTests: XCTestCase {
                     do { try await expectation1.complete() }
                     catch { XCTFail("Failed to complete with error: \(error)") }
                     return .done
+                case .completion(.cancelled):
+                    XCTFail("Should not have cancelled")
+                    return .done
             }
         }
 
@@ -46,6 +49,9 @@ class JustTests: XCTestCase {
                 case .completion(.finished):
                     do { try await expectation2.complete() }
                     catch { XCTFail("Failed to complete with error: \(error)") }
+                    return .done
+                case .completion(.cancelled):
+                    XCTFail("Should not have cancelled")
                     return .done
             }
         }
@@ -80,6 +86,9 @@ class JustTests: XCTestCase {
                         XCTFail("Failed to complete with error: \(error)")
                     }
                     return .done
+                case .completion(.cancelled):
+                    XCTFail("Should not have cancelled")
+                    return .done
             }
         }
 
@@ -98,6 +107,9 @@ class JustTests: XCTestCase {
                         catch {
                             XCTFail("Failed to complete with error: \(error)")
                         }
+                        return .done
+                    case .completion(.cancelled):
+                        XCTFail("Should not have cancelled")
                         return .done
                 }
             } )

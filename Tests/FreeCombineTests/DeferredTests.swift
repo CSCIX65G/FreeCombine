@@ -39,6 +39,8 @@ class DeferTests: XCTestCase {
                         XCTFail("Failed to complete")
                     }
                     return .done
+                case .completion(.cancelled):
+                    XCTFail("Should not have cancelled")
             }
             return .more
         })
@@ -59,6 +61,8 @@ class DeferTests: XCTestCase {
                         XCTFail("Failed to complete")
                     }
                     return .done
+                case .completion(.cancelled):
+                    XCTFail("Should not have cancelled")
             }
             return .more
         })
@@ -88,8 +92,10 @@ class DeferTests: XCTestCase {
             switch result {
                 case .value:
                     await count1.increment()
+                    return .more
                 case let .completion(.failure(error)):
                     XCTFail("Got an error? \(error)")
+                    return .done
                 case .completion(.finished):
                     let count = await count1.count
                     XCTAssert(count == 3, "wrong number of values sent: \(count)")
@@ -99,8 +105,10 @@ class DeferTests: XCTestCase {
                         XCTFail("Failed to complete")
                     }
                     return .done
+                case .completion(.cancelled):
+                    XCTFail("Should not have cancelled")
+                    return .done
             }
-            return .more
         })
 
         let count2 = Counter()
@@ -108,8 +116,10 @@ class DeferTests: XCTestCase {
             switch result {
                 case .value:
                     await count2.increment()
+                    return .more
                 case let .completion(.failure(error)):
                     XCTFail("Got an error? \(error)")
+                    return .done
                 case .completion(.finished):
                     let count = await count2.count
                     XCTAssert(count == 3, "wrong number of values sent: \(count)")
@@ -119,8 +129,10 @@ class DeferTests: XCTestCase {
                         XCTFail("Failed to complete")
                     }
                     return .done
+                case .completion(.cancelled):
+                    XCTFail("Should not have cancelled")
+                    return .done
             }
-            return .more
         })
 
         do {

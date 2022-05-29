@@ -118,6 +118,15 @@ struct MergeState<Output: Sendable>: CombinatorState {
                         }
                     case .completion(.finished):
                         fatalError("Should never get here.")
+                    case .completion(.cancelled):
+                        do {
+                            mostRecentDemand = try await downstream(.completion(.cancelled))
+                            continuation.resume(returning: .done)
+                        }
+                        catch {
+                            continuation.resume(returning: .done)
+                        }
+
                 }
             case let .removeCancellable(index, continuation):
                 cancellables.removeValue(forKey: index)

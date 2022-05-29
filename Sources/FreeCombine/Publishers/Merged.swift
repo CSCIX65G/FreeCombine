@@ -8,7 +8,7 @@
 public extension Publisher {
     func merge(
         onCancel: @escaping () -> Void = { },
-        others upstream2: Publisher<Output>,
+        with upstream2: Publisher<Output>,
         _ otherUpstreams: Publisher<Output>...
     ) -> Publisher<Output> {
         Merged(onCancel: onCancel, publishers: self, upstream2, otherUpstreams)
