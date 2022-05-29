@@ -62,7 +62,11 @@ class CancellationTests: XCTestCase {
         catch {
             XCTFail("Timed out with count: \(await counter.count)")
         }
-        _ = await z1.task.result
+        do {
+            let _ = try await z1.task.value
+            XCTFail("Should have cancelled")
+        }
+        catch { }
     }
 
     func testMultiZipCancellation() async throws {
@@ -147,8 +151,12 @@ class CancellationTests: XCTestCase {
         } catch {
             XCTFail("Timed out")
         }
-        _ = await z1.task.result
-        _ = await z2.task.result
+        do {
+            let _ = try await z1.task.value
+            let _ = try await z2.task.value
+            XCTFail("Should have cancelled")
+        }
+        catch { }
     }
 
     func testSimpleMergeCancellation() async throws {
@@ -179,10 +187,14 @@ class CancellationTests: XCTestCase {
                         return .done
                     case .completion(.finished):
                         XCTFail("Got to end of task that should have been cancelled")
-                        do { try await expectation.complete() }
+                        do {
+                            try await expectation.complete()
+                        }
                         catch { XCTFail("Failed to complete: \(error)") }
                         return .done
                     case .completion(.cancelled):
+                        let count = await counter.count
+                        XCTAssert(count == 10, "Incorrect count")
                         try await expectation.complete()
                         return .done
                 }
@@ -194,6 +206,10 @@ class CancellationTests: XCTestCase {
 
         do { try await FreeCombine.wait(for: expectation, timeout: 100_000_000) }
         catch { XCTFail("Timed out with count: \(await counter.count)") }
-        _ = await z1.task.result
+        do {
+            let _ = try await z1.task.value
+            XCTFail("Should have cancelled")
+        }
+        catch { }
     }
 }

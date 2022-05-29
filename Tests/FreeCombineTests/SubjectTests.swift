@@ -166,7 +166,7 @@ class SubjectTests: XCTestCase {
                     } else if count > 8 {
                         if !Task.isCancelled { XCTFail("Should be cancelled"); throw PublisherError.internalError }
                         XCTFail("Got value after cancellation")
-                        throw PublisherError.internalError
+                        return .done
                     }
                     return .more
                 case let .completion(.failure(error)):
@@ -343,7 +343,7 @@ class SubjectTests: XCTestCase {
         catch {
             XCTFail("timed out")
         }
-
-        c1.cancel()
+        do { _ = try await c1.task.value }
+        catch { XCTFail("Should have completed normally") }
     }
 }

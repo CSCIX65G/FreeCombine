@@ -101,9 +101,9 @@ extension StateTask {
                         case .completed:
                             await reducer(&state, .exit)
                         case .internalError:
-                            fatalError("StateTask internal error")
+                            throw PublisherError.internalError
                         case .enqueueError:
-                            fatalError("Enqueue error from upstream")
+                            throw PublisherError.enqueueError
                     }
                 }
                 return state

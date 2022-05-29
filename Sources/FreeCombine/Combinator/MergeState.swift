@@ -10,7 +10,6 @@ struct MergeState<Output: Sendable>: CombinatorState {
         case setValue(AsyncStream<(Int, Output)>.Result, UnsafeContinuation<Demand, Swift.Error>)
         case removeCancellable(Int, UnsafeContinuation<Demand, Swift.Error>)
         case failure(Int, Error, UnsafeContinuation<Demand, Swift.Error>)
-        case completeCancellation(Int, UnsafeContinuation<Demand, Swift.Error>)
     }
 
     let downstream: (AsyncStream<Output>.Result) async throws -> Demand
@@ -39,12 +38,10 @@ struct MergeState<Output: Sendable>: CombinatorState {
                 switch result {
                     case .value:
                         return .setValue(result, continuation)
-                    case .completion(.finished):
+                    case .completion(.finished), .completion(.cancelled):
                         return .removeCancellable(index, continuation)
                     case let .completion(.failure(error)):
                         return .failure(index, error, continuation)
-                    case .completion(.cancelled):
-                        return .completeCancellation(index, continuation)
                 }
             })
         }
@@ -63,16 +60,20 @@ struct MergeState<Output: Sendable>: CombinatorState {
     }
 
     static func complete(state: inout Self, completion: Reducer<Self, Self.Action>.Completion) async -> Void {
-        state.cancellables.values.forEach { cancellable in cancellable.cancel() }
+        for cancellable in state.cancellables.values {
+            cancellable.cancel()
+            _ = await cancellable.task.result
+        }
         state.cancellables.removeAll()
+        guard state.mostRecentDemand != .done else { return }
         do {
             switch completion {
                 case .termination:
                     state.mostRecentDemand = try await state.downstream(.completion(.finished))
-                case .exit, .failure:
-                    ()
                 case .cancel:
                     state.mostRecentDemand = try await state.downstream(.completion(.cancelled))
+                default:
+                    () // These came from downstream
             }
         } catch {
             fatalError("Finalizing MergeState, unexpected error: \(error)")
@@ -89,7 +90,9 @@ struct MergeState<Output: Sendable>: CombinatorState {
     private mutating func reduce(
         action: Self.Action
     ) async throws -> Reducer<Self, Action>.Effect {
-        guard !Task.isCancelled else { throw PublisherError.cancelled }
+        guard !Task.isCancelled else {
+            throw PublisherError.cancelled
+        }
         switch action {
             case let .setValue(value, continuation):
                 return try await reduceValue(value, continuation)
@@ -97,7 +100,8 @@ struct MergeState<Output: Sendable>: CombinatorState {
                 cancellables.removeValue(forKey: index)
                 continuation.resume(returning: .done)
                 if cancellables.count == 0 {
-                    mostRecentDemand = try await downstream(.completion(.finished))
+                    let c: Completion = Task.isCancelled ? .cancelled : .finished
+                    mostRecentDemand = try await downstream(.completion(c))
                     return .completion(.exit)
                 }
                 return .none
@@ -107,14 +111,6 @@ struct MergeState<Output: Sendable>: CombinatorState {
                 cancellables.removeAll()
                 mostRecentDemand = try await downstream(.completion(.failure(error)))
                 return .completion(.failure(error))
-            case let .completeCancellation(index, continuation):
-                cancellables.removeValue(forKey: index)
-                continuation.resume(returning: .done)
-                if cancellables.count == 0 {
-                    mostRecentDemand = try await downstream(.completion(.cancelled))
-                    return .completion(.cancel)
-                }
-                return .none
         }
     }
 
