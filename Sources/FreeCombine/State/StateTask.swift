@@ -80,7 +80,8 @@ extension StateTask {
                             case .completion(.exit): throw PublisherError.completed
                             case let .completion(.failure(error)): throw error
                             case .completion(.termination): throw PublisherError.internalError
-                            case .completion(.cancel): throw PublisherError.cancelled
+                            case .completion(.cancel):
+                                throw PublisherError.cancelled
                         }
                     }
                     await reducer(&state, .termination)

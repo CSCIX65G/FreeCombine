@@ -156,7 +156,7 @@ class SubjectTests: XCTestCase {
                         do { try await expectation.complete() }
                         catch {  XCTFail("failed to complete") }
                         do {
-                            try await FreeCombine.wait(for: release, timeout: 10_000_000)
+                            try await release.value
                         } catch {
                             guard let error = error as? PublisherError, case error = PublisherError.cancelled else {
                                 XCTFail("Timed out waiting for release")
@@ -339,8 +339,10 @@ class SubjectTests: XCTestCase {
         try await fsubject1.finish()
         try await fsubject2.finish()
 
-        do { try await FreeCombine.wait(for: expectation, timeout: 10_000_000_000) }
-        catch { XCTFail("timed out") }
+        do { try await FreeCombine.wait(for: expectation, timeout: 200_000_000) }
+        catch {
+            XCTFail("timed out")
+        }
 
         c1.cancel()
     }

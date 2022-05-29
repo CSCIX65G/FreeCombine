@@ -75,7 +75,7 @@ struct MergeState<Output: Sendable>: CombinatorState {
                     state.mostRecentDemand = try await state.downstream(.completion(.cancelled))
             }
         } catch {
-            fatalError("Unexpected error in MergeState")
+            fatalError("Finalizing MergeState, unexpected error: \(error)")
         }
     }
 
@@ -108,12 +108,13 @@ struct MergeState<Output: Sendable>: CombinatorState {
                 mostRecentDemand = try await downstream(.completion(.failure(error)))
                 return .completion(.failure(error))
             case let .completeCancellation(index, continuation):
-                guard let _ = cancellables.removeValue(forKey: index) else {
+                cancellables.removeValue(forKey: index)
+                continuation.resume(returning: .done)
+                if cancellables.count == 0 {
                     mostRecentDemand = try await downstream(.completion(.cancelled))
-                    continuation.resume(returning: .done)
-                    return .none
+                    return .completion(.cancel)
                 }
-                fatalError("Invalid cancellation condition in MergeState")
+                return .none
         }
     }
 
