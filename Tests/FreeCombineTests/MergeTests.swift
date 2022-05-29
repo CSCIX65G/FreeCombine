@@ -28,16 +28,20 @@ class MergeTests: XCTestCase {
                 switch result {
                     case .value:
                         await counter.increment()
+                        return .more
                     case let .completion(.failure(error)):
                         XCTFail("Got an error? \(error)")
+                        return .done
                     case .completion(.finished):
                         let count = await counter.count
                         XCTAssert(count == 66, "wrong number of values sent: \(count)")
                         do { try await expectation.complete() }
                         catch { XCTFail("Failed to complete with error: \(error)") }
                         return .done
+                    case .completion(.cancelled):
+                        XCTFail("Should not have cancelled")
+                        return .done
                 }
-                return .more
             })
 
         do {
@@ -66,6 +70,9 @@ class MergeTests: XCTestCase {
                         return .done
                     case .completion(.finished):
                         try await expectation.complete()
+                        return .done
+                    case .completion(.cancelled):
+                        XCTFail("Should not have cancelled")
                         return .done
                 }
             })

@@ -12,6 +12,7 @@ public enum Demand: Equatable, Sendable {
 
 public enum Completion: Sendable {
     case failure(Error)
+    case cancelled
     case finished
 }
 
@@ -61,7 +62,7 @@ public extension Publisher {
     ) -> Cancellable<Demand> {
         call(onStartup, { result in
             guard !Task.isCancelled else {
-                return try await f(.completion(.failure(PublisherError.cancelled)))
+                return try await f(.completion(.cancelled))
             }
             switch result {
                 case let .value(value):
@@ -69,8 +70,8 @@ public extension Publisher {
                 case let .completion(.failure(error)):
                     do { return try await f(.completion(.failure(error))) }
                     catch { throw error }
-                case .completion(.finished):
-                    do { return try await f(.completion(.finished)) }
+                case .completion(.finished), .completion(.cancelled):
+                    do { return try await f(result) }
                     catch { return .done }
             }
         } )
@@ -110,6 +111,9 @@ extension Publisher {
             case .completion(.finished):
                 do { try await receiveCompletion(.finished); return .done }
                 catch { return .done }
+            case .completion(.cancelled):
+                do { try await receiveCompletion(.cancelled); return .done }
+                catch { return .done }
         } }
     }
 
@@ -148,7 +152,7 @@ func flattener<B>(
     { b in switch b {
         case .completion(.finished):
             return .more
-        case .value, .completion(.failure):
+        case .value, .completion(.failure), .completion(.cancelled):
             return try await downstream(b)
     } }
 }

@@ -27,8 +27,10 @@ class ConcatTests: XCTestCase {
                 switch result {
                     case .value:
                         await count.increment()
+                        return .more
                     case let .completion(.failure(error)):
                         XCTFail("Got an error? \(error)")
+                        return .done
                     case .completion(.finished):
                         let n = await count.count
                         XCTAssert(n == 42, "wrong number of values sent: \(n)")
@@ -38,8 +40,10 @@ class ConcatTests: XCTestCase {
                             XCTFail("Could not complete: \(error)")
                         }
                         return .done
+                    case .completion(.cancelled):
+                        XCTFail("Should not have cancelled")
+                        return .done
                 }
-                return .more
             })
 
         do {
@@ -66,8 +70,10 @@ class ConcatTests: XCTestCase {
                 switch result {
                     case .value:
                         await count1.increment()
+                        return .more
                     case let .completion(.failure(error)):
                         XCTFail("Got an error? \(error)")
+                        return .done
                     case .completion(.finished):
                         let count = await count1.count
                         XCTAssert(count == 42, "wrong number of values sent: \(count)")
@@ -77,8 +83,10 @@ class ConcatTests: XCTestCase {
                             XCTFail("Failed to complete branch 1: \(error)")
                         }
                         return .done
+                    case .completion(.cancelled):
+                        XCTFail("Should not have cancelled")
+                        return .done
                 }
-                return .more
             })
 
         let count2 = Counter()
@@ -87,8 +95,10 @@ class ConcatTests: XCTestCase {
                 switch result {
                     case .value:
                         await count2.increment()
+                        return .more
                     case let .completion(.failure(error)):
                         XCTFail("Got an error? \(error)")
+                        return .done
                     case .completion(.finished):
                         let count = await count2.count
                         XCTAssert(count == 42, "wrong number of values sent: \(count)")
@@ -98,8 +108,10 @@ class ConcatTests: XCTestCase {
                             XCTFail("Failed to complete branch 2: \(error)")
                         }
                         return .done
+                    case .completion(.cancelled):
+                        XCTFail("Should not have cancelled")
+                        return .done
                 }
-                return .more
             })
 
         do {

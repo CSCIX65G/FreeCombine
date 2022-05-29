@@ -36,6 +36,9 @@ class ZipTests: XCTestCase {
                         do {  try await expectation.complete() }
                         catch { XCTFail("Failed to complete: \(error)") }
                         return .done
+                    case .completion(.cancelled):
+                        XCTFail("Should not have cancelled")
+                        return .done
                 }
                 return .more
             }
@@ -70,6 +73,9 @@ class ZipTests: XCTestCase {
                         do {  try await expectation.complete() }
                         catch { XCTFail("Failed to complete: \(error)") }
                         return .done
+                    case .completion(.cancelled):
+                        XCTFail("Should not have cancelled")
+                        return .done
                 }
                 return .more
             }
@@ -95,15 +101,19 @@ class ZipTests: XCTestCase {
                 switch result {
                     case .value:
                         _ = await counter.increment()
+                        return .more
                     case let .completion(.failure(error)):
                         XCTFail("Got an error? \(error)")
+                        return .done
                     case .completion(.finished):
                         XCTAssert(count == 26, "wrong number of values sent: \(count)")
                         do {  try await expectation.complete() }
                         catch { XCTFail("Failed to complete: \(error)") }
                         return .done
+                    case .completion(.cancelled):
+                        XCTFail("Should not have cancelled")
+                        return .done
                 }
-                return .more
             }
 
         do { try await FreeCombine.wait(for: expectation, timeout: 100_000_000) }
@@ -128,16 +138,20 @@ class ZipTests: XCTestCase {
                 switch result {
                     case .value:
                         await counter.increment()
+                        return .more
                     case let .completion(.failure(error)):
                         XCTFail("Got an error? \(error)")
+                        return .done
                     case .completion(.finished):
                         let count = await counter.count
                         XCTAssert(count == 26, "wrong number of values sent: \(count)")
                         do { try await expectation.complete() }
                         catch { XCTFail("Failed to complete: \(error)") }
                         return .done
+                    case .completion(.cancelled):
+                        XCTFail("Should not have cancelled")
+                        return .done
                 }
-                return .more
             })
 
         do { try await FreeCombine.wait(for: expectation, timeout: 100_000_000) }
@@ -169,16 +183,20 @@ class ZipTests: XCTestCase {
                 switch result {
                     case .value:
                         await counter.increment()
+                        return .more
                     case let .completion(.failure(error)):
                         XCTFail("Got an error? \(error)")
+                        return .done
                     case .completion(.finished):
                         let count = await counter.count
                         XCTAssert(count == 26, "wrong number of values sent: \(count)")
                         do { try await expectation.complete() }
                         catch { XCTFail("Multiple terminations sent: \(error)") }
                         return .done
+                    case .completion(.cancelled):
+                        XCTFail("Should not have cancelled")
+                        return .done
                 }
-                return .more
             })
 
         do { try await FreeCombine.wait(for: expectation, timeout: 100_000_000) }
@@ -213,20 +231,19 @@ class ZipTests: XCTestCase {
                 switch result {
                     case .value:
                         await count1.increment()
+                        return .more
                     case let .completion(.failure(error)):
                         XCTFail("Got an error? \(error)")
+                        return .done
                     case .completion(.finished):
                         let count = await count1.count
                         XCTAssert(count == 26, "wrong number of values sent: \(count1)")
-                        do {
-                            try await expectation1.complete()
-                        } catch {
-                            // TODO: Investigate
-                            // XCTFail("Failed to complete with error: \(error)")
-                        }
+                        try await expectation1.complete()
+                        return .done
+                    case .completion(.cancelled):
+                        XCTFail("Should not have cancelled")
                         return .done
                 }
-                return .more
             })
 
         let count2 = Counter()
@@ -238,20 +255,19 @@ class ZipTests: XCTestCase {
                 switch result {
                     case .value:
                         await count2.increment()
+                        return .more
                     case let .completion(.failure(error)):
                         XCTFail("Got an error? \(error)")
+                        return .more
                     case .completion(.finished):
                         let count = await count2.count
                         XCTAssert(count == 26, "wrong number of values sent: \(count)")
-                        do {
-                            try await expectation2.complete()
-                        } catch {
-                            // TODO: Investigate
-                            // XCTFail("Failed to complete with error: \(error)")
-                        }
+                        try await expectation2.complete()
+                        return .done
+                    case .completion(.cancelled):
+                        XCTFail("Should not have cancelled")
                         return .done
                 }
-                return .more
             })
 
         do {

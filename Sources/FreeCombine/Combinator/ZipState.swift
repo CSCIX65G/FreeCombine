@@ -49,27 +49,17 @@ struct ZipState<Left: Sendable, Right: Sendable>: CombinatorState {
             case .cancel:
                 state.leftCancellable.cancel()
                 state.left?.continuation.resume(throwing: PublisherError.cancelled)
-                _ = await state.leftCancellable.task.result
                 state.rightCancellable.cancel()
                 state.right?.continuation.resume(throwing: PublisherError.cancelled)
-                _ = await state.rightCancellable.task.result
-                state.channel.finish()
+                _ = try? await state.downstream(.completion(.cancelled))
             default:
                 ()
         }
     }
 
     static func reduce(`self`: inout Self, action: Self.Action) async throws -> Reducer<Self, Action>.Effect {
-        do {
-            guard !Task.isCancelled else {
-                _ = try await `self`.downstream(.completion(.failure(PublisherError.cancelled)))
-                throw PublisherError.cancelled
-            }
-            return try await `self`.reduce(action: action)
-        } catch {
-            await complete(state: &`self`, completion: .cancel)
-            throw error
-        }
+        guard !Task.isCancelled else { throw PublisherError.cancelled }
+        return try await `self`.reduce(action: action)
     }
 
     private mutating func reduce(

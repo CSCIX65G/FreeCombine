@@ -47,16 +47,21 @@ class CancellationTests: XCTestCase {
                         do { try await expectation.complete() }
                         catch { XCTFail("Failed to complete: \(error)") }
                         return .done
+                    case .completion(.cancelled):
+                        try await expectation.complete()
+                        return .done
                 }
                 return .more
             }
         // Provide time for some values to be sent so that the task hangs for cancellation
-        try await FreeCombine.wait(for: startup, timeout: 100_000_000)
+        try await startup.value
         z1.cancel()
-        try await expectation.complete()
+        try await waiter.complete()
 
         do { try await FreeCombine.wait(for: expectation, timeout: 100_000_000) }
-        catch { XCTFail("Timed out with count: \(await counter.count)") }
+        catch {
+            XCTFail("Timed out with count: \(await counter.count)")
+        }
     }
 
     func testMultiZipCancellation() async throws {
@@ -77,16 +82,20 @@ class CancellationTests: XCTestCase {
             switch result {
                 case .value:
                     _ = await counter2.increment()
+                    return .more
                 case let .completion(.failure(error)):
                     XCTFail("Got an error? \(error)")
+                    return .done
                 case .completion(.finished):
                     let count2 = await counter2.count
                     XCTAssertTrue(count2 == 26, "Incorrect count: \(count2)")
                     do { try await expectation2.complete() }
                     catch { XCTFail("Multiple terminations sent: \(error)") }
                     return .done
+                case .completion(.cancelled):
+                    try await expectation2.complete()
+                    return .done
             }
-            return .more
         })
 
         let z2 = await zipped
@@ -99,20 +108,23 @@ class CancellationTests: XCTestCase {
                             try await waiter.value
                         }
                         if count1 > 10 { XCTFail("Received values after cancellation") }
+                        return .more
                     case let .completion(.failure(error)):
                         XCTFail("Got an error? \(error)")
+                        return .done
                     case .completion(.finished):
                         XCTFail("Got to end of task that should have been cancelled")
                         do { try await expectation.complete() }
                         catch { XCTFail("Multiple terminations sent: \(error)") }
                         return .done
+                    case .completion(.cancelled):
+                        try await expectation.complete()
+                        return .done
                 }
-                return .more
             })
         // Provide time for some values to be sent so that the task hangs for cancellation
         try await FreeCombine.wait(for: startup, timeout: 100_000_000)
         z2.cancel()
-        try await expectation.complete()
         try await waiter.complete(())
 
         do {

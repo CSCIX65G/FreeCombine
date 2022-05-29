@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<playground version='6.0' target-platform='ios' display-mode='rendered' buildActiveScheme='true' importAppTypes='true'>
+    <pages>
+        <page name='00a-Introduction (Examples)'/>
+        <page name='00b-Introduction (Requirements)'/>
+        <page name='00c-Introduction (Supply and Demand)'/>
+        <page name='01a-Deriving FreeCombine (Base)'/>
+        <page name='01b-Deriving FreeCombine (enum Demand)'/>
+        <page name='01c-Deriving FreeCombine (async eliminates Subscription)'/>
+        <page name='01d-Deriving FreeCombine (simplify Subscriber to one func)'/>
+        <page name='01e-Deriving FreeCombine (eliminate Subscriber into Publisher)'/>
+        <page name='01f-Deriving FreeCombine (add Task as Cancellation)'/>
+        <page name='01g-Deriving FreeCombine (cleanup)'/>
+        <page name='01h-Deriving FreeCombine (convert Publisher protocol to struct)'/>
+    </pages>
+</playground>

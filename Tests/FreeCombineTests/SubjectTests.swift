@@ -30,8 +30,10 @@ class SubjectTests: XCTestCase {
             switch result {
                 case .value:
                     _ = await counter.increment()
+                    return .more
                 case let .completion(.failure(error)):
                     XCTFail("Got an error? \(error)")
+                    return .done
                 case .completion(.finished):
                     XCTAssert(count == 5, "wrong number of values sent: \(count)")
                     do {
@@ -39,8 +41,10 @@ class SubjectTests: XCTestCase {
                     }
                     catch { XCTFail("Failed to complete: \(error)") }
                     return .done
+                case .completion(.cancelled):
+                    XCTFail("Should not have cancelled")
+                    return .done
             }
-            return .more
         }
         do {
             try await subject.send(14)
@@ -73,15 +77,19 @@ class SubjectTests: XCTestCase {
             switch result {
                 case .value:
                     _ = await counter1.increment()
+                    return .more
                 case let .completion(.failure(error)):
                     XCTFail("Got an error? \(error)")
+                    return .done
                 case .completion(.finished):
                     XCTAssert(count == 5, "wrong number of values sent: \(count)")
                     do { try await expectation1.complete() }
                     catch { XCTFail("Failed to complete: \(error)") }
                     return .done
+                case .completion(.cancelled):
+                    XCTFail("Should not have cancelled")
+                    return .done
             }
-            return .more
         }
 
         let counter2 = Counter()
@@ -90,15 +98,19 @@ class SubjectTests: XCTestCase {
             switch result {
                 case .value:
                     _ = await counter2.increment()
+                    return .more
                 case let .completion(.failure(error)):
                     XCTFail("Got an error? \(error)")
+                    return .done
                 case .completion(.finished):
                     XCTAssert(count == 5, "wrong number of values sent: \(count)")
                     do { try await expectation2.complete() }
                     catch { XCTFail("Failed to complete: \(error)") }
                     return .done
+                case .completion(.cancelled):
+                    XCTFail("Should not have cancelled")
+                    return .done
             }
-            return .more
         }
 
         do {
@@ -132,7 +144,7 @@ class SubjectTests: XCTestCase {
         let expectation2 = await CheckedExpectation<Void>(name: "expectation2")
         let release = await CheckedExpectation<Void>(name: "release")
 
-        let subject = await PassthroughSubject(type: Int.self, buffering: .unbounded)
+        let subject = await PassthroughSubject(Int.self, buffering: .unbounded)
         let p = subject.publisher()
 
         let can = await p.sink({ result in
@@ -161,6 +173,9 @@ class SubjectTests: XCTestCase {
                     XCTFail("Should not have gotten error: \(error)")
                     return .done
                 case .completion(.finished):
+                    return .done
+                case .completion(.cancelled):
+                    XCTFail("Should not have cancelled")
                     return .done
             }
         })
@@ -199,7 +214,7 @@ class SubjectTests: XCTestCase {
         let counter = Counter()
         let expectation = await CheckedExpectation<Void>()
 
-        let subject = await PassthroughSubject(type: Int.self)
+        let subject = await PassthroughSubject(Int.self)
         let p = subject.publisher()
 
         let c1 = await p.sink( { result in
@@ -216,6 +231,9 @@ class SubjectTests: XCTestCase {
                     catch { XCTFail("Failed to complete expectation") }
                     let count = await counter.count
                     XCTAssert(count == 1000, "Received wrong number of invocations: \(count)")
+                    return .done
+                case .completion(.cancelled):
+                    XCTFail("Should not have cancelled")
                     return .done
             }
         })
@@ -239,7 +257,7 @@ class SubjectTests: XCTestCase {
         let counter = Counter()
         let expectation = await CheckedExpectation<Void>()
 
-        let subject = await PassthroughSubject(type: Int.self)
+        let subject = await PassthroughSubject(Int.self)
         let p = subject.publisher()
 
         let c1 = await p.sink({ result in
@@ -256,6 +274,9 @@ class SubjectTests: XCTestCase {
                     catch { XCTFail("Could not complete, error: \(error)") }
                     let count = await counter.count
                     XCTAssert(count == 5, "Received wrong number of invocations: \(count)")
+                    return .done
+                case .completion(.cancelled):
+                    XCTFail("Should not have cancelled")
                     return .done
             }
         })
@@ -277,8 +298,8 @@ class SubjectTests: XCTestCase {
 
     func testSyncAsync() async throws {
         let expectation = await CheckedExpectation<Void>()
-        let fsubject1 = await FreeCombine.PassthroughSubject(type: Int.self)
-        let fsubject2 = await FreeCombine.PassthroughSubject(type: String.self)
+        let fsubject1 = await FreeCombine.PassthroughSubject(Int.self)
+        let fsubject2 = await FreeCombine.PassthroughSubject(String.self)
         
         let fseq1 = "abcdefghijklmnopqrstuvwxyz".asyncPublisher
         let fseq2 = (1 ... 100).asyncPublisher
@@ -288,11 +309,11 @@ class SubjectTests: XCTestCase {
 
         let fm1 = fsubject1.publisher()
             .map(String.init)
-            .merge(others: fsubject2.publisher())
+            .merge(with: fsubject2.publisher())
 
         let counter = Counter()
         let c1 = await fz2
-            .merge(others: fm1)
+            .merge(with: fm1)
             .sink({ value in
                 switch value {
                     case .value(_):
@@ -305,6 +326,9 @@ class SubjectTests: XCTestCase {
                         let count = await counter.count
                         if count != 28  { XCTFail("Incorrect number of values") }
                         try await expectation.complete()
+                        return .done
+                    case .completion(.cancelled):
+                        XCTFail("Should not have cancelled")
                         return .done
                 }
             })

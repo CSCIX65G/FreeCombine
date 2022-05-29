@@ -37,6 +37,9 @@ class FlatMapTests: XCTestCase {
                         XCTAssert(value == 56, "Did not get all values")
                         try! await expectation.complete()
                         return .done
+                    case .completion(.cancelled):
+                        XCTFail("Should not have cancelled")
+                        return .done
                 }
             })
 

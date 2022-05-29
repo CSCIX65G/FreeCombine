@@ -15,7 +15,7 @@ public extension Publisher {
                     return try await downstream(r)
                 case .completion(.failure(let e)):
                     return try await downstream(.completion(.failure(f(e))))
-                case .completion(.finished):
+                case .completion(.finished), .completion(.cancelled):
                     return try await downstream(r)
             } }
         }

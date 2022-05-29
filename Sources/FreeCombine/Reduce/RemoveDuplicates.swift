@@ -50,8 +50,8 @@ extension Publisher {
                         return try await deduplicator.forward(value: a, with: downstream)
                     case .completion(.failure(let e)):
                         return try await downstream(.completion(.failure(e)))
-                    case .completion(.finished):
-                        return try await downstream(.completion(.finished))
+                    case .completion(.finished), .completion(.cancelled):
+                        return try await downstream(r)
                 }
             }
         }
