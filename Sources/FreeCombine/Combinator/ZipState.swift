@@ -48,9 +48,9 @@ struct ZipState<Left: Sendable, Right: Sendable>: CombinatorState {
         switch completion {
             case .cancel:
                 state.leftCancellable.cancel()
-                state.left?.continuation.resume(throwing: PublisherError.cancelled)
+                state.left?.continuation.resume(returning: .done)
                 state.rightCancellable.cancel()
-                state.right?.continuation.resume(throwing: PublisherError.cancelled)
+                state.right?.continuation.resume(returning: .done)
                 _ = try? await state.downstream(.completion(.cancelled))
             default:
                 ()
@@ -58,7 +58,7 @@ struct ZipState<Left: Sendable, Right: Sendable>: CombinatorState {
     }
 
     static func reduce(`self`: inout Self, action: Self.Action) async throws -> Reducer<Self, Action>.Effect {
-        guard !Task.isCancelled else { throw PublisherError.cancelled }
+        guard !Task.isCancelled else { return .completion(.cancel) }
         return try await `self`.reduce(action: action)
     }
 
@@ -80,17 +80,15 @@ struct ZipState<Left: Sendable, Right: Sendable>: CombinatorState {
         _ leftResult: AsyncStream<Left>.Result,
         _ leftContinuation: UnsafeContinuation<Demand, Error>
     ) async throws -> Reducer<Self, Action>.Effect {
-        guard left == nil else {
-            throw PublisherError.internalError
-        }
+        guard left == nil else { throw PublisherError.internalError }
         switch leftResult {
             case let .value((value)):
                 left = (value, leftContinuation)
                 if let right = right {
                     guard !Task.isCancelled else {
                         await Self.complete(state: &self, completion: .failure(PublisherError.cancelled))
-                        _ = try await downstream(.completion(.failure(PublisherError.cancelled)))
-                        throw PublisherError.cancelled
+                        _ = try await downstream(.completion(.cancelled))
+                        return .completion(.cancel)
                     }
                     mostRecentDemand = try await downstream(.value((value, right.value)))
                     try resume(returning: mostRecentDemand)

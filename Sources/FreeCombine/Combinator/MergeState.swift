@@ -73,11 +73,9 @@ struct MergeState<Output: Sendable>: CombinatorState {
                 case .cancel:
                     state.mostRecentDemand = try await state.downstream(.completion(.cancelled))
                 default:
-                    () // These came from downstream
+                    () // These came from downstream and should not go again
             }
-        } catch {
-            fatalError("Finalizing MergeState, unexpected error: \(error)")
-        }
+        } catch { }
     }
 
     static func reduce(
@@ -90,9 +88,7 @@ struct MergeState<Output: Sendable>: CombinatorState {
     private mutating func reduce(
         action: Self.Action
     ) async throws -> Reducer<Self, Action>.Effect {
-        guard !Task.isCancelled else {
-            throw PublisherError.cancelled
-        }
+        guard !Task.isCancelled else { return .completion(.cancel) }
         switch action {
             case let .setValue(value, continuation):
                 return try await reduceValue(value, continuation)
@@ -126,30 +122,21 @@ struct MergeState<Output: Sendable>: CombinatorState {
                 do {
                     mostRecentDemand = try await downstream(.value(output))
                     continuation.resume(returning: mostRecentDemand)
+                    return .none
                 }
                 catch {
                     continuation.resume(throwing: error)
-                    throw error
+                    return .completion(.failure(error))
                 }
             case let .completion(.failure(error)):
-                do {
-                    mostRecentDemand = try await downstream(.completion(.failure(error)))
-                    continuation.resume(returning: mostRecentDemand)
-                }
-                catch {
-                    continuation.resume(throwing: error)
-                }
+                continuation.resume(returning: .done)
+                return .completion(.failure(error))
             case .completion(.finished):
-                fatalError("Should never get here.")
+                continuation.resume(returning: .done)
+                return .none
             case .completion(.cancelled):
-                do {
-                    mostRecentDemand = try await downstream(.completion(.cancelled))
-                    continuation.resume(returning: .done)
-                }
-                catch {
-                    continuation.resume(returning: .done)
-                }
+                continuation.resume(returning: .done)
+                return .none
         }
-        return .none
     }
 }
