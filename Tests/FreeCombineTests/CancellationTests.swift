@@ -127,9 +127,7 @@ class CancellationTests: XCTestCase {
                         return .done
                     case .completion(.finished):
                         XCTFail("Got to end of task that should have been cancelled")
-                        do {
-                            try await expectation.complete()
-                        }
+                        do { try await expectation.complete() }
                         catch { XCTFail("Multiple terminations sent: \(error)") }
                         return .done
                     case .completion(.cancelled):

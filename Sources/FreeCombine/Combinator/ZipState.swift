@@ -45,15 +45,17 @@ struct ZipState<Left: Sendable, Right: Sendable>: CombinatorState {
     }
 
     static func complete(state: inout Self, completion: Reducer<Self, Self.Action>.Completion) async -> Void {
+        state.leftCancellable.cancel()
+        state.left?.continuation.resume(returning: .done)
+        state.rightCancellable.cancel()
+        state.right?.continuation.resume(returning: .done)
         switch completion {
             case .cancel:
-                state.leftCancellable.cancel()
-                state.left?.continuation.resume(returning: .done)
-                state.rightCancellable.cancel()
-                state.right?.continuation.resume(returning: .done)
                 _ = try? await state.downstream(.completion(.cancelled))
-            default:
-                ()
+            case .exit, .termination:
+                _ = try? await state.downstream(.completion(.finished))
+            case let .failure(error):
+                _ = try? await state.downstream(.completion(.failure(error)))
         }
     }
 
@@ -85,44 +87,32 @@ struct ZipState<Left: Sendable, Right: Sendable>: CombinatorState {
             case let .value((value)):
                 left = (value, leftContinuation)
                 if let right = right {
-                    guard !Task.isCancelled else {
-                        await Self.complete(state: &self, completion: .failure(PublisherError.cancelled))
-                        _ = try await downstream(.completion(.cancelled))
-                        return .completion(.cancel)
-                    }
                     mostRecentDemand = try await downstream(.value((value, right.value)))
                     try resume(returning: mostRecentDemand)
                 }
-            case let .completion(finalState) :
-                try await terminate(with: finalState)
+                return .none
+            case .completion(_):
+                return .completion(.exit)
         }
-        return .none
     }
 
     private mutating func handleRight(
         _ rightResult: AsyncStream<Right>.Result,
         _ rightContinuation: UnsafeContinuation<Demand, Error>
     ) async throws -> Reducer<Self, Self.Action>.Effect {
-        guard right == nil else {
-            throw PublisherError.internalError
-        }
+        guard right == nil else { throw PublisherError.internalError }
         switch rightResult {
             case let .value((value)):
                 right = (value, rightContinuation)
                 if let left = left {
-                    guard !Task.isCancelled else {
-                        leftCancellable.cancel()
-                        rightCancellable.cancel()
-                        _ = try await downstream(.completion(.failure(PublisherError.cancelled)))
-                        throw PublisherError.cancelled
-                    }
+                    guard !Task.isCancelled else { return .completion(.cancel) }
                     mostRecentDemand = try await downstream(.value((left.value, value)))
                     try resume(returning: mostRecentDemand)
                 }
-            case let .completion(finalState) :
-                try await terminate(with: finalState)
+                return .none
+            case .completion(_) :
+                return .completion(.exit)
         }
-        return .none
     }
 
     private mutating func resume(returning demand: Demand) throws {
@@ -133,14 +123,5 @@ struct ZipState<Left: Sendable, Right: Sendable>: CombinatorState {
         if let right = right { right.continuation.resume(returning: demand) }
         else if demand == .done { rightCancellable.cancel() }
         right = .none
-
-        if demand == .done {
-            throw PublisherError.completed
-        }
-    }
-
-    private mutating func terminate(with completion: Completion) async throws -> Void {
-        mostRecentDemand = try await downstream(.completion(completion))
-        try resume(returning: mostRecentDemand)
     }
 }
