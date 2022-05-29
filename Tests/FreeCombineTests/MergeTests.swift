@@ -58,7 +58,7 @@ class MergeTests: XCTestCase {
         let fseq1 = (101 ... 150).asyncPublisher
         let fseq2 = (1 ... 100).asyncPublisher
 
-        let fm1 = Merged(publishers: fseq1, fseq2)
+        let fm1 = Merged(fseq1, fseq2)
 
         let c1 = await fm1
             .sink({ value in
