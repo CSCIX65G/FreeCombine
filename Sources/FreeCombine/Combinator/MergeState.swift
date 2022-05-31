@@ -62,7 +62,7 @@ struct MergeState<Output: Sendable>: CombinatorState {
     static func complete(state: inout Self, completion: Reducer<Self, Self.Action>.Completion) async -> Void {
         for cancellable in state.cancellables.values {
             cancellable.cancel()
-            _ = await cancellable.task.result
+            _ = await cancellable.result
         }
         state.cancellables.removeAll()
         guard state.mostRecentDemand != .done else { return }

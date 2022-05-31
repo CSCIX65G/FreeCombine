@@ -47,7 +47,7 @@ class MergeTests: XCTestCase {
         do {  try await FreeCombine.wait(for: expectation, timeout: 100_000_000) }
         catch { XCTFail("Timed out") }
         
-        do { let _ = try await m1.task.value }
+        do { let _ = try await m1.value }
         catch {
             XCTFail("Should have gotten value")
         }

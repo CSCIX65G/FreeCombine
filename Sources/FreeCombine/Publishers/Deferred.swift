@@ -19,7 +19,7 @@ extension Publisher {
         self = .init { continuation, downstream in
             .init{ try await withTaskCancellationHandler(handler: onCancel) {
                 continuation?.resume()
-                return try await flattable(downstream).task.value
+                return try await flattable(downstream).value
             } }
         }
     }
@@ -42,7 +42,7 @@ extension Publisher {
                 continuation?.resume()
                 let p = try await flattener()
                 let c = await p(downstream)
-                return try await c.task.value
+                return try await c.value
             } }
         }
     }

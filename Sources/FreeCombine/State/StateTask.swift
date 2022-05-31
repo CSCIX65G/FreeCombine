@@ -48,10 +48,26 @@ public final class StateTask<State, Action: Sendable> {
         channel.yield(element)
     }
 
-    var result: Result<State, Swift.Error> {
+    public var isCancelled: Bool {
+        task.isCancelled
+    }
+
+    public var value: State {
+        get async throws {
+            try await task.value
+        }
+    }
+
+    public var result: Result<State, Swift.Error> {
         get async {
             do { return .success(try await finalState) }
             catch { return .failure(error) }
+        }
+    }
+
+    public var finalState: State {
+        get async throws {
+            try await task.value
         }
     }
 }
@@ -109,16 +125,6 @@ extension StateTask {
                 return state
             } }
         )
-    }
-
-    public var isCancelled: Bool {
-        task.isCancelled
-    }
-
-    public var finalState: State {
-        get async throws {
-            try await task.value
-        }
     }
 }
 

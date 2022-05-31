@@ -343,7 +343,7 @@ class SubjectTests: XCTestCase {
         catch {
             XCTFail("timed out")
         }
-        do { _ = try await c1.task.value }
+        do { _ = try await c1.value }
         catch { XCTFail("Should have completed normally") }
     }
 }

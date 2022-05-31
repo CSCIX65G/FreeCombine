@@ -51,7 +51,7 @@ class ConcatTests: XCTestCase {
         } catch {
             XCTFail("Timed out")
         }
-        do {  _ = try await c1.task.value }
+        do {  _ = try await c1.value }
         catch { XCTFail("Should have completed") }
     }
 
@@ -122,8 +122,8 @@ class ConcatTests: XCTestCase {
             XCTFail("Timed out")
         }
         do {
-            _ = try await c1.task.value
-            _ = try await c2.task.value
+            _ = try await c1.value
+            _ = try await c2.value
         }
         catch { XCTFail("Should have completed") }
     }

@@ -63,7 +63,7 @@ class CancellationTests: XCTestCase {
             XCTFail("Timed out with count: \(await counter.count)")
         }
         do {
-            let _ = try await z1.task.value
+            let _ = try await z1.value
             XCTFail("Should have cancelled")
         }
         catch { }
@@ -150,8 +150,8 @@ class CancellationTests: XCTestCase {
             XCTFail("Timed out")
         }
         do {
-            let _ = try await z1.task.value
-            let _ = try await z2.task.value
+            let _ = try await z1.value
+            let _ = try await z2.value
             XCTFail("Should have cancelled")
         }
         catch { }
@@ -205,7 +205,7 @@ class CancellationTests: XCTestCase {
         do { try await FreeCombine.wait(for: expectation, timeout: 100_000_000) }
         catch { XCTFail("Timed out with count: \(await counter.count)") }
         do {
-            let _ = try await z1.task.value
+            let _ = try await z1.value
             XCTFail("Should have cancelled")
         }
         catch { }
