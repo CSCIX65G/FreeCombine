@@ -13,7 +13,7 @@ class SubjectTests: XCTestCase {
 
     override func tearDownWithError() throws { }
 
-    func testSimpleSubject() async throws {
+    func xtestSimpleSubject() async throws {
         let expectation = await CheckedExpectation<Void>()
 
         let subject = await CurrentValueSubject(

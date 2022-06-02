@@ -36,6 +36,20 @@ public struct DistributorState<Output: Sendable> {
         self.repeaters = downstreams
     }
 
+    static func complete(state: inout Self, completion: Reducer<Self, Self.Action>.Completion) async -> Void {
+        switch completion {
+            case .termination:
+                await state.process(currentRepeaters: state.repeaters, with: .completion(.finished))
+            case .exit:
+                fatalError("Distributor should never exit")
+            case .failure(_):
+                fatalError("Distributor should never report error")
+            case .cancel:
+                await state.process(currentRepeaters: state.repeaters, with: .completion(.cancelled))
+        }
+        for (_, repeater) in state.repeaters { repeater.finish() }
+        state.repeaters.removeAll()
+    }
 
     static func reduce(`self`: inout Self, action: Self.Action) async throws -> Reducer<Self, Action>.Effect {
         try await `self`.reduce(action: action)
@@ -58,7 +72,7 @@ public struct DistributorState<Output: Sendable> {
                             fatalError("Unable to remove subscriber for subject due to: \(queueStatus)")
                         }
                     }) {
-                        try await repeater.finalState.mostRecentDemand
+                        try await repeater.value.mostRecentDemand
                     } } )
                 } catch {
                     continuation?.resume(throwing: error)
