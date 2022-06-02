@@ -16,9 +16,8 @@ public func CurrentValueSubject<Output>(
         initialState: { channel in .init(channel: channel, currentValue: currentValue, nextKey: 0, downstreams: [:]) },
         onStartup: onStartup,
         onCancel: onCancel,
-        reducer: Reducer.init(
-            onCompletion: { _, _ in },
-            disposer: { _, _ in },
+        reducer: Reducer(
+            onCompletion: DistributorState<Output>.complete,
             reducer: DistributorState<Output>.reduce
         )
     )
@@ -33,9 +32,8 @@ public func CurrentValueSubject<Output>(
         channel: .init(buffering: buffering),
         initialState: { channel in .init(channel: channel, currentValue: currentValue, nextKey: 0, downstreams: [:]) },
         onCancel: onCancel,
-        reducer: Reducer.init(
-            onCompletion: { _, _ in },
-            disposer: { _, _ in },
+        reducer: Reducer(
+            onCompletion: DistributorState<Output>.complete,
             reducer: DistributorState<Output>.reduce
         )
     )

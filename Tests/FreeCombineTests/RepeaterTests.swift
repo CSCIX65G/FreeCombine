@@ -16,7 +16,7 @@ class RepeaterTests: XCTestCase {
 
     func testSimpleRepeater() async throws {
         let expectation = await CheckedExpectation<Void>()
-        let downstream: (AsyncStream<Int>.Result) async throws -> Demand = { result in
+        let downstream: @Sendable (AsyncStream<Int>.Result) async throws -> Demand = { result in
             switch result {
                 case .value:
                     return .more

@@ -15,7 +15,10 @@ public func PassthroughSubject<Output>(
         initialState: DistributorState<Output>.init,
         onStartup: onStartup,
         onCancel: onCancel,
-        reducer: Reducer(reducer: DistributorState<Output>.reduce)
+        reducer: Reducer(
+            onCompletion: DistributorState<Output>.complete,
+            reducer: DistributorState<Output>.reduce
+        )
     )
 }
 
@@ -28,6 +31,9 @@ public func PassthroughSubject<Output>(
         .stateTask(
             initialState: DistributorState<Output>.init,
             onCancel: onCancel,
-            reducer: Reducer(reducer: DistributorState<Output>.reduce)
+            reducer: Reducer(
+                onCompletion: DistributorState<Output>.complete,
+                reducer: DistributorState<Output>.reduce
+            )
         )
 }

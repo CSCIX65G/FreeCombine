@@ -46,7 +46,7 @@ public extension Publisher {
                     guard !Task.isCancelled else {
                         throw PublisherError.cancelled
                     }
-                    let finalState = try await stateTask.finalState
+                    let finalState = try await stateTask.value
                     let mostRecentDemand = finalState.mostRecentDemand
                     return mostRecentDemand
                 }

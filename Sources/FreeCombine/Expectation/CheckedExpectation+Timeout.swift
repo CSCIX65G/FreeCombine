@@ -62,7 +62,7 @@ public func wait<FinalResult, PartialResult, S: Sequence>(
             },
             reducer: Reducer(reducer: WaitState<FinalResult, PartialResult>.reduce)
         )
-        return try await stateTask.finalState.finalResult
+        return try await stateTask.value.finalResult
     }
     return try await reducingTask.value
 }

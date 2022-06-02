@@ -30,14 +30,14 @@ public enum PublisherError: Swift.Error, Sendable, CaseIterable {
     case enqueueError
 }
 
-public struct Publisher<Output> {
-    private let call: (
+public struct Publisher<Output: Sendable>: Sendable {
+    private let call: @Sendable (
         UnsafeContinuation<Void, Never>?,
         @Sendable @escaping (AsyncStream<Output>.Result) async throws -> Demand
     ) -> Cancellable<Demand>
 
     internal init(
-        _ call: @escaping (
+        _ call: @Sendable @escaping (
             UnsafeContinuation<Void, Never>?,
             @Sendable @escaping (AsyncStream<Output>.Result) async throws -> Demand
         ) -> Cancellable<Demand>

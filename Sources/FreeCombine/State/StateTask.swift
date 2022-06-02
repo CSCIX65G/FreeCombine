@@ -27,17 +27,20 @@
 
 public final class StateTask<State, Action: Sendable> {
     let channel: Channel<Action>
-    let task: Task<State, Swift.Error>
+    let cancellable: Cancellable<State>
 
-    fileprivate init(channel: Channel<Action>, task: Task<State, Swift.Error>) {
+    fileprivate init(channel: Channel<Action>, cancellable: Cancellable<State>) {
         self.channel = channel
-        self.task = task
+        self.cancellable = cancellable
     }
 
-    deinit { task.cancel() }
+    deinit {
+        finish()
+        cancel()
+    }
 
     @Sendable func cancel() -> Void {
-        task.cancel()
+        cancellable.cancel()
     }
 
     @Sendable func finish() -> Void {
@@ -48,26 +51,10 @@ public final class StateTask<State, Action: Sendable> {
         channel.yield(element)
     }
 
-    public var isCancelled: Bool {
-        task.isCancelled
-    }
-
-    public var value: State {
-        get async throws {
-            try await task.value
-        }
-    }
-
-    public var result: Result<State, Swift.Error> {
+    var result: Result<State, Swift.Error> {
         get async {
-            do { return .success(try await finalState) }
+            do { return .success(try await value) }
             catch { return .failure(error) }
-        }
-    }
-
-    public var finalState: State {
-        get async throws {
-            try await task.value
         }
     }
 }
@@ -82,7 +69,7 @@ extension StateTask {
     ) {
         self.init(
             channel: channel,
-            task: .init { try await withTaskCancellationHandler(handler: onCancel) {
+            cancellable: .init { try await withTaskCancellationHandler(handler: onCancel) {
                 var state = await initialState(channel)
                 onStartup?.resume()
                 do {
@@ -96,19 +83,16 @@ extension StateTask {
                             case .completion(.exit): throw PublisherError.completed
                             case let .completion(.failure(error)): throw error
                             case .completion(.termination): throw PublisherError.internalError
-                            case .completion(.cancel):
-                                throw PublisherError.cancelled
+                            case .completion(.cancel): throw PublisherError.cancelled
                         }
                     }
                     await reducer(&state, .termination)
                 } catch {
                     channel.finish()
-                    for await action in channel {
-                        reducer(action, .failure(error))
-                        continue
-                    }
+                    for await action in channel { reducer(action, .failure(error)); continue }
                     guard let completion = error as? PublisherError else {
-                        await reducer(&state, .failure(error)); throw error
+                        await reducer(&state, .failure(error))
+                        throw error
                     }
                     switch completion {
                         case .cancelled:
@@ -117,14 +101,26 @@ extension StateTask {
                         case .completed:
                             await reducer(&state, .exit)
                         case .internalError:
-                            throw PublisherError.internalError
+                            await reducer(&state, .failure(PublisherError.internalError))
+                            throw completion
                         case .enqueueError:
-                            throw PublisherError.enqueueError
+                            await reducer(&state, .failure(PublisherError.enqueueError))
+                            throw completion
                     }
                 }
                 return state
             } }
         )
+    }
+
+    public var isCancelled: Bool {
+        cancellable.isCancelled
+    }
+
+    public var value: State {
+        get async throws {
+            try await cancellable.value
+        }
     }
 }
 
