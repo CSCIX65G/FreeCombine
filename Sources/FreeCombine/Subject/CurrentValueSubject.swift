@@ -13,7 +13,7 @@ public func CurrentValueSubject<Output>(
 ) -> StateTask<DistributorState<Output>, DistributorState<Output>.Action> {
     .init(
         channel: .init(buffering: buffering),
-        initialState: { channel in .init(channel: channel, currentValue: currentValue, nextKey: 0, downstreams: [:]) },
+        initialState: { _ in .init(currentValue: currentValue, nextKey: 0, downstreams: [:]) },
         onStartup: onStartup,
         onCancel: onCancel,
         reducer: Reducer(
@@ -30,7 +30,7 @@ public func CurrentValueSubject<Output>(
 ) async -> StateTask<DistributorState<Output>, DistributorState<Output>.Action> {
     await .stateTask(
         channel: .init(buffering: buffering),
-        initialState: { channel in .init(channel: channel, currentValue: currentValue, nextKey: 0, downstreams: [:]) },
+        initialState: { channel in .init(currentValue: currentValue, nextKey: 0, downstreams: [:]) },
         onCancel: onCancel,
         reducer: Reducer(
             onCompletion: DistributorState<Output>.complete,

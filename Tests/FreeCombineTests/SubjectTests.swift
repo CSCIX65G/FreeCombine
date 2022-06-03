@@ -13,7 +13,7 @@ class SubjectTests: XCTestCase {
 
     override func tearDownWithError() throws { }
 
-    func xtestSimpleSubject() async throws {
+    func testSimpleSubject() async throws {
         let expectation = await CheckedExpectation<Void>()
 
         let subject = await CurrentValueSubject(
@@ -39,7 +39,9 @@ class SubjectTests: XCTestCase {
                     do {
                         try await expectation.complete()
                     }
-                    catch { XCTFail("Failed to complete: \(error)") }
+                    catch {
+                        XCTFail("Failed to complete: \(error)")
+                    }
                     return .done
                 case .completion(.cancelled):
                     XCTFail("Should not have cancelled")
@@ -56,16 +58,19 @@ class SubjectTests: XCTestCase {
             XCTFail("Caught error: \(error)")
         }
 
-        do { try await FreeCombine.wait(for: expectation, timeout: 100_000_000) }
+        do { _ =
+            try await subject.value
+            let demand = try await c1.value
+            XCTAssert(demand == .done, "Did not finish correctly")
+        }
+        catch { XCTFail("Should not have thrown") }
+        do {
+            try await FreeCombine.wait(for: expectation, timeout: 100_000_000)
+        }
         catch {
             let count = await counter.count
             XCTFail("Timed out, count = \(count)")
         }
-        do { _ =
-            try await subject.value
-            let _ = try await c1.value
-        }
-        catch { XCTFail("Should not have thrown") }
     }
 
     func testMultisubscriptionSubject() async throws {
@@ -127,25 +132,29 @@ class SubjectTests: XCTestCase {
             XCTFail("Caught error: \(error)")
         }
 
+        do { _ =
+            try await subject.value
+            let demand1 = try await c1.value
+            XCTAssert(demand1 == .done, "Did not finish c1 correctly")
+            let demand2 = try await c2.value
+            XCTAssert(demand2 == .done, "Did not finish c2 correctly")
+        }
+        catch { XCTFail("Should not have thrown") }
         do {
-            try await FreeCombine.wait(
-                for: [expectation1, expectation2],
-                timeout: 100_000_000,
-                reducing: (),
-                with: { _, _ in }
-            )
+            try await FreeCombine.wait(for: expectation1, timeout: 100_000_000)
+            try await FreeCombine.wait(for: expectation2, timeout: 100_000_000)
         }
         catch {
-            XCTFail("Timed out")
+            let count1 = await counter1.count
+            let count2 = await counter2.count
+            XCTFail("Timed out, count1 = \(count1), count2 = \(count2)")
         }
-        c1.cancel()
-        c2.cancel()
     }
 
-    func xtestSimpleCancellation() async throws {
+    func testSimpleCancellation() async throws {
         let counter = Counter()
         let expectation = await CheckedExpectation<Void>(name: "expectation")
-        let expectation2 = await CheckedExpectation<Void>(name: "expectation2")
+        let expectation3 = await CheckedExpectation<Void>(name: "expectation3")
         let release = await CheckedExpectation<Void>(name: "release")
 
         let subject = await PassthroughSubject(Int.self, buffering: .unbounded)
@@ -157,7 +166,10 @@ class SubjectTests: XCTestCase {
                     let count = await counter.increment()
                     XCTAssertEqual(value, count, "Wrong value sent")
                     if count == 8 {
-                        do { try await expectation.complete() }
+                        do {
+                            try await expectation.complete()
+                            return .more
+                        }
                         catch {  XCTFail("failed to complete") }
                         do {
                             try await release.value
@@ -179,7 +191,7 @@ class SubjectTests: XCTestCase {
                 case .completion(.finished):
                     return .done
                 case .completion(.cancelled):
-                    XCTFail("Should not have cancelled")
+                    try await expectation3.complete()
                     return .done
             }
         })
@@ -197,6 +209,7 @@ class SubjectTests: XCTestCase {
 
         can.cancel()
         try await release.complete()
+        try await FreeCombine.wait(for: expectation3, timeout: 100_000_000)
 
         do {
             try await subject.send(9)
@@ -205,13 +218,7 @@ class SubjectTests: XCTestCase {
             XCTFail("Failed to enqueue")
         }
         try await subject.finish()
-        try await expectation2.complete()
 
-        do {
-            try await FreeCombine.wait(for: expectation2, timeout: 100_000_000)
-        } catch {
-            XCTFail("Timed out")
-        }
     }
 
     func testSimpleTermination() async throws {

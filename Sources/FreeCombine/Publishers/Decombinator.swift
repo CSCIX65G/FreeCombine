@@ -25,28 +25,36 @@ public extension Publisher {
         stateTask: StateTask<DistributorState<Output>, DistributorState<Output>.Action>
     ) {
         self = .init { continuation, downstream in
-            .init {
-                let innerTask: Cancellable<Demand> = try await withUnsafeThrowingContinuation { demandContinuation in
-                    let enqueueStatus = stateTask.send(.subscribe(downstream, continuation, demandContinuation))
+            let t: Task<Cancellable<Demand>, Swift.Error> = .init {
+                let c: Cancellable<Demand> = try await withUnsafeThrowingContinuation { demandContinuation in
+                    let enqueueStatus = stateTask.send(.subscribe(downstream, demandContinuation))
                     guard case .enqueued = enqueueStatus else {
                         return demandContinuation.resume(throwing: PublisherError.enqueueError)
                     }
                 }
-                let cancellation: @Sendable () -> Void = {
-                    innerTask.cancel()
-                    onCancel()
-                }
-                return try await withTaskCancellationHandler(handler: cancellation) {
-                    switch await innerTask.result {
-                        case let .failure(error):
-                            if let error = error as? PublisherError,
-                                case error = PublisherError.cancelled { cancellation() }
-                            throw error
-                        case let .success(value):
-                            return value
+                continuation?.resume()
+                return c
+            }
+            return .init(
+                cancel: { Task {
+                    await t.result.map {
+                        $0.cancel()
+                    }
+                } },
+                isCancelled: { t.isCancelled },
+                value: {
+                    let cancellable = try await t.value
+                    let value = try await cancellable.value
+                    return value
+                },
+                result: {
+                    let r = await t.result
+                    switch r {
+                        case let .success(result):  return await result.result
+                        case let .failure(error): return .failure(error)
                     }
                 }
-            }
+            )
         }
     }
 }

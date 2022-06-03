@@ -62,17 +62,18 @@ public extension Publisher {
     ) -> Cancellable<Demand> {
         call(onStartup, { result in
             guard !Task.isCancelled else {
-                return try await f(.completion(.cancelled))
+                do { _ = try await f(.completion(.cancelled)) } catch { }
+                return .done
             }
             switch result {
                 case let .value(value):
                     return try await f(.value(value))
                 case let .completion(.failure(error)):
-                    do { return try await f(.completion(.failure(error))) }
-                    catch { throw error }
+                    do { _ = try await f(.completion(.failure(error))) } catch { }
+                    throw error
                 case .completion(.finished), .completion(.cancelled):
-                    do { return try await f(result) }
-                    catch { return .done }
+                    do { _ = try await f(result) } catch { }
+                    return .done
             }
         } )
     }

@@ -12,7 +12,7 @@ public func PassthroughSubject<Output>(
 ) -> StateTask<DistributorState<Output>, DistributorState<Output>.Action> {
     Channel.init(buffering: buffering)
     .stateTask(
-        initialState: DistributorState<Output>.init,
+        initialState: { channel in .init(currentValue: .none, nextKey: 0, downstreams: [:]) },
         onStartup: onStartup,
         onCancel: onCancel,
         reducer: Reducer(
@@ -29,7 +29,7 @@ public func PassthroughSubject<Output>(
 ) async -> StateTask<DistributorState<Output>, DistributorState<Output>.Action> {
     await Channel(buffering: buffering)
         .stateTask(
-            initialState: DistributorState<Output>.init,
+            initialState: { channel in .init(currentValue: .none, nextKey: 0, downstreams: [:]) },
             onCancel: onCancel,
             reducer: Reducer(
                 onCompletion: DistributorState<Output>.complete,

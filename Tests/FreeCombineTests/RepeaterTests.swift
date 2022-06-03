@@ -28,7 +28,7 @@ class RepeaterTests: XCTestCase {
         let nextKey = 1
         let _: Void = await withUnsafeContinuation { continuation in
             Task {
-                let repeaterState = await RepeaterState(id: nextKey, downstream: downstream)
+                let repeaterState = RepeaterState(id: nextKey, downstream: downstream)
                 let repeater: StateTask<RepeaterState<Int, Int>, RepeaterState<Int, Int>.Action> = .init(
                     channel: .init(buffering: .bufferingOldest(1)),
                     initialState: {_ in repeaterState },
