@@ -69,11 +69,9 @@ public extension Publisher {
                 case let .value(value):
                     return try await f(.value(value))
                 case let .completion(.failure(error)):
-                    do { _ = try await f(.completion(.failure(error))) } catch { }
-                    throw error
+                    return try await f(.completion(.failure(error)))
                 case .completion(.finished), .completion(.cancelled):
-                    do { _ = try await f(result) } catch { }
-                    return .done
+                    return try await f(result)
             }
         } )
     }
@@ -153,7 +151,11 @@ func flattener<B>(
     { b in switch b {
         case .completion(.finished):
             return .more
-        case .value, .completion(.failure), .completion(.cancelled):
+        case .value:
+            return try await downstream(b)
+        case .completion(.failure):
+            return try await downstream(b)
+        case .completion(.cancelled):
             return try await downstream(b)
     } }
 }

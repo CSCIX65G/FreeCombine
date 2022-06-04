@@ -64,7 +64,7 @@ class DistributorTests: XCTestCase {
         }
     }
 
-    func testSimpleSubscribeAndSend() async throws {
+    func xtestSimpleSubscribeAndSend() async throws {
         let counter = Counter()
         let expectation1: CheckedExpectation<Void> = await .init()
         let downstream1: @Sendable (AsyncStream<Int>.Result) async throws -> Demand = { result in

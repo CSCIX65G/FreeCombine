@@ -141,7 +141,7 @@ public struct DistributorState<Output: Sendable> {
                     let value = try await repeater.value
                     return value.mostRecentDemand
                 } catch {
-                    fatalError("Could not get demand")
+                    fatalError("Could not get demand.  Error: \(error)")
                 }
             },
             result: { await repeater.result.map(\.mostRecentDemand) }
