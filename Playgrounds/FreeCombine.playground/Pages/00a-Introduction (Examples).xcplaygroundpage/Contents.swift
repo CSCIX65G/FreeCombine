@@ -82,7 +82,7 @@ Task {
     try await fsubject2.send("hello, combined world!")
     try await fsubject1.finish()
     try await fsubject2.finish()
-    let finalDemand = try await fcancellable.task.value
+    let finalDemand = try await fcancellable.value
     print(finalDemand)
 }
 

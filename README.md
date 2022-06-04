@@ -2,6 +2,8 @@
 
 * Protocol-free.
 * Race-free.
+* Yield-free.
+* Sleep-free.
 * Lock-free.
 * Leak-free.
 * Dependency-free.
