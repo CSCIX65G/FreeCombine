@@ -13,7 +13,7 @@ public struct DistributorState<Output: Sendable> {
         case receive(AsyncStream<Output>.Result, UnsafeContinuation<Void, Never>?)
         case subscribe(
             @Sendable (AsyncStream<Output>.Result) async throws -> Demand,
-            UnsafeContinuation<Cancellable<Demand>, Swift.Error>?
+            UnsafeContinuation<Cancellable<Demand>, Swift.Error>
         )
         case unsubscribe(Int)
     }
@@ -64,7 +64,7 @@ public struct DistributorState<Output: Sendable> {
                 if let currentValue = currentValue, try await downstream(.value(currentValue)) == .done {
                     // FIXME: handle first value cancellation
                 }
-                continuation?.resume(returning: repeater)
+                continuation.resume(returning: repeater)
                 return .none
             case let .unsubscribe(channelId):
                 guard let downstream = repeaters.removeValue(forKey: channelId) else {
@@ -144,7 +144,9 @@ public struct DistributorState<Output: Sendable> {
                     fatalError("Could not get demand.  Error: \(error)")
                 }
             },
-            result: { await repeater.result.map(\.mostRecentDemand) }
+            result: {
+                await repeater.result.map(\.mostRecentDemand)
+            }
         )
     }
 }

@@ -64,7 +64,7 @@ class DistributorTests: XCTestCase {
         }
     }
 
-    func xtestSimpleSubscribeAndSend() async throws {
+    func testSimpleSubscribeAndSend() async throws {
         let counter = Counter()
         let expectation1: CheckedExpectation<Void> = await .init()
         let downstream1: @Sendable (AsyncStream<Int>.Result) async throws -> Demand = { result in
@@ -98,15 +98,29 @@ class DistributorTests: XCTestCase {
             }
         }
 
+        let taskSync = await CheckedExpectation<Void>()
         var t: Task<Void, Swift.Error>!
+        let distributorValue = ValueRef(value: DistributorState(currentValue: 13, nextKey: 0, downstreams: [:]))
         let _: Void = await withUnsafeContinuation { c in
             t = Task {
-                let cancellable: Cancellable<Demand> = try await withUnsafeThrowingContinuation { taskC in
+                let cancellable1: Cancellable<Demand> = try await withUnsafeThrowingContinuation { taskC in
                     Task {
                         do {
-                            var distributor = DistributorState(currentValue: 13, nextKey: 0, downstreams: [:])
+                            var distributor = await distributorValue.value
                             XCTAssert(distributor.repeaters.count == 0, "Incorrect number of repeaters = \(distributor.repeaters.count)")
-                            _ = try await distributor.reduce(action: .subscribe(downstream1, .none))
+                            _ = try await distributor.reduce(action: .subscribe(downstream1, taskC))
+                            await distributorValue.set(value: distributor)
+                            _ = try await taskSync.complete()
+                        } catch {
+                            XCTFail("Caught: \(error)")
+                        }
+                    }
+                }
+                let cancellable2: Cancellable<Demand> = try await withUnsafeThrowingContinuation { taskC in
+                    Task {
+                        do {
+                            _ = try await taskSync.value
+                            var distributor = await distributorValue.value
                             XCTAssert(distributor.repeaters.count == 1, "Incorrect number of repeaters = \(distributor.repeaters.count)")
                             _ = try await distributor.reduce(action: .subscribe(downstream2, taskC))
                             XCTAssert(distributor.repeaters.count == 2, "Incorrect number of repeaters = \(distributor.repeaters.count)")
@@ -117,14 +131,18 @@ class DistributorTests: XCTestCase {
                             XCTAssert(count2 == 4, "Incorrect number of sends: \(count2)")
                             _ = try await distributor.reduce(action: .receive(.completion(.finished), c))
                             XCTAssert(distributor.repeaters.count == 0, "Incorrect number of repeaters = \(distributor.repeaters.count)")
+                            await distributorValue.set(value: distributor)
                         } catch {
                             XCTFail("Caught: \(error)")
                         }
                     }
                 }
-                cancellable.cancel()
-                _ = try await cancellable.value
-                c.resume()
+                do {
+                    _ = try await cancellable1.value
+                    _ = try await cancellable2.value
+                } catch {
+                    XCTFail("Failed to complete tasks")
+                }
             }
         }
         do {
@@ -139,6 +157,8 @@ class DistributorTests: XCTestCase {
         do {
             _ = try await t.value
         }
-        catch { XCTFail("Should have completed") }
+        catch {
+            XCTFail("Should have completed")
+        }
     }
 }
