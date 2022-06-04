@@ -1,3 +1,5 @@
+[edit](https://github.com/CSCIX65G/FreeCombine/edit/gh-pages/index.md)
+
 # FreeCombine
 
 - Protocol-free.
