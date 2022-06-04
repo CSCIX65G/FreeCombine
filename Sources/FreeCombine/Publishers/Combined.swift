@@ -7,30 +7,26 @@
 
 public extension Publisher {
     func combineLatest<Other>(
-        onCancel: @escaping () -> Void = { },
         _ other: Publisher<Other>
     ) -> Publisher<(Output?, Other?)> {
-        Combined(onCancel: onCancel, self, other)
+        Combined(self, other)
     }
 }
 
 public func Combined<Left, Right>(
-    onCancel: @escaping () -> Void = { },
     _ left: Publisher<Left>,
     _ right: Publisher<Right>
 ) -> Publisher<(Left?, Right?)> {
-    combineLatest(onCancel: onCancel, left, right)
+    combineLatest(left, right)
 }
 
 public func combineLatest<Left, Right>(
-    onCancel: @escaping () -> Void = { },
     _ left: Publisher<Left>,
     _ right: Publisher<Right>
 ) -> Publisher<(Left?, Right?)> {
     .init(
         initialState: CombineLatestState<Left, Right>.create(left: left, right: right),
         buffering: .bufferingOldest(2),
-        onCancel: onCancel,
         reducer: Reducer(
             onCompletion: CombineLatestState<Left, Right>.complete,
             reducer: CombineLatestState<Left, Right>.reduce
@@ -39,40 +35,36 @@ public func combineLatest<Left, Right>(
 }
 
 public func combineLatest<A, B, C>(
-    onCancel: @escaping () -> Void = { },
     _ one: Publisher<A>,
     _ two: Publisher<B>,
     _ three: Publisher<C>
 ) -> Publisher<(A?, B?, C?)> {
-    combineLatest(onCancel: onCancel, combineLatest(one, two), three)
+    combineLatest(combineLatest(one, two), three)
         .map { ($0.0?.0, $0.0?.1, $0.1) }
 }
 
 public func combineLatest<A, B, C, D>(
-    onCancel: @escaping () -> Void = { },
     _ one: Publisher<A>,
     _ two: Publisher<B>,
     _ three: Publisher<C>,
     _ four: Publisher<D>
 ) -> Publisher<(A?, B?, C?, D?)> {
-    combineLatest(onCancel: onCancel, combineLatest(one, two), combineLatest(three, four))
+    combineLatest(combineLatest(one, two), combineLatest(three, four))
         .map { ($0.0?.0, $0.0?.1, $0.1?.0, $0.1?.1) }
 }
 
 public func combineLatest<A, B, C, D, E>(
-    onCancel: @escaping () -> Void = { },
     _ one: Publisher<A>,
     _ two: Publisher<B>,
     _ three: Publisher<C>,
     _ four: Publisher<D>,
     _ five: Publisher<E>
 ) -> Publisher<(A?, B?, C?, D?, E?)> {
-    combineLatest(onCancel: onCancel, combineLatest(combineLatest(one, two), combineLatest(three, four)), five)
+    combineLatest(combineLatest(combineLatest(one, two), combineLatest(three, four)), five)
         .map { ($0.0?.0?.0, $0.0?.0?.1, $0.0?.1?.0, $0.0?.1?.1, $0.1) }
 }
 
 public func combineLatest<A, B, C, D, E, F>(
-    onCancel: @escaping () -> Void = { },
     _ one: Publisher<A>,
     _ two: Publisher<B>,
     _ three: Publisher<C>,
@@ -80,12 +72,11 @@ public func combineLatest<A, B, C, D, E, F>(
     _ five: Publisher<E>,
     _ six: Publisher<F>
 ) -> Publisher<(A?, B?, C?, D?, E?, F?)> {
-    combineLatest(onCancel: onCancel, combineLatest(combineLatest(one, two), combineLatest(three, four)), combineLatest(five, six))
+    combineLatest(combineLatest(combineLatest(one, two), combineLatest(three, four)), combineLatest(five, six))
         .map { ($0.0?.0?.0, $0.0?.0?.1, $0.0?.1?.0, $0.0?.1?.1, $0.1?.0, $0.1?.1) }
 }
 
 public func combineLatest<A, B, C, D, E, F, G>(
-    onCancel: @escaping () -> Void = { },
     _ one: Publisher<A>,
     _ two: Publisher<B>,
     _ three: Publisher<C>,
@@ -94,12 +85,11 @@ public func combineLatest<A, B, C, D, E, F, G>(
     _ six: Publisher<F>,
     _ seven: Publisher<G>
 ) -> Publisher<(A?, B?, C?, D?, E?, F?, G?)> {
-    combineLatest(onCancel: onCancel, combineLatest(combineLatest(one, two), combineLatest(three, four)), combineLatest(combineLatest(five, six), seven))
+    combineLatest(combineLatest(combineLatest(one, two), combineLatest(three, four)), combineLatest(combineLatest(five, six), seven))
         .map { ($0.0?.0?.0, $0.0?.0?.1, $0.0?.1?.0, $0.0?.1?.1, $0.1?.0?.0, $0.1?.0?.1, $0.1?.1) }
 }
 
 public func combineLatest<A, B, C, D, E, F, G, H>(
-    onCancel: @escaping () -> Void = { },
     _ one: Publisher<A>,
     _ two: Publisher<B>,
     _ three: Publisher<C>,
@@ -109,6 +99,6 @@ public func combineLatest<A, B, C, D, E, F, G, H>(
     _ seven: Publisher<G>,
     _ eight: Publisher<H>
 ) -> Publisher<(A?, B?, C?, D?, E?, F?, G?, H?)> {
-    combineLatest(onCancel: onCancel, combineLatest(combineLatest(one, two), combineLatest(three, four)), combineLatest(combineLatest(five, six), combineLatest(seven, eight)))
+    combineLatest(combineLatest(combineLatest(one, two), combineLatest(three, four)), combineLatest(combineLatest(five, six), combineLatest(seven, eight)))
         .map { ($0.0?.0?.0, $0.0?.0?.1, $0.0?.1?.0, $0.0?.1?.1, $0.1?.0?.0, $0.1?.0?.1, $0.1?.1?.0, $0.1?.1?.1) }
 }

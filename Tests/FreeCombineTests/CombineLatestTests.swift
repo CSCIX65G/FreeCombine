@@ -204,15 +204,15 @@ class CombineLatestTests: XCTestCase {
         let expectation1 = await CheckedExpectation<Void>()
         let expectation2 = await CheckedExpectation<Void>()
 
-        let p1 = Unfolded(0 ... 100)
+        let p1 = Unfolded(0 ..< 100)
         let p2 = Unfolded("abcdefghijklmnopqrstuvwxyz")
-        let p3 = Unfolded(0 ... 100)
+        let p3 = Unfolded(0 ..< 100)
         let p4 = Unfolded("abcdefghijklmnopqrstuvwxyz")
 
-        let combineLatestped = combineLatest(p1, p2, p3, p4)
+        let combineLatest = combineLatest(p1, p2, p3, p4)
 
         let count1 = Counter()
-        let z1 = await combineLatestped
+        let z1 = await combineLatest
             .map { v in
                 ((v.0 ?? 0) + 100, (v.1 ?? Character(" ")).uppercased(), (v.2 ?? 0) + 110, v.3 ?? Character(" "))
             }
@@ -226,7 +226,7 @@ class CombineLatestTests: XCTestCase {
                         return .done
                     case .completion(.finished):
                         let count = await count1.count
-                        XCTAssert(count == 254, "wrong number of values sent: \(count)")
+                        XCTAssert(count == 252, "wrong number of values sent: \(count)")
                         try await expectation1.complete()
                         return .done
                     case .completion(.cancelled):
@@ -236,7 +236,7 @@ class CombineLatestTests: XCTestCase {
             })
 
         let count2 = Counter()
-        let z2 = await combineLatestped
+        let z2 = await combineLatest
             .map { v in
                 ((v.0 ?? 0) + 100, (v.1 ?? Character(" ")).uppercased(), (v.2 ?? 0) + 110, v.3 ?? Character(" "))
             }
@@ -250,7 +250,7 @@ class CombineLatestTests: XCTestCase {
                         return .more
                     case .completion(.finished):
                         let count = await count2.count
-                        XCTAssert(count == 254, "wrong number of values sent: \(count)")
+                        XCTAssert(count == 252, "wrong number of values sent: \(count)")
                         try await expectation2.complete()
                         return .done
                     case .completion(.cancelled):

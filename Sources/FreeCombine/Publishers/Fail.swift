@@ -5,24 +5,20 @@
 //  Created by Van Simmons on 5/18/22.
 //
 public func Fail<Element>(
-    onCancel: @Sendable @escaping () -> Void = { },
     _ t: Element.Type = Element.self,
     _ e: Swift.Error
 ) -> Publisher<Element> {
-    .init(onCancel: onCancel, t, e)
+    .init(t, e)
 }
 
 public extension Publisher {
     init(
-        onCancel: @Sendable @escaping () -> Void = { },
         _: Output.Type = Output.self,
         _ error: Swift.Error
     ) {
         self = .init { continuation, downstream in
             .init {
-                try await withTaskCancellationHandler(handler: onCancel) {
-                    return try await downstream(.completion(.failure(error)))
-                }
+                try await downstream(.completion(.failure(error)))
             }
         }
     }

@@ -10,54 +10,41 @@ public extension Sequence {
     }
 }
 
-public func Unfolded<S: Sequence>(
-    onCancel: @Sendable @escaping () -> Void = { },
-    _ sequence: S
-) -> Publisher<S.Element> {
-    .init(onCancel: onCancel, sequence)
+public func Unfolded<S: Sequence>(_ sequence: S) -> Publisher<S.Element> {
+    .init(sequence)
 }
 
 public extension Publisher {
-    init<S: Sequence>(
-        onCancel: @Sendable @escaping () -> Void,
-        _ sequence: S
-    ) where S.Element == Output {
+    init<S: Sequence>(_ sequence: S) where S.Element == Output {
         self = .init { continuation, downstream in
             Cancellable<Demand> {
                 continuation?.resume()
-                return try await withTaskCancellationHandler(handler: onCancel) {
-                    for a in sequence {
-                        guard !Task.isCancelled else {
-                            return try await downstream(.completion(.failure(PublisherError.cancelled)))
-                        }
-                        guard try await downstream(.value(a)) == .more else { return .done }
-                    }
+                for a in sequence {
                     guard !Task.isCancelled else {
                         return try await downstream(.completion(.failure(PublisherError.cancelled)))
                     }
-                    return try await downstream(.completion(.finished))
+                    guard try await downstream(.value(a)) == .more else { return .done }
                 }
+                guard !Task.isCancelled else {
+                    return try await downstream(.completion(.failure(PublisherError.cancelled)))
+                }
+                return try await downstream(.completion(.finished))
             }
         }
     }
 }
 
 public func Unfolded<Element>(
-    onCancel: @Sendable @escaping () -> Void = { },
     _ generator: @escaping () -> Element?
 ) -> Publisher<Element> {
-    .init(onCancel: onCancel, generator)
+    .init(generator)
 }
 
 public extension Publisher {
-    init(
-        onCancel: @Sendable @escaping () -> Void = { },
-        _ generator: @escaping () async throws -> Output?
-    ) {
+    init(_ generator: @escaping () async throws -> Output?) {
         self = .init { continuation, downstream in
-            .init {
-                continuation?.resume()
-                return try await withTaskCancellationHandler(handler: onCancel) {
+                .init {
+                    continuation?.resume()
                     while let a = try await generator() {
                         guard !Task.isCancelled else {
                             return try await downstream(.completion(.failure(PublisherError.cancelled)))
@@ -69,7 +56,6 @@ public extension Publisher {
                     }
                     return try await downstream(.completion(.finished))
                 }
-            }
         }
     }
 }

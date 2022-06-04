@@ -5,11 +5,10 @@
 //  Created by Van Simmons on 5/26/22.
 //
 public func FireAndForget<Element>(
-    onCancel: @Sendable @escaping () -> Void = { },
     _ elementType: Element.Type = Element.self,
     operation: @escaping () async throws -> Void
 ) -> Publisher<Element> {
-    .init(onCancel: onCancel, elementType)
+    .init(elementType)
 }
 
 public extension Publisher {
@@ -18,7 +17,6 @@ public extension Publisher {
     }
 
     init(
-        onCancel: @Sendable @escaping () -> Void = { },
         _: Output.Type = Output.self,
         operation: @escaping () async throws -> Void
     ) {
