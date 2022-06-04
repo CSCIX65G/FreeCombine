@@ -5,8 +5,10 @@ import PackageDescription
 let package = Package(
     name: "FreeCombine",
     platforms: [
-        .iOS(.v15),
-        .macOS(.v12)
+        .iOS(.v13),
+        .macOS(.v10_15),
+        .watchOS(.v6),
+        .tvOS(.v13)
     ],
     products: [
         .library(
