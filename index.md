@@ -1,37 +1,25 @@
-## Welcome to GitHub Pages
+# FreeCombine
 
-You can use the [editor on GitHub](https://github.com/CSCIX65G/FreeCombine/edit/gh-pages/index.md) to maintain and preview the content for your website in Markdown files.
+- Protocol-free.
+- Race-free.
+- Yield-free.
+- Sleep-free.
+- Lock-free.
+- Leak-free.
+- Dependency-free.
 
-Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://jekyllrb.com/) to rebuild the pages in your site, from the content in your Markdown files.
+## Salient features
 
-### Markdown
+1. "Small things that compose"
+2. Futures _AND_ Streams
 
-Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
+## Todo
 
-```markdown
-Syntax highlighted code block
-
-# Header 1
-## Header 2
-### Header 3
-
-- Bulleted
-- List
-
-1. Numbered
-2. List
-
-**Bold** and _Italic_ and `Code` text
-
-[Link](url) and ![Image](src)
-```
-
-For more details see [Basic writing and formatting syntax](https://docs.github.com/en/github/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax).
-
-### Jekyll Themes
-
-Your Pages site will use the layout and styles from the Jekyll theme you have selected in your [repository settings](https://github.com/CSCIX65G/FreeCombine/settings/pages). The name of this theme is saved in the Jekyll `_config.yml` configuration file.
-
-### Support or Contact
-
-Having trouble with Pages? Check out our [documentation](https://docs.github.com/categories/github-pages-basics/) or [contact support](https://support.github.com/contact) and we’ll help you sort it out.
+1. maybe add an additional repo (FreeCombineDispatch) that depends on libdispatch to get delay, debounce, throttle
+2. revamp StateThread to be exactly a concurrency aware version of TCA's store
+3. Add support for Promise/Future
+4. Add a repo which implements asyncPublishers for everything in Foundation that currently has a `publisher`
+5. fully implement all Combine operators
+6. Add a Buffer publisher/operator to reintroduce a push model via an independent source of demand upstream
+7. Get to 100% test coverage
+8. Document this at the level of writing a book in the form of playgrounds
