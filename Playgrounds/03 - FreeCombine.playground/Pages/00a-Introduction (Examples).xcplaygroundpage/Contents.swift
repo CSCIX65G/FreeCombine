@@ -55,8 +55,8 @@ import FreeCombine
 import _Concurrency
 
 Task {
-    let fsubject1 = await FreeCombine.PassthroughSubject(Int.self)
-    let fsubject2 = await FreeCombine.PassthroughSubject(String.self)
+    let fsubject1 = await PassthroughSubject(Int.self)
+    let fsubject2 = await PassthroughSubject(String.self)
 
     let fseq1 = "abcdefghijklmnopqrstuvwxyz".asyncPublisher
     let fseq2 = (1 ... 100).asyncPublisher

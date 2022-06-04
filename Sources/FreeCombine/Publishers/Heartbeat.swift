@@ -6,19 +6,17 @@
 //
 import Dispatch
 public func Heartbeat(
-    onCancel: @Sendable @escaping () -> Void = { },
     interval: Duration
 ) -> Publisher<UInt64> {
-    .init(onCancel: onCancel, interval: interval)
+    .init(interval: interval)
 }
 
 public extension Publisher where Output == UInt64 {
     init(
-        onCancel: @Sendable @escaping () -> Void = { },
         interval: Duration
     ) {
         self = Publisher<UInt64> { continuation, downstream  in
-            .init { try await withTaskCancellationHandler(handler: onCancel) {
+            .init {
                 let startTime = DispatchTime.now().uptimeNanoseconds
                 var ticks: UInt64 = 0
                 continuation?.resume()
@@ -35,7 +33,7 @@ public extension Publisher where Output == UInt64 {
                         case .more: try? await Task.sleep(nanoseconds: nextTime - currentTime)
                     }
                 }
-            } }
+            }
         }
     }
 }

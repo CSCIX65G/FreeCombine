@@ -19,13 +19,11 @@ public struct Channel<Element>: AsyncSequence {
 
     public init(
         _: Element.Type = Element.self,
-        buffering: AsyncStream<Element>.Continuation.BufferingPolicy = .bufferingOldest(1),
-        onTermination: (@Sendable (AsyncStream<Element>.Continuation.Termination) -> Void)? = .none
+        buffering: AsyncStream<Element>.Continuation.BufferingPolicy = .bufferingOldest(1)
     ) {
         var localContinuation: AsyncStream<Element>.Continuation! = .none
         stream = .init(bufferingPolicy: buffering) { continuation in
             localContinuation = continuation
-            localContinuation.onTermination = onTermination
         }
         continuation = localContinuation
     }
@@ -79,7 +77,6 @@ public extension Channel {
 
     func stateTask<State>(
         initialState: @escaping (Self) async -> State,
-        onCancel: @Sendable @escaping () -> Void = { },
         reducer: Reducer<State, Self.Element>
     ) async -> StateTask<State, Self.Element> {
         var stateTask: StateTask<State, Self.Element>!
@@ -88,7 +85,6 @@ public extension Channel {
                 channel: self,
                 initialState: initialState,
                 onStartup: stateTaskContinuation,
-                onCancel: onCancel,
                 reducer: reducer
             )
         }
@@ -98,14 +94,12 @@ public extension Channel {
     func stateTask<State>(
         initialState: @escaping (Self) async -> State,
         onStartup: UnsafeContinuation<Void, Never>? = .none,
-        onCancel: @Sendable @escaping () -> Void = { },
         reducer: Reducer<State, Self.Element>
     ) -> StateTask<State, Self.Element> {
         .init(
             channel: self,
             initialState: initialState,
             onStartup: onStartup,
-            onCancel: onCancel,
             reducer: reducer
         )
     }

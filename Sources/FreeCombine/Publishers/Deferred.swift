@@ -4,46 +4,36 @@
 //
 //  Created by Van Simmons on 5/18/22.
 //
-public func Deferred<Element>(
-    onCancel: @Sendable @escaping () -> Void = { },
-    from flattable: Publisher<Element>
-) -> Publisher<Element> {
-    .init(onCancel: onCancel, from: flattable)
+public func Deferred<Element>(from flattable: Publisher<Element>) -> Publisher<Element> {
+    .init(from: flattable)
 }
 
 extension Publisher {
-    init(
-        onCancel: @Sendable @escaping () -> Void = { },
-        from flattable: Publisher<Output>
-    ) {
+    init(from flattable: Publisher<Output>) {
         self = .init { continuation, downstream in
-            .init{ try await withTaskCancellationHandler(handler: onCancel) {
+            .init {
                 continuation?.resume()
                 return try await flattable(downstream).value
-            } }
+            }
         }
     }
 }
 
 public func Deferred<Element>(
-    onCancel: @Sendable @escaping () -> Void = { },
     flattener: @escaping () async -> Publisher<Element>
 ) -> Publisher<Element> {
-    .init(onCancel: onCancel, from: flattener)
+    .init(from: flattener)
 }
 
 extension Publisher {
-    init(
-        onCancel: @Sendable @escaping () -> Void = { },
-        from flattener: @escaping () async throws -> Publisher<Output>
-    ) {
+    init(from flattener: @escaping () async throws -> Publisher<Output>) {
         self = .init { continuation, downstream in
-            .init { try await withTaskCancellationHandler(handler: onCancel) {
+            .init {
                 continuation?.resume()
                 let p = try await flattener()
                 let c = await p(downstream)
                 return try await c.value
-            } }
+            }
         }
     }
 }

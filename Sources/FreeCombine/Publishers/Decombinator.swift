@@ -6,22 +6,19 @@
 //
 public extension StateTask {
     func publisher<Output: Sendable>(
-        onCancel: @Sendable @escaping () -> Void = { }
     ) -> Publisher<Output> where State == DistributorState<Output>, Action == DistributorState<Output>.Action {
-        .init(onCancel: onCancel, stateTask: self)
+        .init(stateTask: self)
     }
 }
 
 public func Decombinator<Output>(
-    onCancel: @Sendable @escaping () -> Void = { },
     stateTask: StateTask<DistributorState<Output>, DistributorState<Output>.Action>
 ) -> Publisher<Output> {
-    .init(onCancel: onCancel, stateTask: stateTask)
+    .init(stateTask: stateTask)
 }
 
 public extension Publisher {
     init(
-        onCancel: @Sendable @escaping () -> Void = { },
         stateTask: StateTask<DistributorState<Output>, DistributorState<Output>.Action>
     ) {
         self = .init { continuation, downstream in

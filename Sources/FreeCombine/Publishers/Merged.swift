@@ -7,43 +7,38 @@
 
 public extension Publisher {
     func merge(
-        onCancel: @escaping () -> Void = { },
         with upstream2: Publisher<Output>,
         _ otherUpstreams: Publisher<Output>...
     ) -> Publisher<Output> {
-        Merged(onCancel: onCancel, self, upstream2, otherUpstreams)
+        Merged(self, upstream2, otherUpstreams)
     }
 }
 
 public func Merged<Output>(
-    onCancel: @escaping () -> Void = { },
     _ upstream1: Publisher<Output>,
     _ upstream2: Publisher<Output>,
     _ otherUpstreams: [Publisher<Output>]
 ) -> Publisher<Output> {
-    merge(onCancel: onCancel, publishers: upstream1, upstream2, otherUpstreams)
+    merge(publishers: upstream1, upstream2, otherUpstreams)
 }
 
 public func Merged<Output>(
-    onCancel: @escaping () -> Void = { },
     _ upstream1: Publisher<Output>,
     _ upstream2: Publisher<Output>,
     _ otherUpstreams: Publisher<Output>...
 ) -> Publisher<Output> {
-    merge(onCancel: onCancel, publishers: upstream1, upstream2, otherUpstreams)
+    merge(publishers: upstream1, upstream2, otherUpstreams)
 }
 
 public func merge<Output>(
-    onCancel: @escaping () -> Void = { },
     publishers upstream1: Publisher<Output>,
     _ upstream2: Publisher<Output>,
     _ otherUpstreams: Publisher<Output>...
 ) -> Publisher<Output> {
-    merge(onCancel: onCancel, publishers: upstream1, upstream2, otherUpstreams)
+    merge(publishers: upstream1, upstream2, otherUpstreams)
 }
 
 public func merge<Output>(
-    onCancel: @escaping () -> Void = { },
     publishers upstream1: Publisher<Output>,
     _ upstream2: Publisher<Output>,
     _ otherUpstreams: [Publisher<Output>]
@@ -51,7 +46,6 @@ public func merge<Output>(
     .init(
         initialState: MergeState<Output>.create(upstreams: upstream1, upstream2, otherUpstreams),
         buffering: .bufferingOldest(2 + otherUpstreams.count),
-        onCancel: onCancel,
         reducer: Reducer(
             onCompletion: MergeState<Output>.complete,
             disposer: { action, error in
@@ -63,4 +57,3 @@ public func merge<Output>(
         )
     )
 }
-
