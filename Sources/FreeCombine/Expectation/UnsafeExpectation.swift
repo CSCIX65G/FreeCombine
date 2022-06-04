@@ -25,33 +25,14 @@ public class UnsafeExpectation<Arg> {
         cancel()
     }
 
-    public var isCancelled: Bool {
-        task.isCancelled
-    }
-
-    public var result: Result<Arg, Swift.Error> {
-        get async { await task.result }
-    }
-
-    public var value: Arg {
-        get async throws { try await task.value }
-    }
-
-    public func cancel() -> Void {
-        task.cancel()
-    }
-
-    public func complete(_ arg: Arg) -> Void {
-        resumption.resume(returning: arg)
-    }
-
-    public func fail(_ error: Error) throws -> Void {
-        resumption.resume(throwing: error)
-    }
+    public var isCancelled: Bool { task.isCancelled }
+    public var result: Result<Arg, Swift.Error> { get async { await task.result } }
+    public var value: Arg { get async throws { try await task.value } }
+    public func cancel() -> Void { task.cancel() }
+    public func complete(_ arg: Arg) -> Void { resumption.resume(returning: arg) }
+    public func fail(_ error: Error) throws -> Void { resumption.resume(throwing: error) }
 }
 
 extension UnsafeExpectation where Arg == Void {
-    public func complete() -> Void {
-        resumption.resume(returning: ())
-    }
+    public func complete() -> Void { resumption.resume(returning: ()) }
 }

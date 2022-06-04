@@ -116,7 +116,7 @@ class JustTests: XCTestCase {
         }
 
         do {
-            let finalDemand = try await t.task.value
+            let finalDemand = try await t.value
             XCTAssert(finalDemand == .done, "Incorrect return")
         } catch {
             XCTFail("Errored out")

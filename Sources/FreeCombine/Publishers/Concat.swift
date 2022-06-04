@@ -28,7 +28,7 @@ public extension Publisher {
                 continuation?.resume()
                 for p in publishers {
                     let t = await p(flattenedDownstream)
-                    guard try await t.task.value == .more else { return .done }
+                    guard try await t.value == .more else { return .done }
                 }
                 return try await downstream(.completion(.finished))
             } }
@@ -70,7 +70,7 @@ public extension Publisher {
                 continuation?.resume()
                 while let p = await flattening() {
                     let t = await p(flattenedDownstream)
-                    guard try await t.task.value == .more else { return .done }
+                    guard try await t.value == .more else { return .done }
                 }
                 return try await downstream(.completion(.finished))
             } }

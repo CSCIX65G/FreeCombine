@@ -6,23 +6,60 @@
 //
 
 public final class Cancellable<Output: Sendable>: Sendable {
-    public let task: Task<Output, Swift.Error>
+    private let _cancel: @Sendable () -> Void
+    private let _isCancelled: @Sendable () -> Bool
+    private let _value: @Sendable () async throws -> Output
+    private let _result: @Sendable () async -> Result<Output, Swift.Error>
 
-    public init(task: Task<Output, Swift.Error>) {
-        self.task = task
+    public var isCancelled: Bool {  _isCancelled() }
+    public var value: Output {  get async throws { try await _value() } }
+    public var result: Result<Output, Swift.Error> {  get async { await _result() } }
+
+    @Sendable public func cancel() -> Void { _cancel() }
+    @Sendable public func cancelAndAwaitValue() async throws -> Output {
+        _cancel()
+        return try await _value()
+    }
+    @Sendable public func cancelAndAwaitResult() async throws -> Result<Output, Swift.Error> {
+        _cancel()
+        return await _result()
     }
 
-    public init(task: @Sendable @escaping () async throws -> Output) {
-        self.task = Task.init(operation: task)
+    init(
+        cancel: @escaping @Sendable () -> Void,
+        isCancelled: @escaping @Sendable () -> Bool,
+        value: @escaping @Sendable () async throws -> Output,
+        result: @escaping @Sendable () async -> Result<Output, Swift.Error>
+    ) {
+        _cancel = cancel
+        _isCancelled = isCancelled
+        _value = value
+        _result = result
     }
 
-    public func cancel() {
-        task.cancel()
+    deinit { if !self.isCancelled { self.cancel() } }
+}
+
+public extension Cancellable {
+    convenience init(task: Task<Output, Swift.Error>) {
+        self.init(
+            cancel: { task.cancel() },
+            isCancelled: { task.isCancelled },
+            value: { try await task.value },
+            result: { await task.result }
+        )
     }
 
-    deinit {
-        if !self.task.isCancelled {
-            self.task.cancel()
-        }
+    convenience init<Action: Sendable>(stateTask: StateTask<Output, Action>) {
+        self.init(
+            cancel: { stateTask.cancel() },
+            isCancelled: { stateTask.isCancelled },
+            value: { try await stateTask.value },
+            result: { await stateTask.result }
+        )
+    }
+
+    convenience init(task: @Sendable @escaping () async throws -> Output) {
+        self.init(task: Task.init(operation: task))
     }
 }

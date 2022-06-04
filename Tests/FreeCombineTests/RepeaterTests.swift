@@ -16,7 +16,7 @@ class RepeaterTests: XCTestCase {
 
     func testSimpleRepeater() async throws {
         let expectation = await CheckedExpectation<Void>()
-        let downstream: (AsyncStream<Int>.Result) async throws -> Demand = { result in
+        let downstream: @Sendable (AsyncStream<Int>.Result) async throws -> Demand = { result in
             switch result {
                 case .value:
                     return .more
@@ -28,7 +28,7 @@ class RepeaterTests: XCTestCase {
         let nextKey = 1
         let _: Void = await withUnsafeContinuation { continuation in
             Task {
-                let repeaterState = await RepeaterState(id: nextKey, downstream: downstream)
+                let repeaterState = RepeaterState(id: nextKey, downstream: downstream)
                 let repeater: StateTask<RepeaterState<Int, Int>, RepeaterState<Int, Int>.Action> = .init(
                     channel: .init(buffering: .bufferingOldest(1)),
                     initialState: {_ in repeaterState },

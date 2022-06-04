@@ -53,7 +53,7 @@ class CancellationTests: XCTestCase {
                 }
                 return .more
             }
-        // Provide time for some values to be sent so that the task hangs for cancellation
+
         try await startup.value
         z1.cancel()
         try await waiter.complete()
@@ -62,13 +62,19 @@ class CancellationTests: XCTestCase {
         catch {
             XCTFail("Timed out with count: \(await counter.count)")
         }
+        do {
+            let _ = try await z1.value
+            XCTFail("Should have cancelled")
+        }
+        catch { }
     }
 
     func testMultiZipCancellation() async throws {
         let expectation = await CheckedExpectation<Void>()
         let expectation2 = await CheckedExpectation<Void>()
         let waiter = await CheckedExpectation<Void>()
-        let startup = await CheckedExpectation<Void>()
+        let startup1 = await CheckedExpectation<Void>()
+        let startup2 = await CheckedExpectation<Void>()
 
         let publisher1 = Unfolded(0 ... 100)
         let publisher2 = Unfolded("abcdefghijklmnopqrstuvwxyz")
@@ -81,7 +87,10 @@ class CancellationTests: XCTestCase {
         let z1 = await zipped.sink({ result in
             switch result {
                 case .value:
-                    _ = await counter2.increment()
+                    let count2 = await counter2.increment()
+                    if (count2 == 1) {
+                        try await startup1.complete()
+                    }
                     return .more
                 case let .completion(.failure(error)):
                     XCTFail("Got an error? \(error)")
@@ -93,6 +102,7 @@ class CancellationTests: XCTestCase {
                     catch { XCTFail("Multiple terminations sent: \(error)") }
                     return .done
                 case .completion(.cancelled):
+                    XCTFail("Should not have cancelled")
                     try await expectation2.complete()
                     return .done
             }
@@ -104,10 +114,13 @@ class CancellationTests: XCTestCase {
                     case .value:
                         let count1 = await counter1.increment()
                         if count1 == 10 {
-                            try await startup.complete()
+                            try await startup2.complete()
                             try await waiter.value
+                            return .more
                         }
-                        if count1 > 10 { XCTFail("Received values after cancellation") }
+                        if count1 > 10 {
+                            XCTFail("Received values after cancellation")
+                        }
                         return .more
                     case let .completion(.failure(error)):
                         XCTFail("Got an error? \(error)")
@@ -122,10 +135,11 @@ class CancellationTests: XCTestCase {
                         return .done
                 }
             })
-        // Provide time for some values to be sent so that the task hangs for cancellation
-        try await FreeCombine.wait(for: startup, timeout: 100_000_000)
+
+        try await startup1.value
+        try await startup2.value
         z2.cancel()
-        try await waiter.complete(())
+        try await waiter.complete()
 
         do {
             try await FreeCombine.wait(for: expectation, timeout: 100_000_000)
@@ -135,6 +149,65 @@ class CancellationTests: XCTestCase {
         } catch {
             XCTFail("Timed out")
         }
+        do {
+            let _ = try await z1.value
+            let _ = try await z2.value
+            XCTFail("Should have cancelled")
+        }
+        catch { }
+    }
+
+    func testSimpleMergeCancellation() async throws {
+        let expectation = await CheckedExpectation<Void>()
+        let waiter = await CheckedExpectation<Void>()
+        let startup = await CheckedExpectation<Void>()
+
+        let publisher1 = "zyxwvutsrqponmlkjihgfedcba".asyncPublisher
+        let publisher2 = "abcdefghijklmnopqrstuvwxyz".asyncPublisher
+
+        let counter = Counter()
+        let z1 = await merge(publishers: publisher1, publisher2)
+            .map { $0.uppercased() }
+            .sink { result in
+                switch result {
+                    case .value:
+                        let count = await counter.increment()
+                        if count > 9 {
+                            try await startup.complete()
+                            try await waiter.value
+                        }
+                        if count > 10 && Task.isCancelled {
+                            XCTFail("Got values after cancellation")
+                        }
+                        return .more
+                    case let .completion(.failure(error)):
+                        XCTFail("Got an error? \(error)")
+                        return .done
+                    case .completion(.finished):
+                        XCTFail("Got to end of task that should have been cancelled")
+                        do {
+                            try await expectation.complete()
+                        }
+                        catch { XCTFail("Failed to complete: \(error)") }
+                        return .done
+                    case .completion(.cancelled):
+                        let count = await counter.count
+                        XCTAssert(count == 10, "Incorrect count")
+                        try await expectation.complete()
+                        return .done
+                }
+            }
+
+        try await startup.value
         z1.cancel()
+        try await waiter.complete()
+
+        do { try await FreeCombine.wait(for: expectation, timeout: 100_000_000) }
+        catch { XCTFail("Timed out with count: \(await counter.count)") }
+        do {
+            let _ = try await z1.value
+            XCTFail("Should have cancelled")
+        }
+        catch { }
     }
 }

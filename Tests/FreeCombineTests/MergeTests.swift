@@ -44,12 +44,13 @@ class MergeTests: XCTestCase {
                 }
             })
 
-        do {
-            try await FreeCombine.wait(for: expectation, timeout: 100_000_000)
-        } catch {
-            XCTFail("Timed out")
+        do {  try await FreeCombine.wait(for: expectation, timeout: 100_000_000) }
+        catch { XCTFail("Timed out") }
+        
+        do { let _ = try await m1.value }
+        catch {
+            XCTFail("Should have gotten value")
         }
-        m1.cancel()
     }
 
     func testInlineMerge() async throws {
@@ -58,7 +59,7 @@ class MergeTests: XCTestCase {
         let fseq1 = (101 ... 150).asyncPublisher
         let fseq2 = (1 ... 100).asyncPublisher
 
-        let fm1 = Merged(publishers: fseq1, fseq2)
+        let fm1 = Merged(fseq1, fseq2)
 
         let c1 = await fm1
             .sink({ value in

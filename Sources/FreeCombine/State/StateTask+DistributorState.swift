@@ -21,13 +21,27 @@ public extension StateTask {
         try send(.value(value))
     }
 
-    func finish<Output: Sendable>() async throws -> Void where State == DistributorState<Output>, Action == DistributorState<Output>.Action {
+    func finish<Output: Sendable>(
+    ) async throws -> Void where State == DistributorState<Output>, Action == DistributorState<Output>.Action {
         try await send(.completion(.finished))
         channel.finish()
     }
 
-    func nonBlockingFinish<Output: Sendable>() throws -> Void where State == DistributorState<Output>, Action == DistributorState<Output>.Action {
+    func nonBlockingFinish<Output: Sendable>(
+    ) throws -> Void where State == DistributorState<Output>, Action == DistributorState<Output>.Action {
         try send(.completion(.finished))
+        channel.finish()
+    }
+
+    func cancel<Output: Sendable>(
+    ) async throws -> Void where State == DistributorState<Output>, Action == DistributorState<Output>.Action {
+        try await send(.completion(.cancelled))
+        channel.finish()
+    }
+
+    func nonBlockingCancel<Output: Sendable>(
+    ) throws -> Void where State == DistributorState<Output>, Action == DistributorState<Output>.Action {
+        try send(.completion(.cancelled))
         channel.finish()
     }
 
@@ -47,9 +61,11 @@ public extension StateTask {
 
     func send<Output: Sendable>(
         _ result: AsyncStream<Output>.Result
-    ) throws -> Void where State == DistributorState<Output>, Action == DistributorState<Output>.Action {
+    ) async throws -> Void where State == DistributorState<Output>, Action == DistributorState<Output>.Action {
         var enqueueResult: AsyncStream<DistributorState<Output>.Action>.Continuation.YieldResult!
-        enqueueResult = send(.receive(result, .none))
+        let _: Void = await withUnsafeContinuation { continuation in
+            enqueueResult = send(.receive(result, continuation))
+        }
         guard case .enqueued = enqueueResult else {
             throw PublisherError.enqueueError
         }
@@ -57,12 +73,9 @@ public extension StateTask {
 
     func send<Output: Sendable>(
         _ result: AsyncStream<Output>.Result
-    ) async throws -> Void where State == DistributorState<Output>, Action == DistributorState<Output>.Action {
+    ) throws -> Void where State == DistributorState<Output>, Action == DistributorState<Output>.Action {
         var enqueueResult: AsyncStream<DistributorState<Output>.Action>.Continuation.YieldResult!
-        let _: Void = await withUnsafeContinuation { continuation in
-            enqueueResult = send(.receive(result, continuation))
-            guard case .enqueued = enqueueResult else { continuation.resume(); return }
-        }
+        enqueueResult = send(.receive(result, .none))
         guard case .enqueued = enqueueResult else {
             throw PublisherError.enqueueError
         }

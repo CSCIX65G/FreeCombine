@@ -9,27 +9,13 @@ struct MergeState<Output: Sendable>: CombinatorState {
     enum Action {
         case setValue(AsyncStream<(Int, Output)>.Result, UnsafeContinuation<Demand, Swift.Error>)
         case removeCancellable(Int, UnsafeContinuation<Demand, Swift.Error>)
+        case failure(Int, Error, UnsafeContinuation<Demand, Swift.Error>)
     }
 
     let downstream: (AsyncStream<Output>.Result) async throws -> Demand
 
     var cancellables: [Int: Cancellable<Demand>]
     var mostRecentDemand: Demand
-
-    init(
-        channel: Channel<MergeState<Output>.Action>,
-        downstream: @escaping (AsyncStream<(Output)>.Result) async throws -> Demand,
-        mostRecentDemand: Demand = .more,
-        upstreams upstream1: Publisher<Output>,
-        _ upstream2: Publisher<Output>,
-        _ otherUpstreams: Publisher<Output>...
-    ) async {
-        await self.init(
-            channel: channel,
-            downstream: downstream,
-            upstreams: upstream1, upstream2, otherUpstreams
-        )
-    }
 
     init(
         channel: Channel<MergeState<Output>.Action>,
@@ -49,10 +35,14 @@ struct MergeState<Output: Sendable>: CombinatorState {
             }
         for (index, publisher) in upstreams.enumerated() {
             localCancellables[index] = await channel.consume(publisher: publisher, using: { result, continuation in
-                if case AsyncStream<(Int, Output)>.Result.completion = result {
-                    return MergeState<Output>.Action.removeCancellable(index, continuation)
+                switch result {
+                    case .value:
+                        return .setValue(result, continuation)
+                    case .completion(.finished), .completion(.cancelled):
+                        return .removeCancellable(index, continuation)
+                    case let .completion(.failure(error)):
+                        return .failure(index, error, continuation)
                 }
-                return MergeState<Output>.Action.setValue(result, continuation)
             })
         }
         cancellables = localCancellables
@@ -70,72 +60,83 @@ struct MergeState<Output: Sendable>: CombinatorState {
     }
 
     static func complete(state: inout Self, completion: Reducer<Self, Self.Action>.Completion) async -> Void {
-        state.cancellables.values.forEach { cancellable in cancellable.cancel() }
+        for cancellable in state.cancellables.values {
+            cancellable.cancel()
+            _ = await cancellable.result
+        }
         state.cancellables.removeAll()
+        guard state.mostRecentDemand != .done else { return }
+        do {
+            switch completion {
+                case .termination:
+                    state.mostRecentDemand = try await state.downstream(.completion(.finished))
+                case .cancel:
+                    state.mostRecentDemand = try await state.downstream(.completion(.cancelled))
+                default:
+                    () // These came from downstream and should not go again
+            }
+        } catch { }
     }
 
     static func reduce(
         `self`: inout Self,
         action: Self.Action
     ) async throws -> Reducer<Self, Action>.Effect {
-        do {
-            guard !Task.isCancelled else {
-                _ = try await `self`.downstream(.completion(.failure(PublisherError.cancelled)))
-                throw PublisherError.cancelled
-            }
-            return try await `self`.reduce(action: action)
-        } catch {
-            await complete(state: &`self`, completion: .cancel)
-            throw error
-        }
+        return try await `self`.reduce(action: action)
     }
 
     private mutating func reduce(
         action: Self.Action
     ) async throws -> Reducer<Self, Action>.Effect {
+        guard !Task.isCancelled else { return .completion(.cancel) }
         switch action {
             case let .setValue(value, continuation):
-                switch value {
-                    case let .value((index, output)):
-                        guard let _ = cancellables[index] else {
-                            fatalError("received value after task completion")
-                        }
-                        do {
-                            mostRecentDemand = try await downstream(.value(output))
-                            continuation.resume(returning: mostRecentDemand)
-                        }
-                        catch {
-                            continuation.resume(throwing: error)
-                            throw error
-                        }
-                    case let .completion(.failure(error)):
-                        do {
-                            mostRecentDemand = try await downstream(.completion(.failure(error)))
-                            continuation.resume(returning: mostRecentDemand)
-                        }
-                        catch {
-                            continuation.resume(throwing: error)
-                        }
-                    case .completion(.finished):
-                        fatalError("Should never get here.")
-                    case .completion(.cancelled):
-                        do {
-                            mostRecentDemand = try await downstream(.completion(.cancelled))
-                            continuation.resume(returning: .done)
-                        }
-                        catch {
-                            continuation.resume(returning: .done)
-                        }
-
-                }
+                return try await reduceValue(value, continuation)
             case let .removeCancellable(index, continuation):
                 cancellables.removeValue(forKey: index)
                 continuation.resume(returning: .done)
                 if cancellables.count == 0 {
-                    mostRecentDemand = try await downstream(.completion(.finished))
+                    let c: Completion = Task.isCancelled ? .cancelled : .finished
+                    mostRecentDemand = try await downstream(.completion(c))
                     return .completion(.exit)
                 }
+                return .none
+            case let .failure(index, error, continuation):
+                cancellables.removeValue(forKey: index)
+                continuation.resume(returning: .done)
+                cancellables.removeAll()
+                mostRecentDemand = try await downstream(.completion(.failure(error)))
+                return .completion(.failure(error))
         }
-        return .none
+    }
+
+    private mutating func reduceValue(
+        _ value: AsyncStream<(Int, Output)>.Result,
+        _ continuation: UnsafeContinuation<Demand, Swift.Error>
+    ) async throws -> Reducer<Self, Action>.Effect {
+        switch value {
+            case let .value((index, output)):
+                guard let _ = cancellables[index] else {
+                    fatalError("received value after task completion")
+                }
+                do {
+                    mostRecentDemand = try await downstream(.value(output))
+                    continuation.resume(returning: mostRecentDemand)
+                    return .none
+                }
+                catch {
+                    continuation.resume(throwing: error)
+                    return .completion(.failure(error))
+                }
+            case let .completion(.failure(error)):
+                continuation.resume(returning: .done)
+                return .completion(.failure(error))
+            case .completion(.finished):
+                continuation.resume(returning: .done)
+                return .none
+            case .completion(.cancelled):
+                continuation.resume(returning: .done)
+                return .none
+        }
     }
 }

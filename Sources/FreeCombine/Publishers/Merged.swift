@@ -11,13 +11,13 @@ public extension Publisher {
         with upstream2: Publisher<Output>,
         _ otherUpstreams: Publisher<Output>...
     ) -> Publisher<Output> {
-        Merged(onCancel: onCancel, publishers: self, upstream2, otherUpstreams)
+        Merged(onCancel: onCancel, self, upstream2, otherUpstreams)
     }
 }
 
 public func Merged<Output>(
     onCancel: @escaping () -> Void = { },
-    publishers upstream1: Publisher<Output>,
+    _ upstream1: Publisher<Output>,
     _ upstream2: Publisher<Output>,
     _ otherUpstreams: [Publisher<Output>]
 ) -> Publisher<Output> {
@@ -26,7 +26,7 @@ public func Merged<Output>(
 
 public func Merged<Output>(
     onCancel: @escaping () -> Void = { },
-    publishers upstream1: Publisher<Output>,
+    _ upstream1: Publisher<Output>,
     _ upstream2: Publisher<Output>,
     _ otherUpstreams: Publisher<Output>...
 ) -> Publisher<Output> {
