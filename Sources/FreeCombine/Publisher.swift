@@ -87,7 +87,7 @@ public extension Publisher {
     func callAsFunction(
         _ f: @Sendable @escaping (AsyncStream<Output>.Result) async throws -> Demand
     ) async -> Cancellable<Demand> {
-        var cancellable: Cancellable<Demand>! = .none
+        var cancellable: Cancellable<Demand>!
         let _: Void = await withUnsafeContinuation { continuation in
             cancellable = self(onStartup: continuation, f)
         }

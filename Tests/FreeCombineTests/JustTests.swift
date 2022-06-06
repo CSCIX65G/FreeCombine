@@ -66,6 +66,41 @@ class JustTests: XCTestCase {
         c2.cancel()
     }
 
+    func testSimpleSequenceJust() async throws {
+        let expectation1 = await CheckedExpectation<Void>()
+        let just = Just([1, 2, 3, 4])
+        let c1 = await just.sink { (result: AsyncStream<[Int]>.Result) in
+            switch result {
+                case let .value(value):
+                    XCTAssert(value == [1, 2, 3, 4], "wrong value sent: \(value)")
+                    return .more
+                case let .completion(.failure(error)):
+                    XCTFail("Got an error? \(error)")
+                    return .done
+                case .completion(.finished):
+                    do { try await expectation1.complete() }
+                    catch {
+                        XCTFail("Failed to complete with error: \(error)")
+                    }
+                    return .done
+                case .completion(.cancelled):
+                    XCTFail("Should not have cancelled")
+                    return .done
+            }
+        }
+        do {
+            let finalDemand = try await c1.value
+            XCTAssert(finalDemand == .done, "Incorrect return")
+        } catch {
+            XCTFail("Errored out")
+        }
+        do {
+            try await FreeCombine.wait(for: expectation1, timeout: 10_000_000)
+        } catch {
+            XCTFail("Timed out")
+        }
+    }
+
     func testSimpleAsyncJust() async throws {
         let expectation1 = await CheckedExpectation<Void>()
         let expectation2 = await CheckedExpectation<Void>()
@@ -129,6 +164,5 @@ class JustTests: XCTestCase {
         }
 
         c1.cancel()
-        t.cancel()
     }
 }
