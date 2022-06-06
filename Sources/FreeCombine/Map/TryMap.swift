@@ -13,10 +13,10 @@ public extension Publisher {
                 }
                 switch r {
                     case .value(let a):
-                        var b: B? = .none
+                        var b: B!
                         do { b = try await f(a) }
                         catch { return try await downstream(.completion(.failure(error))) }
-                        return try await downstream(.value(b!))
+                        return try await downstream(.value(b))
                     case let .completion(value):
                         return try await downstream(.completion(value))
                 }

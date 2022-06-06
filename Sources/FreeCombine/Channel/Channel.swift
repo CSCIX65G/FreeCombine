@@ -21,7 +21,7 @@ public struct Channel<Element>: AsyncSequence {
         _: Element.Type = Element.self,
         buffering: AsyncStream<Element>.Continuation.BufferingPolicy = .bufferingOldest(1)
     ) {
-        var localContinuation: AsyncStream<Element>.Continuation! = .none
+        var localContinuation: AsyncStream<Element>.Continuation!
         stream = .init(bufferingPolicy: buffering) { continuation in
             localContinuation = continuation
         }
@@ -93,7 +93,7 @@ public extension Channel {
 
     func stateTask<State>(
         initialState: @escaping (Self) async -> State,
-        onStartup: UnsafeContinuation<Void, Never>? = .none,
+        onStartup: UnsafeContinuation<Void, Never>?,
         reducer: Reducer<State, Self.Element>
     ) -> StateTask<State, Self.Element> {
         .init(
