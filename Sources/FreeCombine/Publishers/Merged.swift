@@ -54,6 +54,7 @@ public func merge<Output>(
                 }
             },
             reducer: MergeState<Output>.reduce
-        )
+        ),
+        extractor: \.mostRecentDemand
     )
 }
