@@ -9,6 +9,7 @@
 * Lock-free.
 * Leak-free.
 * Dependency-free.
+* Unbounded queue-free.
 
 ### Salient features
 1. "Small things that compose"

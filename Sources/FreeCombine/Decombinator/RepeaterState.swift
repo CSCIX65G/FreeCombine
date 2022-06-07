@@ -53,13 +53,9 @@ public struct RepeaterState<ID: Hashable & Sendable, Output: Sendable>: Identifi
             case let .repeat(output, semaphore):
                 do {
                     mostRecentDemand = try await downstream(output)
-                    if case .completion = output {
-                        mostRecentDemand = .done
-                    }
+                    if case .completion = output { mostRecentDemand = .done }
                 }
-                catch {
-                    mostRecentDemand = .done
-                }
+                catch { mostRecentDemand = .done }
                 await semaphore.decrement(with: .repeated(id, mostRecentDemand))
                 return mostRecentDemand == .done ? .completion(.exit) : .none
         }
