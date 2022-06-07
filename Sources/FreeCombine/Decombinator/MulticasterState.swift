@@ -11,13 +11,7 @@ public struct MulticasterState<Output: Sendable> {
         case pause(UnsafeContinuation<Void, Swift.Error>)
         case resume(UnsafeContinuation<Void, Swift.Error>)
         case disconnect(UnsafeContinuation<Void, Swift.Error>)
-        
-        case receive(AsyncStream<Output>.Result, UnsafeContinuation<Demand, Swift.Error>)
-        case subscribe(
-            @Sendable (AsyncStream<Output>.Result) async throws -> Demand,
-            UnsafeContinuation<Cancellable<Demand>, Swift.Error>
-        )
-        case unsubscribe(Int)
+        case distribute(DistributorState<Output>.Action)
     }
 
     public enum Error: Swift.Error {
@@ -33,21 +27,22 @@ public struct MulticasterState<Output: Sendable> {
     let downstream: @Sendable (AsyncStream<Output>.Result) async throws -> Demand
 
     var cancellable: Cancellable<Demand>?
-    var nextKey: Int
-    var repeaters: [Int: StateTask<RepeaterState<Int, Output>, RepeaterState<Int, Output>.Action>]
     var upstreamContinuation: UnsafeContinuation<Demand, Swift.Error>?
     var isRunning: Bool = false
+    var distributor: DistributorState<Output>
 
     public init(
         upstream: Publisher<Output>,
         channel: Channel<MulticasterState<Output>.Action>
     ) {
         self.upstream = upstream
-        self.nextKey = 0
-        self.repeaters = [:]
-        self.downstream = { r in try await withUnsafeThrowingContinuation { continuation in
-            channel.yield(.receive(r, continuation))
-        } }
+        self.distributor = .init(currentValue: .none, nextKey: 0, downstreams: [:])
+        self.downstream = { r in
+            await withUnsafeContinuation { continuation in
+                channel.yield(.distribute(.receive(r, continuation)))
+            }
+            return .more
+        }
     }
 
     static func create(
@@ -59,18 +54,18 @@ public struct MulticasterState<Output: Sendable> {
     static func complete(state: inout Self, completion: Reducer<Self, Self.Action>.Completion) async -> Void {
         switch completion {
             case .termination:
-                await state.process(currentRepeaters: state.repeaters, with: .completion(.finished))
+                await state.distributor.process(currentRepeaters: state.distributor.repeaters, with: .completion(.finished))
             case .exit:
                 fatalError("Multicaster should never exit")
             case let .failure(error):
-                await state.process(currentRepeaters: state.repeaters, with: .completion(.failure(error)))
+                await state.distributor.process(currentRepeaters: state.distributor.repeaters, with: .completion(.failure(error)))
             case .cancel:
-                await state.process(currentRepeaters: state.repeaters, with: .completion(.cancelled))
+                await state.distributor.process(currentRepeaters: state.distributor.repeaters, with: .completion(.cancelled))
         }
-        for (_, repeater) in state.repeaters {
+        for (_, repeater) in state.distributor.repeaters {
             repeater.finish()
         }
-        state.repeaters.removeAll()
+        state.distributor.repeaters.removeAll()
     }
 
     static func reduce(`self`: inout Self, action: Self.Action) async throws -> Reducer<Self, Action>.Effect {
@@ -122,108 +117,37 @@ public struct MulticasterState<Output: Sendable> {
                 upstreamContinuation?.resume(returning: .done)
                 continuation.resume()
                 return .completion(.exit)
-            case let .receive(result, continuation):
-                guard case .none = upstreamContinuation else {
-                    upstreamContinuation?.resume(throwing: Error.internalError)
-                    continuation.resume(throwing: Error.internalError)
-                    return .completion(.failure(Error.internalError))
+            case let .distribute(.receive(result, continuation)):
+                switch try await distributor.reduce(action: .receive(result, continuation)) {
+                    case .none:
+                        return .none
+                    case .published(_):
+                        return .none // FIXME: Need to handle this
+                    case let .completion(completion):
+                        switch completion {
+                            case .termination:
+                                return .completion(.termination)
+                            case .exit:
+                                return .completion(.exit)
+                            case let .failure(error):
+                                return .completion(.failure(error))
+                            case .cancel:
+                                return .completion(.cancel)
+                        }
                 }
-                await process(currentRepeaters: repeaters, with: result)
-                if isRunning {
-                    continuation.resume(returning: .more)
-                    upstreamContinuation = .none
-                } else {
-                    upstreamContinuation = continuation
-                }
-                return .none
-            case let .subscribe(downstream, continuation):
+            case let .distribute(.subscribe(downstream, continuation)):
                 var repeater: Cancellable<Demand>!
                 let _: Void = await withUnsafeContinuation { outerContinuation in
-                    repeater = process(subscription: downstream, continuation: outerContinuation)
+                    repeater = distributor.process(subscription: downstream, continuation: outerContinuation)
                 }
                 continuation.resume(returning: repeater)
                 return .none
-            case let .unsubscribe(channelId):
-                guard let downstream = repeaters.removeValue(forKey: channelId) else {
+            case let .distribute(.unsubscribe(channelId)):
+                guard let downstream = distributor.repeaters.removeValue(forKey: channelId) else {
                     return .none
                 }
-                await process(currentRepeaters: [channelId: downstream], with: .completion(.finished))
+                await distributor.process(currentRepeaters: [channelId: downstream], with: .completion(.finished))
                 return .none
         }
-    }
-
-    mutating func process(
-        currentRepeaters : [Int: StateTask<RepeaterState<Int, Output>, RepeaterState<Int, Output>.Action>],
-        with result: AsyncStream<Output>.Result
-    ) async -> Void {
-        guard currentRepeaters.count > 0 else {
-            return
-        }
-        await withUnsafeContinuation { (completedContinuation: UnsafeContinuation<[Int], Never>) in
-            // Note that the semaphore's reducer constructs a list of repeaters
-            // which have responded with .done and that the elements of that list
-            // are removed at completion of the sends
-            let semaphore = Semaphore<[Int], RepeatedAction<Int>>(
-                continuation: completedContinuation,
-                reducer: { completedIds, action in
-                    guard case let .repeated(id, .done) = action else { return }
-                    completedIds.append(id)
-                },
-                initialState: [Int](),
-                count: currentRepeaters.count
-            )
-
-            for (key, downstreamTask) in currentRepeaters {
-                let queueStatus = downstreamTask.send(.repeat(result, semaphore))
-                switch queueStatus {
-                    case .enqueued:
-                        ()
-                    case .terminated:
-                        Task { await semaphore.decrement(with: .repeated(key, .done)) }
-                    case .dropped:
-                        fatalError("Should never drop")
-                    @unknown default:
-                        fatalError("Handle new case")
-                }
-            }
-        }
-        .forEach { key in
-            repeaters.removeValue(forKey: key)
-        }
-    }
-
-    mutating func process(
-        subscription downstream: @escaping @Sendable (AsyncStream<Output>.Result) async throws -> Demand,
-        continuation: UnsafeContinuation<Void, Never>?
-    ) -> Cancellable<Demand> {
-        nextKey += 1
-        let repeaterState = RepeaterState(id: nextKey, downstream: downstream)
-        let repeater: StateTask<RepeaterState<Int, Output>, RepeaterState<Int, Output>.Action> = .init(
-            channel: .init(buffering: .bufferingOldest(1)),
-            initialState: { _ in repeaterState },
-            onStartup: continuation,
-            reducer: Reducer(
-                onCompletion: RepeaterState.complete,
-                reducer: RepeaterState.reduce
-            )
-        )
-        repeaters[nextKey] = repeater
-        return .init(
-            cancel: {
-                repeater.cancel()
-            },
-            isCancelled: { repeater.isCancelled },
-            value: {
-                do {
-                    let value = try await repeater.value
-                    return value.mostRecentDemand
-                } catch {
-                    fatalError("Could not get demand.  Error: \(error)")
-                }
-            },
-            result: {
-                await repeater.result.map(\.mostRecentDemand)
-            }
-        )
     }
 }

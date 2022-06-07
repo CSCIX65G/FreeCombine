@@ -74,7 +74,7 @@ public extension Publisher {
         self = .init { continuation, downstream in
             let t: Task<Cancellable<Demand>, Swift.Error> = .init {
                 let c: Cancellable<Demand> = try await withUnsafeThrowingContinuation { demandContinuation in
-                    let enqueueStatus = stateTask.send(.subscribe(downstream, demandContinuation))
+                    let enqueueStatus = stateTask.send(.distribute(.subscribe(downstream, demandContinuation)))
                     guard case .enqueued = enqueueStatus else {
                         return demandContinuation.resume(throwing: PublisherError.enqueueError)
                     }
