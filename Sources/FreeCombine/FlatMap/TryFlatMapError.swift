@@ -1,11 +1,11 @@
 //
-//  FlatMapError.swift
+//  TryFlatMapError.swift
 //  
 //
-//  Created by Van Simmons on 5/18/22.
+//  Created by Van Simmons on 6/7/22.
 //
 public extension Publisher {
-    func flatMapError(_ f: @escaping (Swift.Error) async -> Publisher<Output>) -> Publisher<Output> {
+    func tryFlatMapError(_ f: @escaping (Swift.Error) async throws -> Publisher<Output>) -> Publisher<Output> {
         .init { continuation, downstream in
             self(onStartup: continuation) { r in switch r {
                 case .value(let a):

@@ -15,25 +15,22 @@ struct ZipState<Left: Sendable, Right: Sendable> {
     let leftCancellable: Cancellable<Demand>
     let rightCancellable: Cancellable<Demand>
 
-    var mostRecentDemand: Demand
+    var mostRecentDemand: Demand = .more
     var left: (value: Left, continuation: UnsafeContinuation<Demand, Swift.Error>)? = .none
     var right: (value: Right, continuation: UnsafeContinuation<Demand, Swift.Error>)? = .none
 
     init(
         channel: Channel<ZipState<Left, Right>.Action>,
         downstream: @escaping (AsyncStream<(Left, Right)>.Result) async throws -> Demand,
-        mostRecentDemand: Demand = .more,
         left: Publisher<Left>,
         right: Publisher<Right>
     ) async {
         self.downstream = downstream
-        self.mostRecentDemand = mostRecentDemand
         self.leftCancellable = await channel.consume(publisher: left, using: ZipState<Left, Right>.Action.setLeft)
         self.rightCancellable = await channel.consume(publisher: right, using: ZipState<Left, Right>.Action.setRight)
     }
 
     static func create(
-        mostRecentDemand: Demand = .more,
         left: Publisher<Left>,
         right: Publisher<Right>
     ) -> (@escaping (AsyncStream<(Left, Right)>.Result) async throws -> Demand) -> (Channel<ZipState<Left, Right>.Action>) async -> Self {
@@ -43,10 +40,10 @@ struct ZipState<Left: Sendable, Right: Sendable> {
     }
 
     static func complete(state: inout Self, completion: Reducer<Self, Self.Action>.Completion) async -> Void {
-        state.leftCancellable.cancel()
         state.left?.continuation.resume(returning: .done)
-        state.rightCancellable.cancel()
+        state.leftCancellable.cancel()
         state.right?.continuation.resume(returning: .done)
+        state.rightCancellable.cancel()
         switch completion {
             case .cancel:
                 _ = try? await state.downstream(.completion(.cancelled))
