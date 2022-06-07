@@ -20,32 +20,46 @@
  */
 import Combine
 
-let subject1 = Combine.PassthroughSubject<Int, Error>()
-let subject2 = Combine.PassthroughSubject<String, Error>()
-
-let seq1 = "abcdefghijklmnopqrstuvwxyz".publisher
-let seq2 = (1 ... 100).publisher
-
-let z1 = seq1.zip(seq2)
-let m1 = subject1
-    .map(String.init)
-    .mapError { _ in fatalError() }
-    .merge(with: subject2)
-    .replaceError(with: "")
-
-let z2 = z1
-    .map { left, right in String(left) + String(right) }
-
-let m2 = z2.merge(with: m1)
-let cancellable = m2.sink { value in
-    print(value)
+/**
+ Here is what we are trying to do.
+ 
+ z1:  create a zip publisher of [a...z] and [1 ... 100]
+      there should be exactly 26 values emitted
+ 
+ m1:  merge an Int and String value emitter
+      there should be a string value emitted if either is sent a value
+      
+ m2:  merge the z1 and m1
+      there should be all the values emitted by z1 and any other emitted by m1
+      ... observe how the zip blocks all, value Int(14) and String("hello, combined world!")
+      are emitted at the very end
+ */
+func combineVersion() {
+    let subject1 = Combine.PassthroughSubject<Int, Error>()
+    let subject2 = Combine.PassthroughSubject<String, Error>()
+    
+    let seq1 = "abcdefghijklmnopqrstuvwxyz".publisher
+    let seq2 = (1 ... 100).publisher
+    
+    let z1 = seq1.zip(seq2)
+        .map { left, right in String(left) + String(right) }
+    let m1 = subject1
+        .map(String.init)
+        .mapError { _ in fatalError() }
+        .merge(with: subject2)
+        .replaceError(with: "")
+    
+    let m2 = z1.merge(with: m1)
+    let cancellable = m2.sink { value in
+        print("received: \(value)")
+    }
+    
+    subject1.send(14)
+    subject2.send("hello, combined world!")
+    subject1.send(completion: .finished)
+    subject2.send(completion: .finished)
 }
-
-subject1.send(14)
-subject2.send("hello, combined world!")
-subject1.send(completion: .finished)
-subject2.send(completion: .finished)
-
+combineVersion()
 print("=========================================================")
 
 /*:
@@ -54,37 +68,46 @@ print("=========================================================")
 import FreeCombine
 import _Concurrency
 
-Task {
-    let fsubject1 = await PassthroughSubject(Int.self)
-    let fsubject2 = await PassthroughSubject(String.self)
-
-    let fseq1 = "abcdefghijklmnopqrstuvwxyz".asyncPublisher
-    let fseq2 = (1 ... 100).asyncPublisher
-
-    let fz1 = fseq1.zip(fseq2)
-    let fm1 = fsubject1.publisher()
-        .map(String.init)
-        .mapError { _ in fatalError() }
-        .merge(with: fsubject2.publisher())
-        .replaceError(with: "")
-
-    let fz2 = fz1
-        .map { left, right in String(left) + String(right) }
-
-    let fm2 = fz2.merge(with: fm1)
-    let fcancellable = await fm2.sink { value in
-        guard case let .value(value) = value else { return .more }
-        print(value)
-        return .more
+/**
+ same algorithm as the combineVersion
+      observe how the zip does not block at all
+      value Int(14) and String("hello, combined world!")
+      are emitted randomly as they occur
+ */
+func freeCombineVersion() {
+    Task {
+        let subject1 = await PassthroughSubject(Int.self)
+        let subject2 = await PassthroughSubject(String.self)
+        
+        let seq1 = "abcdefghijklmnopqrstuvwxyz".asyncPublisher
+        let seq2 = (1 ... 100).asyncPublisher
+        
+        let z1 = seq1.zip(seq2)
+            .map { left, right in String(left) + String(right) }
+        let m1 = subject1.publisher()
+            .map(String.init)
+            .mapError { _ in fatalError() }
+            .merge(with: subject2.publisher())
+            .replaceError(with: "")
+        
+        
+        let m2 = z1.merge(with: m1)
+        let cancellable = await m2.sink { value in
+            guard case let .value(value) = value else { return .more }
+            print("received: \(value)")
+            return .more
+        }
+        
+        try await subject1.send(14)
+        try await subject2.send("hello, combined world!")
+        try await subject1.finish()
+        try await subject2.finish()
+        let finalDemand = try await cancellable.value
+        print(finalDemand)
     }
-
-    try await fsubject1.send(14)
-    try await fsubject2.send("hello, combined world!")
-    try await fsubject1.finish()
-    try await fsubject2.finish()
-    let finalDemand = try await fcancellable.value
-    print(finalDemand)
 }
+freeCombineVersion()
+print("=========================================================")
 
 /*:
  ## Project Requirements
