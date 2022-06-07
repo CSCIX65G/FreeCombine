@@ -2,20 +2,16 @@
 
 # FreeCombine
 
-## Combine. Only free. And concurrent.
+## Like Combine. Only free. And concurrent.
 
-- Protocol-free.
-- Race-free.
-
-  - Yield-free.
-  - Sleep-free.
-
-- Leak-free.
-
-  - Unbounded queue-free.
-
-- Lock-free.
-- Dependency-free.
+* Protocol-free.
+* Race-free.
+  * Yield-free.
+  * Sleep-free.
+* Leak-free.
+  * Unbounded queue-free.
+* Lock-free.
+* Dependency-free.
 
 ## Salient features
 
