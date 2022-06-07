@@ -30,7 +30,8 @@ public func combineLatest<Left, Right>(
         reducer: Reducer(
             onCompletion: CombineLatestState<Left, Right>.complete,
             reducer: CombineLatestState<Left, Right>.reduce
-        )
+        ),
+        extractor: \.mostRecentDemand
     )
 }
 

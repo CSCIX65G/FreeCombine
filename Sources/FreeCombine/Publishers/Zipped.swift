@@ -30,7 +30,8 @@ public func zip<Left, Right>(
         reducer: Reducer(
             onCompletion: ZipState<Left, Right>.complete,
             reducer: ZipState<Left, Right>.reduce
-        )
+        ),
+        extractor: \.mostRecentDemand
     )
 }
 

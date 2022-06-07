@@ -7,7 +7,7 @@
  #actor problems
 
  1. no oneway funcs (can't call from synchronous code)
- 2. can't selectively block callers
+ 2. can't selectively block callers (to pass a continuation to an actor requires spawning a task which can introduce a race condition and is really heavy-weight)
  3. can't block on internal state (can only block with async call to another task)
  4. no concept of cancellation
  5. execute on global actor queues (generally not needed or desirable)

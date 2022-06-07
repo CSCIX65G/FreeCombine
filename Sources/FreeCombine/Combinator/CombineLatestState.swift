@@ -4,7 +4,7 @@
 //
 //  Created by Van Simmons on 6/4/22.
 //
-struct CombineLatestState<Left: Sendable, Right: Sendable>: CombinatorState {
+struct CombineLatestState<Left: Sendable, Right: Sendable> {
     typealias CombinatorAction = Self.Action
     enum Action {
         case setLeft(AsyncStream<Left>.Result, UnsafeContinuation<Demand, Swift.Error>)

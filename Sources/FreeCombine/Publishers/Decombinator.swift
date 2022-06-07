@@ -74,7 +74,7 @@ public extension Publisher {
         self = .init { continuation, downstream in
             let t: Task<Cancellable<Demand>, Swift.Error> = .init {
                 let c: Cancellable<Demand> = try await withUnsafeThrowingContinuation { demandContinuation in
-                    let enqueueStatus = stateTask.send(.subscribe(downstream, demandContinuation))
+                    let enqueueStatus = stateTask.send(.distribute(.subscribe(downstream, demandContinuation)))
                     guard case .enqueued = enqueueStatus else {
                         return demandContinuation.resume(throwing: PublisherError.enqueueError)
                     }
@@ -83,20 +83,11 @@ public extension Publisher {
                 return c
             }
             return .init(
-                cancel: { Task {
-                    await t.result.map {
-                        $0.cancel()
-                    }
-                } },
+                cancel: { Task { await t.result.map {  $0.cancel() } } },
                 isCancelled: { t.isCancelled },
-                value: {
-                    let cancellable = try await t.value
-                    let value = try await cancellable.value
-                    return value
-                },
+                value: {  try await t.value.value },
                 result: {
-                    let r = await t.result
-                    switch r {
+                    switch await t.result {
                         case let .success(result):  return await result.result
                         case let .failure(error): return .failure(error)
                     }

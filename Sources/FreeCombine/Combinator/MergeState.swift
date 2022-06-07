@@ -4,7 +4,7 @@
 //
 //  Created by Van Simmons on 5/19/22.
 //
-struct MergeState<Output: Sendable>: CombinatorState {
+struct MergeState<Output: Sendable> {
     typealias CombinatorAction = Self.Action
     enum Action {
         case setValue(AsyncStream<(Int, Output)>.Result, UnsafeContinuation<Demand, Swift.Error>)
