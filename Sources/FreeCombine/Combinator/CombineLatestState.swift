@@ -35,7 +35,6 @@ struct CombineLatestState<Left: Sendable, Right: Sendable> {
     }
 
     static func create(
-        mostRecentDemand: Demand = .more,
         left: Publisher<Left>,
         right: Publisher<Right>
     ) -> (@escaping (AsyncStream<(Left?, Right?)>.Result) async throws -> Demand) -> (Channel<CombineLatestState<Left, Right>.Action>) async -> Self {
@@ -45,10 +44,10 @@ struct CombineLatestState<Left: Sendable, Right: Sendable> {
     }
 
     static func complete(state: inout Self, completion: Reducer<Self, Self.Action>.Completion) async -> Void {
-        state.leftCancellable.cancel()
         state.left?.continuation.resume(returning: .done)
-        state.rightCancellable.cancel()
+        state.leftCancellable.cancel()
         state.right?.continuation.resume(returning: .done)
+        state.rightCancellable.cancel()
         switch completion {
             case .cancel:
                 _ = try? await state.downstream(.completion(.cancelled))

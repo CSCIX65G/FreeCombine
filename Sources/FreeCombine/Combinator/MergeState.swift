@@ -15,24 +15,20 @@ struct MergeState<Output: Sendable> {
     let downstream: (AsyncStream<Output>.Result) async throws -> Demand
 
     var cancellables: [Int: Cancellable<Demand>]
-    var mostRecentDemand: Demand
+    var mostRecentDemand: Demand = .more
 
     init(
         channel: Channel<MergeState<Output>.Action>,
         downstream: @escaping (AsyncStream<(Output)>.Result) async throws -> Demand,
-        mostRecentDemand: Demand = .more,
         upstreams upstream1: Publisher<Output>,
         _ upstream2: Publisher<Output>,
         _ otherUpstreams: [Publisher<Output>]
     ) async {
         self.downstream = downstream
-        self.mostRecentDemand = mostRecentDemand
         var localCancellables = [Int: Cancellable<Demand>]()
-        let upstreams = ([upstream1, upstream2] + otherUpstreams)
-            .enumerated()
-            .map { (index: Int, publisher: Publisher<Output>) in
-                publisher.map { value in (index, value) }
-            }
+        let upstreams = ([upstream1, upstream2] + otherUpstreams).enumerated()
+            .map { index, publisher in publisher.map { value in (index, value) } }
+
         for (index, publisher) in upstreams.enumerated() {
             localCancellables[index] = await channel.consume(publisher: publisher, using: { result, continuation in
                 switch result {
@@ -49,7 +45,6 @@ struct MergeState<Output: Sendable> {
     }
 
     static func create(
-        mostRecentDemand: Demand = .more,
         upstreams upstream1: Publisher<Output>,
         _ upstream2: Publisher<Output>,
         _ otherUpstreams: [Publisher<Output>]
@@ -60,10 +55,7 @@ struct MergeState<Output: Sendable> {
     }
 
     static func complete(state: inout Self, completion: Reducer<Self, Self.Action>.Completion) async -> Void {
-        for cancellable in state.cancellables.values {
-            cancellable.cancel()
-            _ = await cancellable.result
-        }
+        for can in state.cancellables.values { can.cancel(); _ = await can.result }
         state.cancellables.removeAll()
         guard state.mostRecentDemand != .done else { return }
         do {
@@ -72,8 +64,8 @@ struct MergeState<Output: Sendable> {
                     state.mostRecentDemand = try await state.downstream(.completion(.finished))
                 case .cancel:
                     state.mostRecentDemand = try await state.downstream(.completion(.cancelled))
-                default:
-                    () // These came from downstream and should not go again
+                case .exit, .failure:
+                    () // These came from downstream and should not go down again
             }
         } catch { }
     }

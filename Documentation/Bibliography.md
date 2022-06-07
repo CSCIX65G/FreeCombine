@@ -34,3 +34,7 @@ https://github.com/bitemyapp/papers/blob/master/Stream%20Fusion%20on%20Haskell%2
 
 ### Stream Libraries
 
+### Combine
+
+[Conversation on Combine](https://iosdevelopers.slack.com/archives/C0AET0JQ5/p1623102144192300)
+

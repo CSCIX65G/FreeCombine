@@ -159,3 +159,19 @@ func flattener<B>(
             return try await downstream(b)
     } }
 }
+
+func errorFlattener<B>(
+    _ downstream: @Sendable @escaping (AsyncStream<B>.Result) async throws -> Demand
+) -> @Sendable (AsyncStream<B>.Result) async throws -> Demand {
+    { b in switch b {
+        case .completion(.finished):
+            return .more
+        case .value:
+            return try await downstream(b)
+        case let .completion(.failure(error)):
+            throw error
+        case .completion(.cancelled):
+            return try await downstream(b)
+    } }
+}
+

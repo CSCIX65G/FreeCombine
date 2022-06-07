@@ -1,3 +1,4 @@
+[edit](https://github.com/CSCIX65G/FreeCombine/edit/gh-pages/README.md)
 # FreeCombine
 
 ### Combine.  Only free. And concurrent.
@@ -13,7 +14,8 @@
 
 ### Salient features
 1. "Small things that compose"
-1. Implement all operations supported by Combine
+1. Implement all operations supported by Combine, but some require modification
+1. Uses "imprecise" errors throughout in the manner of Swift concurrency
 1. Futures _AND_ Streams
 
 ### Todo
