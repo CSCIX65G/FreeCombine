@@ -13,27 +13,21 @@
  would become the core of an expanded course on Functional Concurrent Programming using Swift, but that
  course is still fairly far off.
 
- ## Introduction to Combine:
+ ## Introduction to FreeCombine:
 
  Here's a silly example of using combine to manipulate streams of data of various types.
+ What we are trying to do is:
+ 
+ * z1:  create a zip publisher of [a...z] and [1 ... 100]. There should be exactly 26 values emitted
+ 
+ * m1:  merge an Int and String value emitter. There should be a string value emitted if either is sent a value
+      
+ * m2:  merge the z1 and m1. there should be all the values emitted by z1 and any other emitted by m1
 
+ observe how the zip blocks of value `Int(14)` and `String("hello, combined world!")` are all emitted at the very end.
  */
 import Combine
 
-/**
- Here is what we are trying to do.
- 
- z1:  create a zip publisher of [a...z] and [1 ... 100]
-      there should be exactly 26 values emitted
- 
- m1:  merge an Int and String value emitter
-      there should be a string value emitted if either is sent a value
-      
- m2:  merge the z1 and m1
-      there should be all the values emitted by z1 and any other emitted by m1
-      ... observe how the zip blocks all, value Int(14) and String("hello, combined world!")
-      are emitted at the very end
- */
 func combineVersion() {
     let subject1 = Combine.PassthroughSubject<Int, Error>()
     let subject2 = Combine.PassthroughSubject<String, Error>()
@@ -63,17 +57,13 @@ combineVersion()
 print("=========================================================")
 
 /*:
- Here's the same example done using FreeCombine:
+ Here's the same example done using FreeCombine.  It's the same algorithm as the combineVersion,
+ observe how the zip does not block at all and value `Int(14)` and `String("hello, combined world!")`
+ are emitted randomly as they occur.
  */
 import FreeCombine
 import _Concurrency
 
-/**
- same algorithm as the combineVersion
-      observe how the zip does not block at all
-      value Int(14) and String("hello, combined world!")
-      are emitted randomly as they occur
- */
 func freeCombineVersion() {
     Task {
         let subject1 = await PassthroughSubject(Int.self)
