@@ -83,20 +83,11 @@ public extension Publisher {
                 return c
             }
             return .init(
-                cancel: { Task {
-                    await t.result.map {
-                        $0.cancel()
-                    }
-                } },
+                cancel: { Task { await t.result.map {  $0.cancel() } } },
                 isCancelled: { t.isCancelled },
-                value: {
-                    let cancellable = try await t.value
-                    let value = try await cancellable.value
-                    return value
-                },
+                value: {  try await t.value.value },
                 result: {
-                    let r = await t.result
-                    switch r {
+                    switch await t.result {
                         case let .success(result):  return await result.result
                         case let .failure(error): return .failure(error)
                     }
