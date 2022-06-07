@@ -75,79 +75,96 @@ public struct MulticasterState<Output: Sendable> {
     mutating func reduce(action: Action) async throws -> Reducer<Self, Action>.Effect {
         switch action {
             case let .connect(continuation):
-                guard case .none = cancellable else {
-                    continuation.resume(throwing: Error.alreadyConnected)
-                    return .completion(.failure(Error.alreadyConnected))
-                }
-                cancellable = await upstream.sink(downstream)
-                isRunning = true
-                continuation.resume()
-                return .none
+                return try await connect(continuation)
             case let .pause(continuation):
-                guard let _ = cancellable else {
-                    continuation.resume(throwing: Error.disconnected)
-                    return .completion(.failure(Error.disconnected))
-                }
-                guard isRunning else {
-                    continuation.resume(throwing: Error.alreadyPaused)
-                    return .completion(.failure(Error.alreadyPaused))
-                }
-                isRunning = false
-                continuation.resume()
-                return .none
+                return try await pause(continuation)
             case let .resume(continuation):
-                guard let _ = cancellable else {
-                    continuation.resume(throwing: Error.disconnected)
-                    return .completion(.failure(Error.disconnected))
-                }
-                guard !isRunning else {
-                    continuation.resume(throwing: Error.alreadyResumed)
-                    return .completion(.failure(Error.alreadyResumed))
-                }
-                isRunning = true
-                upstreamContinuation?.resume(returning: .more)
-                continuation.resume()
-                return .none
+                return try await resume(continuation)
             case let .disconnect(continuation):
-                guard let _ = cancellable else {
-                    continuation.resume(throwing: Error.alreadyDisconnected)
-                    return .completion(.failure(Error.alreadyDisconnected))
-                }
-                isRunning = false
-                upstreamContinuation?.resume(returning: .done)
-                continuation.resume()
-                return .completion(.exit)
-            case let .distribute(.receive(result, continuation)):
-                switch try await distributor.reduce(action: .receive(result, continuation)) {
-                    case .none:
-                        return .none
-                    case .published(_):
-                        return .none // FIXME: Need to handle this
-                    case let .completion(completion):
-                        switch completion {
-                            case .termination:
-                                return .completion(.termination)
-                            case .exit:
-                                return .completion(.exit)
-                            case let .failure(error):
-                                return .completion(.failure(error))
-                            case .cancel:
-                                return .completion(.cancel)
-                        }
-                }
-            case let .distribute(.subscribe(downstream, continuation)):
-                var repeater: Cancellable<Demand>!
-                let _: Void = await withUnsafeContinuation { outerContinuation in
-                    repeater = distributor.process(subscription: downstream, continuation: outerContinuation)
-                }
-                continuation.resume(returning: repeater)
+                return try await disconnect(continuation)
+            case let .distribute(action):
+                return try await distribute(action)
+        }
+    }
+
+    mutating func connect(
+        _ continuation: UnsafeContinuation<Void, Swift.Error>
+    ) async throws -> Reducer<Self, Action>.Effect {
+        guard case .none = cancellable else {
+            continuation.resume(throwing: Error.alreadyConnected)
+            return .completion(.failure(Error.alreadyConnected))
+        }
+        cancellable = await upstream.sink(downstream)
+        isRunning = true
+        continuation.resume()
+        return .none
+    }
+
+    mutating func pause(
+        _ continuation: UnsafeContinuation<Void, Swift.Error>
+    ) async throws -> Reducer<Self, Action>.Effect {
+        guard let _ = cancellable else {
+            continuation.resume(throwing: Error.disconnected)
+            return .completion(.failure(Error.disconnected))
+        }
+        guard isRunning else {
+            continuation.resume(throwing: Error.alreadyPaused)
+            return .completion(.failure(Error.alreadyPaused))
+        }
+        isRunning = false
+        continuation.resume()
+        return .none
+    }
+
+    mutating func resume(
+        _ continuation: UnsafeContinuation<Void, Swift.Error>
+    ) async throws -> Reducer<Self, Action>.Effect {
+        guard let _ = cancellable else {
+            continuation.resume(throwing: Error.disconnected)
+            return .completion(.failure(Error.disconnected))
+        }
+        guard !isRunning else {
+            continuation.resume(throwing: Error.alreadyResumed)
+            return .completion(.failure(Error.alreadyResumed))
+        }
+        isRunning = true
+        upstreamContinuation?.resume(returning: .more)
+        continuation.resume()
+        return .none
+    }
+
+    mutating func disconnect(
+        _ continuation: UnsafeContinuation<Void, Swift.Error>
+    ) async throws -> Reducer<Self, Action>.Effect {
+        guard let _ = cancellable else {
+            continuation.resume(throwing: Error.alreadyDisconnected)
+            return .completion(.failure(Error.alreadyDisconnected))
+        }
+        isRunning = false
+        upstreamContinuation?.resume(returning: .done)
+        continuation.resume()
+        return .completion(.exit)
+    }
+
+    mutating func distribute(
+        _ action: DistributorState<Output>.Action
+    ) async throws -> Reducer<Self, Action>.Effect {
+        switch try await distributor.reduce(action: action) {
+            case .none:
                 return .none
-            case let .distribute(.unsubscribe(channelId)):
-                guard let downstream = distributor.repeaters.removeValue(forKey: channelId) else {
-                    return .none
+            case .published(_):
+                return .none // FIXME: Need to handle this
+            case let .completion(completion):
+                switch completion {
+                    case .termination:
+                        return .completion(.termination)
+                    case .exit:
+                        return .completion(.exit)
+                    case let .failure(error):
+                        return .completion(.failure(error))
+                    case .cancel:
+                        return .completion(.cancel)
                 }
-                await distributor.process(currentRepeaters: [channelId: downstream], with: .completion(.finished))
-                return .none
         }
     }
 }
