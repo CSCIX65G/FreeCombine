@@ -66,15 +66,16 @@ public extension Cancellable {
     }
 }
 public extension Cancellable {
-    static func join<B>(_ inner: Cancellable<Cancellable<B>>) -> Cancellable<B> {
+    static func join<B>(_ outer: Cancellable<Cancellable<B>>) -> Cancellable<B> {
         .init(
-            cancel: { inner.cancel() },
-            isCancelled: { inner.isCancelled },
+            cancel: { outer.cancel() },
+            isCancelled: { outer.isCancelled },
             value: {
-                try await inner.value.value
+                let inner = try await outer.value
+                return try await inner.value
             },
             result: {
-                switch await inner.result {
+                switch await outer.result {
                     case let .success(value): return await value.result
                     case let .failure(error): return .failure(error)
                 }

@@ -103,14 +103,12 @@ class MulticastTests: XCTestCase {
                     XCTFail("Got an error? \(error)")
                     return .done
                 case .completion(.finished):
-                    print("received: \(result)")
                     let count = await counter1.count
                     if count != 100 {
                         XCTFail("Incorrect count: \(count) in subscription 1")
                     }
                     return .done
                 case .completion(.cancelled):
-                    print("received: \(result)")
                     XCTFail("Should not have cancelled")
                     return .done
             }

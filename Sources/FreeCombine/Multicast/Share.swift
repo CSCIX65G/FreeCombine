@@ -18,9 +18,9 @@ public extension Publisher {
                     case .value:
                         return try await downstream(r)
                     case .completion:
-                        let ret = try await downstream(r)
+                        let finalValue = try await downstream(r)
                         await multicaster.set(value: .none)
-                        return ret
+                        return finalValue
                 }
             }
         }
@@ -39,14 +39,14 @@ public extension Publisher {
                     await multicaster.set(value: m)
                     let cancellable = await m.publisher().sink(lift(downstream))
                     try await m.connect()
-                    _ = print("\(m)")
+                    continuation?.resume()
                     return cancellable
                 }
                 guard let m = await multicaster.value else {
                     return await Empty(Output.self).sink(downstream)
                 }
+                continuation?.resume()
                 let cancellable = await m.publisher().sink(lift(downstream))
-                _ = print("\(m)")
                 return cancellable
             } )
         }
