@@ -5,6 +5,8 @@
 //  Created by Van Simmons on 5/18/22.
 //
 
+// Can't be a protocol bc we have to implement deinit
+
 public final class Cancellable<Output: Sendable>: Sendable {
     private let _cancel: @Sendable () -> Void
     private let _isCancelled: @Sendable () -> Bool
@@ -61,5 +63,44 @@ public extension Cancellable {
 
     convenience init(task: @Sendable @escaping () async throws -> Output) {
         self.init(task: Task.init(operation: task))
+    }
+}
+public extension Cancellable {
+    static func join<B>(_ inner: Cancellable<Cancellable<B>>) -> Cancellable<B> {
+        .init(
+            cancel: { inner.cancel() },
+            isCancelled: { inner.isCancelled },
+            value: {
+                try await inner.value.value
+            },
+            result: {
+                switch await inner.result {
+                    case let .success(value): return await value.result
+                    case let .failure(error): return .failure(error)
+                }
+            }
+        )
+    }
+
+    func map<B>(_ f: @escaping (Output) async -> B) -> Cancellable<B> {
+        .init(
+            cancel: self.cancel,
+            isCancelled: { self.isCancelled },
+            value: { try await f(self.value) },
+            result: {
+                switch await self.result {
+                    case let .success(value): return await .success(f(value))
+                    case let .failure(error): return .failure(error)
+                }
+            }
+        )
+    }
+
+    func join<B>() -> Cancellable<B> where  Output == Cancellable<B> {
+        Self.join(self)
+    }
+
+    func flatMap<B>(_ f: @escaping (Output) async -> Cancellable<B>) -> Cancellable<B> {
+        self.map(f).join()
     }
 }
