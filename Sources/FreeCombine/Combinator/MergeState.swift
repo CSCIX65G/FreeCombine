@@ -60,7 +60,7 @@ struct MergeState<Output: Sendable> {
         guard state.mostRecentDemand != .done else { return }
         do {
             switch completion {
-                case .termination:
+                case .finished:
                     state.mostRecentDemand = try await state.downstream(.completion(.finished))
                 case .cancel:
                     state.mostRecentDemand = try await state.downstream(.completion(.cancelled))

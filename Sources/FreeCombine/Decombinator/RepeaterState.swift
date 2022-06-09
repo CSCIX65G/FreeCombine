@@ -31,7 +31,7 @@ public struct RepeaterState<ID: Hashable & Sendable, Output: Sendable>: Identifi
     static func complete(state: inout Self, completion: Reducer<Self, Self.Action>.Completion) async -> Void {
         do {
             switch completion {
-                case .termination:
+                case .finished:
                     _ = try await state.downstream(.completion(.finished))
                 case .exit:
                     ()

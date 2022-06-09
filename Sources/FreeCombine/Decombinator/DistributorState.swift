@@ -30,7 +30,7 @@ public struct DistributorState<Output: Sendable> {
 
     static func complete(state: inout Self, completion: Reducer<Self, Self.Action>.Completion) async -> Void {
         switch completion {
-            case .termination:
+            case .finished:
                 await state.process(currentRepeaters: state.repeaters, with: .completion(.finished))
             case .exit:
                 fatalError("Distributor should never exit")

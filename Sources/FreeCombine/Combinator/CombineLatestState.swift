@@ -51,7 +51,7 @@ struct CombineLatestState<Left: Sendable, Right: Sendable> {
         switch completion {
             case .cancel:
                 _ = try? await state.downstream(.completion(.cancelled))
-            case .exit, .termination:
+            case .exit, .finished:
                 _ = try? await state.downstream(.completion(.finished))
             case let .failure(error):
                 _ = try? await state.downstream(.completion(.failure(error)))

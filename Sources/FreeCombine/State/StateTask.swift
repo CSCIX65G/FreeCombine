@@ -81,11 +81,11 @@ extension StateTask {
                             case .published(_): continue // FIXME: Handle future mutation
                             case .completion(.exit): throw PublisherError.completed
                             case let .completion(.failure(error)): throw error
-                            case .completion(.termination): throw PublisherError.internalError
+                            case .completion(.finished): throw PublisherError.internalError
                             case .completion(.cancel): throw PublisherError.cancelled
                         }
                     }
-                    await reducer(&state, .termination)
+                    await reducer(&state, .finished)
                 } catch {
                     channel.finish()
                     for await action in channel { reducer(action, .failure(error)); continue }
