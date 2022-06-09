@@ -34,6 +34,8 @@ https://github.com/bitemyapp/papers/blob/master/Stream%20Fusion%20on%20Haskell%2
 
 ### Stream Libraries
 
+[Akka Streams](https://qconnewyork.com/ny2015/system/files/presentation-slides/AkkaStreamsQconNY.pdf)
+
 ### Combine
 
 [Conversation on Combine](https://iosdevelopers.slack.com/archives/C0AET0JQ5/p1623102144192300)

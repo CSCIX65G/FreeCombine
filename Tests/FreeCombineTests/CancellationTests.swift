@@ -99,7 +99,7 @@ class CancellationTests: XCTestCase {
                     let count2 = await counter2.count
                     XCTAssertTrue(count2 == 26, "Incorrect count: \(count2)")
                     do { try await expectation2.complete() }
-                    catch { XCTFail("Multiple terminations sent: \(error)") }
+                    catch { XCTFail("Multiple finishes sent: \(error)") }
                     return .done
                 case .completion(.cancelled):
                     XCTFail("Should not have cancelled")
@@ -128,7 +128,7 @@ class CancellationTests: XCTestCase {
                     case .completion(.finished):
                         XCTFail("Got to end of task that should have been cancelled")
                         do { try await expectation.complete() }
-                        catch { XCTFail("Multiple terminations sent: \(error)") }
+                        catch { XCTFail("Multiple finishes sent: \(error)") }
                         return .done
                     case .completion(.cancelled):
                         try await expectation.complete()

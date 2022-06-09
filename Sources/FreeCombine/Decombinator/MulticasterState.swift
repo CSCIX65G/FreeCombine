@@ -53,7 +53,7 @@ public struct MulticasterState<Output: Sendable> {
 
     static func complete(state: inout Self, completion: Reducer<Self, Self.Action>.Completion) async -> Void {
         switch completion {
-            case .termination:
+            case .finished:
                 await state.distributor.process(currentRepeaters: state.distributor.repeaters, with: .completion(.finished))
             case .exit:
                 fatalError("Multicaster should never exit")
@@ -156,8 +156,8 @@ public struct MulticasterState<Output: Sendable> {
                 return .none // FIXME: Need to handle this
             case let .completion(completion):
                 switch completion {
-                    case .termination:
-                        return .completion(.termination)
+                    case .finished:
+                        return .completion(.finished)
                     case .exit:
                         return .completion(.exit)
                     case let .failure(error):

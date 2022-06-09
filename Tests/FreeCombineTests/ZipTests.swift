@@ -191,7 +191,7 @@ class ZipTests: XCTestCase {
                         let count = await counter.count
                         XCTAssert(count == 26, "wrong number of values sent: \(count)")
                         do { try await expectation.complete() }
-                        catch { XCTFail("Multiple terminations sent: \(error)") }
+                        catch { XCTFail("Multiple finishes sent: \(error)") }
                         return .done
                     case .completion(.cancelled):
                         XCTFail("Should not have cancelled")

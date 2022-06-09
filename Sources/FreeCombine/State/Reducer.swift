@@ -17,7 +17,7 @@ public struct Reducer<State, Action> {
     }
 
     public enum Completion {
-        case termination
+        case finished
         case exit
         case failure(Swift.Error)
         case cancel

@@ -4,35 +4,51 @@
 //
 //  Created by Van Simmons on 6/7/22.
 //
+
+// Need join on Cancellable
 public extension Publisher {
-//    func share() async -> Self {
-//        let multicaster: ValueRef<Multicaster<Output>?> = ValueRef(value: .none)
-//        return .init { continuation, downstream in
-//            return self(onStartup: continuation) { r in
-//                if await multicaster.value == nil {
-//                    let m: Multicaster<Output> = await .init(
-//                        stateTask: Channel.init().stateTask(
-//                            initialState: MulticasterState<Output>.create(upstream: self),
-//                            reducer: Reducer(
-//                                onCompletion: MulticasterState<Output>.complete,
-//                                reducer: MulticasterState<Output>.reduce
-//                            )
-//                        )
-//                    )
-//                    await multicaster.set(value: m)
-//                    try await m.connect()
-//                }
-//                guard let m = await multicaster.value else {
-//                    fatalError("Lost connection")
-//                }
-//                switch r {
-//                    case .value(let a):
-//                        return try await downstream(.value(a))
-//                    case let .completion(value):
-//                        try await m.disconnect()
-//                        return .done
-//                }
-//            }
-//        }
-//    }
+
+    func share() async -> Self {
+        let multicaster: ValueRef<Multicaster<Output>?> = ValueRef(value: .none)
+        @Sendable func lift(
+            _ downstream: @Sendable @escaping (AsyncStream<Output>.Result) async throws -> Demand
+        ) -> @Sendable (AsyncStream<Output>.Result) async throws -> Demand {
+            { r in
+                switch r {
+                    case .value:
+                        return try await downstream(r)
+                    case .completion:
+                        let finalValue = try await downstream(r)
+                        await multicaster.set(value: .none)
+                        return finalValue
+                }
+            }
+        }
+        return .init { continuation, downstream in
+            Cancellable<Cancellable<Demand>>.join(.init {
+                if await multicaster.value == nil {
+                    let m: Multicaster<Output> = await .init(
+                        stateTask: Channel.init().stateTask(
+                            initialState: MulticasterState<Output>.create(upstream: self),
+                            reducer: Reducer(
+                                onCompletion: MulticasterState<Output>.complete,
+                                reducer: MulticasterState<Output>.reduce
+                            )
+                        )
+                    )
+                    await multicaster.set(value: m)
+                    let cancellable = await m.publisher().sink(lift(downstream))
+                    try await m.connect()
+                    continuation?.resume()
+                    return cancellable
+                }
+                guard let m = await multicaster.value else {
+                    return await Empty(Output.self).sink(downstream)
+                }
+                continuation?.resume()
+                let cancellable = await m.publisher().sink(lift(downstream))
+                return cancellable
+            } )
+        }
+    }
 }
