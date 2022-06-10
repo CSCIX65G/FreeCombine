@@ -10,5 +10,6 @@
         <page name='07 - UnracyAsyncTaskContinuation'/>
         <page name='08 - Publishers'/>
         <page name='09 - Duality of Direct Style vs Continuation Passing Style'/>
+        <page name='10 - Push - Pull Duality.xcplaygroundpage'/>
     </pages>
 </playground>
