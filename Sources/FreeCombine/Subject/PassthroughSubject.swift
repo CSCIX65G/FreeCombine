@@ -15,6 +15,7 @@ public func PassthroughSubject<Output>(
         onStartup: onStartup,
         reducer: Reducer(
             onCompletion: DistributorState<Output>.complete,
+            disposer: DistributorState<Output>.dispose,
             reducer: DistributorState<Output>.reduce
         )
     )
@@ -29,6 +30,7 @@ public func PassthroughSubject<Output>(
             initialState: { channel in .init(currentValue: .none, nextKey: 0, downstreams: [:]) },
             reducer: Reducer(
                 onCompletion: DistributorState<Output>.complete,
+                disposer: DistributorState<Output>.dispose,
                 reducer: DistributorState<Output>.reduce
             )
         )

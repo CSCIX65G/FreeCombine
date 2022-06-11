@@ -49,6 +49,12 @@ public extension Channel where Element == Void {
 }
 
 public extension Channel {
+//    func consume(
+//        publisher: Publisher<Element>
+//    ) async -> Cancellable<Demand> where Element == AsyncStream<Upstream>.Result {
+//        await consume(publisher: publisher, using: { ($0, $1) })
+//    }
+
     func consume<Upstream>(
         publisher: Publisher<Upstream>
     ) async -> Cancellable<Demand> where Element == (AsyncStream<Upstream>.Result, UnsafeContinuation<Demand, Error>) {

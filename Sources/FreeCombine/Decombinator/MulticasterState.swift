@@ -20,6 +20,7 @@ public struct MulticasterState<Output: Sendable> {
         case disconnected
         case alreadyPaused
         case alreadyResumed
+        case alreadyCompleted
         case internalError
     }
 
@@ -68,6 +69,32 @@ public struct MulticasterState<Output: Sendable> {
         state.distributor.repeaters.removeAll()
     }
 
+    static func distributorCompletion(
+        _ completion: Reducer<Self, Self.Action>.Completion
+    ) -> Reducer<DistributorState<Output>, DistributorState<Output>.Action>.Completion {
+        switch completion {
+            case .finished: return .finished
+            case .exit: return .exit
+            case let .failure(error): return .failure(error)
+            case .cancel: return .cancel
+        }
+    }
+
+    static func dispose(action: Self.Action, completion: Reducer<Self, Self.Action>.Completion) async -> Void {
+        switch action {
+            case let .connect(continuation):
+                continuation.resume(throwing: Error.alreadyCompleted)
+            case let .pause(continuation):
+                continuation.resume(throwing: Error.alreadyCompleted)
+            case let .resume(continuation):
+                continuation.resume(throwing: Error.alreadyCompleted)
+            case let .disconnect(continuation):
+                continuation.resume(throwing: Error.alreadyCompleted)
+            case let .distribute(distributorAction):
+                await DistributorState<Output>.dispose(action: distributorAction, completion: distributorCompletion(completion))
+        }
+    }
+
     static func reduce(`self`: inout Self, action: Self.Action) async throws -> Reducer<Self, Action>.Effect {
         try await `self`.reduce(action: action)
     }
@@ -91,8 +118,8 @@ public struct MulticasterState<Output: Sendable> {
         _ continuation: UnsafeContinuation<Void, Swift.Error>
     ) async throws -> Reducer<Self, Action>.Effect {
         guard case .none = cancellable else {
-            continuation.resume(throwing: Error.alreadyConnected)
-            return .completion(.failure(Error.alreadyConnected))
+            continuation.resume()
+            return .none
         }
         cancellable = await upstream.sink(downstream)
         isRunning = true
