@@ -9,6 +9,10 @@ public struct DistributorState<Output: Sendable> {
     var nextKey: Int
     var repeaters: [Int: StateTask<RepeaterState<Int, Output>, RepeaterState<Int, Output>.Action>]
 
+    public enum Error: Swift.Error {
+        case alreadyCompleted
+    }
+
     public enum Action: Sendable {
         case receive(AsyncStream<Output>.Result, UnsafeContinuation<Void, Never>?)
         case subscribe(
@@ -28,6 +32,23 @@ public struct DistributorState<Output: Sendable> {
         self.repeaters = downstreams
     }
 
+    static func dispose(action: Self.Action, completion: Reducer<Self, Self.Action>.Completion) async -> Void {
+        switch action {
+            case let .receive(_, continuation): continuation?.resume()
+            case let .subscribe(downstream, continuation):
+                switch completion {
+                    case let .failure(error):
+                        _ = try? await downstream(.completion(.failure(error)))
+                        continuation.resume(throwing: error)
+                    default:
+                        continuation.resume(
+                            returning: .init(task: .init { return try await downstream(.completion(.finished))})
+                        )
+                }
+            case .unsubscribe: ()
+        }
+    }
+
     static func complete(state: inout Self, completion: Reducer<Self, Self.Action>.Completion) async -> Void {
         switch completion {
             case .finished:
@@ -44,6 +65,8 @@ public struct DistributorState<Output: Sendable> {
         }
         state.repeaters.removeAll()
     }
+
+    
     
     static func reduce(`self`: inout Self, action: Self.Action) async throws -> Reducer<Self, Action>.Effect {
         try await `self`.reduce(action: action)

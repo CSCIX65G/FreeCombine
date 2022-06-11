@@ -16,6 +16,7 @@ public func CurrentValueSubject<Output>(
         onStartup: onStartup,
         reducer: Reducer(
             onCompletion: DistributorState<Output>.complete,
+            disposer: DistributorState<Output>.dispose,
             reducer: DistributorState<Output>.reduce
         )
     )
@@ -30,6 +31,7 @@ public func CurrentValueSubject<Output>(
         initialState: { channel in .init(currentValue: currentValue, nextKey: 0, downstreams: [:]) },
         reducer: Reducer(
             onCompletion: DistributorState<Output>.complete,
+            disposer: DistributorState<Output>.dispose,
             reducer: DistributorState<Output>.reduce
         )
     )

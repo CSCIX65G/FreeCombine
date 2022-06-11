@@ -78,7 +78,9 @@ extension StateTask {
                         guard !Task.isCancelled else { throw PublisherError.cancelled }
                         switch effect {
                             case .none: continue
-                            case .published(_): continue // FIXME: Handle future mutation
+                            case .published(_):
+                                // FIXME: Need to handle the publisher   channel.consume(publisher: publisher)
+                                continue
                             case .completion(.exit): throw PublisherError.completed
                             case let .completion(.failure(error)): throw error
                             case .completion(.finished): throw PublisherError.internalError
@@ -88,7 +90,7 @@ extension StateTask {
                     await reducer(&state, .finished)
                 } catch {
                     channel.finish()
-                    for await action in channel { reducer(action, .failure(error)); continue }
+                    for await action in channel { await reducer(action, .failure(error)); continue }
                     guard let completion = error as? PublisherError else {
                         await reducer(&state, .failure(error))
                         throw error

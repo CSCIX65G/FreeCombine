@@ -7,7 +7,7 @@
 
 public actor ValueRef<Value> {
     var value: Value
-    
+
     public init(value: Value) { self.value = value }
 
     @discardableResult
@@ -27,4 +27,3 @@ extension ValueRef {
         value.next()
     }
 }
-
