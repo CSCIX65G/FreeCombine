@@ -59,7 +59,9 @@ struct CombineLatestState<Left: Sendable, Right: Sendable> {
     }
 
     static func reduce(`self`: inout Self, action: Self.Action) async throws -> Reducer<Self, Action>.Effect {
-        guard !Task.isCancelled else { return .completion(.cancel) }
+        guard !Task.isCancelled else {
+            return .completion(.cancel)
+        }
         return try await `self`.reduce(action: action)
     }
 

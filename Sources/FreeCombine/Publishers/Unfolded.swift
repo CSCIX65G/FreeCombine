@@ -21,21 +21,22 @@ public extension Publisher {
                 continuation?.resume()
                 for a in sequence {
                     guard !Task.isCancelled else {
-                        return try await downstream(.completion(.failure(PublisherError.cancelled)))
+                        return try await handleCancellation(of: downstream)
                     }
-                    guard try await downstream(.value(a)) == .more else { return .done }
+                    guard try await downstream(.value(a)) == .more else {
+                        return .done
+                    }
                 }
-                guard !Task.isCancelled else {
-                    return try await downstream(.completion(.failure(PublisherError.cancelled)))
-                }
-                return try await downstream(.completion(.finished))
+                return Task.isCancelled
+                ? try await downstream(.completion(.cancelled))
+                : try await downstream(.completion(.finished))
             }
         }
     }
 }
 
 public func Unfolded<Element>(
-    _ generator: @escaping () -> Element?
+    _ generator: @escaping () async throws -> Element?
 ) -> Publisher<Element> {
     .init(generator)
 }
@@ -47,12 +48,9 @@ public extension Publisher {
                     continuation?.resume()
                     while let a = try await generator() {
                         guard !Task.isCancelled else {
-                            return try await downstream(.completion(.failure(PublisherError.cancelled)))
+                            return try await handleCancellation(of: downstream)
                         }
                         guard try await downstream(.value(a)) == .more else { return .done }
-                    }
-                    guard !Task.isCancelled else {
-                        return try await downstream(.completion(.failure(PublisherError.cancelled)))
                     }
                     return try await downstream(.completion(.finished))
                 }

@@ -46,7 +46,7 @@ class CombineLatestTests: XCTestCase {
             let count = await counter.count
             XCTFail("Timed out, count = \(count)")
         }
-        c1.cancel()
+        let _ = await c1.result
     }
 
     func testEmptyCombineLatest() async throws {
@@ -82,7 +82,7 @@ class CombineLatestTests: XCTestCase {
             let count = await counter.count
             XCTFail("Timed out, count = \(count)")
         }
-        z1.cancel()
+        let _ = await z1.result
     }
 
     func testSimpleSequenceCombineLatest() async throws {

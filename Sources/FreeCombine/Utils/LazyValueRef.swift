@@ -54,10 +54,13 @@ public struct LazyValueRefState<Value: Sendable> {
                     }
                     do {
                         value = try await creator()
+                        self.creator = .none
+                        refCount += 1
                         continuation.resume(returning: value!)
                         return .none
                     }
                 }
+                refCount += 1
                 continuation.resume(returning: value)
                 return .none
             case let .retain(continuation):
@@ -76,6 +79,8 @@ public struct LazyValueRefState<Value: Sendable> {
                 refCount -= 1
                 if refCount == 0 {
                     value = .none
+                    continuation.resume()
+                    return .completion(.exit)
                 }
                 continuation.resume()
                 return .none
@@ -106,7 +111,7 @@ public func LazyValueRef<Value>(
 }
 
 public extension StateTask {
-    func value<Value>() async throws -> Value where State == LazyValueRefState<Value>, Action == LazyValueRefState<Value>.Action {
+    func value<Value>() async throws -> Value? where State == LazyValueRefState<Value>, Action == LazyValueRefState<Value>.Action {
         let value: Value = try await withUnsafeThrowingContinuation({ continuation in
             let queueStatus = self.channel.yield(.value(continuation))
             switch queueStatus {

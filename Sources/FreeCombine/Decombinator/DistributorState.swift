@@ -6,27 +6,39 @@
 //
 public struct DistributorState<Output: Sendable> {
     public private(set) var currentValue: Output?
+//    let channel: Channel<DistributorState<Output>.Action>
     var nextKey: Int
     var repeaters: [Int: StateTask<RepeaterState<Int, Output>, RepeaterState<Int, Output>.Action>]
+    var isComplete = false
 
     public enum Error: Swift.Error {
         case alreadyCompleted
     }
 
-    public enum Action: Sendable {
+    public enum Action: Sendable, CustomStringConvertible {
         case receive(AsyncStream<Output>.Result, UnsafeContinuation<Void, Never>?)
         case subscribe(
             @Sendable (AsyncStream<Output>.Result) async throws -> Demand,
             UnsafeContinuation<Cancellable<Demand>, Swift.Error>
         )
         case unsubscribe(Int)
+
+        public var description: String {
+            switch self {
+                case let .receive(result, _): return "receive(\(result)"
+                case .subscribe: return "subscribe"
+                case let .unsubscribe(key): return "unsubscribe(\(key))"
+            }
+        }
     }
 
     public init(
+//        channel: Channel<DistributorState<Output>.Action>,
         currentValue: Output?,
         nextKey: Int,
         downstreams: [Int: StateTask<RepeaterState<Int, Output>, RepeaterState<Int, Output>.Action>]
     ) {
+//        self.channel = channel
         self.currentValue = currentValue
         self.nextKey = nextKey
         self.repeaters = downstreams
@@ -37,12 +49,20 @@ public struct DistributorState<Output: Sendable> {
             case let .receive(_, continuation): continuation?.resume()
             case let .subscribe(downstream, continuation):
                 switch completion {
+                    case .failure(PublisherError.completed):
+                        let c = Cancellable { try await downstream(.completion(.finished)) }
+                        continuation.resume(returning: c)
+                    case .failure(PublisherError.cancelled):
+                        continuation.resume(
+                            returning: .init { return try await downstream(.completion(.cancelled))}
+                        )
                     case let .failure(error):
-                        _ = try? await downstream(.completion(.failure(error)))
-                        continuation.resume(throwing: error)
+                        continuation.resume(
+                            returning: .init { return try await downstream(.completion(.failure(error)))}
+                        )
                     default:
                         continuation.resume(
-                            returning: .init(task: .init { return try await downstream(.completion(.finished))})
+                            returning: .init { return try await downstream(.completion(.finished))}
                         )
                 }
             case .unsubscribe: ()
@@ -51,10 +71,8 @@ public struct DistributorState<Output: Sendable> {
 
     static func complete(state: inout Self, completion: Reducer<Self, Self.Action>.Completion) async -> Void {
         switch completion {
-            case .finished:
+            case .finished, .exit:
                 await state.process(currentRepeaters: state.repeaters, with: .completion(.finished))
-            case .exit:
-                fatalError("Distributor should never exit")
             case let .failure(error):
                 await state.process(currentRepeaters: state.repeaters, with: .completion(.failure(error)))
             case .cancel:
@@ -66,8 +84,6 @@ public struct DistributorState<Output: Sendable> {
         state.repeaters.removeAll()
     }
 
-    
-    
     static func reduce(`self`: inout Self, action: Self.Action) async throws -> Reducer<Self, Action>.Effect {
         try await `self`.reduce(action: action)
     }
@@ -76,11 +92,20 @@ public struct DistributorState<Output: Sendable> {
         switch action {
             case let .receive(result, continuation):
                 if case let .value(newValue) = result, currentValue != nil { currentValue = newValue }
+                if case .completion = result {
+                    isComplete = true
+                }
                 await process(currentRepeaters: repeaters, with: result)
                 continuation?.resume()
-                return .none
+                return isComplete
+                    ? .completion(.exit)
+                    : .none
             case let .subscribe(downstream, continuation):
                 var repeater: Cancellable<Demand>!
+                if isComplete {
+                    continuation.resume(returning: .init { try await downstream(.completion(.finished)) } )
+                    return .completion(.exit)
+                }
                 let _: Void = await withUnsafeContinuation { outerContinuation in
                     repeater = process(subscription: downstream, continuation: outerContinuation)
                 }
@@ -154,22 +179,10 @@ public struct DistributorState<Output: Sendable> {
             )
         )
         repeaters[nextKey] = repeater
-        return .init(
-            cancel: {
-                repeater.cancel()
-            },
-            isCancelled: { repeater.isCancelled },
-            value: {
-                do {
-                    let value = try await repeater.value
-                    return value.mostRecentDemand
-                } catch {
-                    fatalError("Could not get demand.  Error: \(error)")
-                }
-            },
-            result: {
-                await repeater.result.map(\.mostRecentDemand)
+        return .init {
+            try await withTaskCancellationHandler(handler: repeater.cancel) {
+                try await repeater.value.mostRecentDemand
             }
-        )
+        }
     }
 }

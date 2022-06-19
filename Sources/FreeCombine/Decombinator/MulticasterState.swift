@@ -6,12 +6,22 @@
 //
 
 public struct MulticasterState<Output: Sendable> {
-    public enum Action: Sendable {
+    public enum Action: Sendable, CustomStringConvertible {
         case connect(UnsafeContinuation<Void, Swift.Error>)
         case pause(UnsafeContinuation<Void, Swift.Error>)
         case resume(UnsafeContinuation<Void, Swift.Error>)
         case disconnect(UnsafeContinuation<Void, Swift.Error>)
         case distribute(DistributorState<Output>.Action)
+
+        public var description: String {
+            switch self {
+                case .connect: return "connect"
+                case .pause: return "pause"
+                case .resume: return "resume"
+                case .disconnect: return "disconnect"
+                case let .distribute(subaction): return "distribute(\(subaction))"
+            }
+        }
     }
 
     public enum Error: Swift.Error {
@@ -37,27 +47,38 @@ public struct MulticasterState<Output: Sendable> {
         channel: Channel<MulticasterState<Output>.Action>
     ) {
         self.upstream = upstream
+
         self.distributor = .init(currentValue: .none, nextKey: 0, downstreams: [:])
         self.downstream = { r in
-            await withUnsafeContinuation { continuation in
-                channel.yield(.distribute(.receive(r, continuation)))
+            var queueStatus: AsyncStream<MulticasterState<Output>.Action>.Continuation.YieldResult!
+            let _: Void = await withUnsafeContinuation { continuation in
+                queueStatus = channel.yield(.distribute(.receive(r, continuation)))
+                switch queueStatus {
+                    case .enqueued, .terminated:
+                        ()
+                    case .dropped:
+                        fatalError("Should never drop")
+                    case .none:
+                        fatalError("must have a queue status")
+                    @unknown default:
+                        fatalError("Handle new case")
+                }
             }
-            return .more
+            if case .enqueued = queueStatus { return .more }
+            return .done
         }
     }
 
     static func create(
         upstream: Publisher<Output>
     ) -> (Channel<MulticasterState<Output>.Action>) -> Self {
-        { channel in .init(upstream: upstream, channel: channel) }
+        { channel in return .init(upstream: upstream, channel: channel) }
     }
 
     static func complete(state: inout Self, completion: Reducer<Self, Self.Action>.Completion) async -> Void {
         switch completion {
-            case .finished:
+            case .finished, .exit:
                 await state.distributor.process(currentRepeaters: state.distributor.repeaters, with: .completion(.finished))
-            case .exit:
-                fatalError("Multicaster should never exit")
             case let .failure(error):
                 await state.distributor.process(currentRepeaters: state.distributor.repeaters, with: .completion(.failure(error)))
             case .cancel:
@@ -67,6 +88,7 @@ public struct MulticasterState<Output: Sendable> {
             repeater.finish()
         }
         state.distributor.repeaters.removeAll()
+        state.cancellable?.cancel()
     }
 
     static func distributorCompletion(
@@ -96,7 +118,7 @@ public struct MulticasterState<Output: Sendable> {
     }
 
     static func reduce(`self`: inout Self, action: Self.Action) async throws -> Reducer<Self, Action>.Effect {
-        try await `self`.reduce(action: action)
+        return try await `self`.reduce(action: action)
     }
 
     mutating func reduce(action: Action) async throws -> Reducer<Self, Action>.Effect {
@@ -121,7 +143,11 @@ public struct MulticasterState<Output: Sendable> {
             continuation.resume()
             return .none
         }
-        cancellable = await upstream.sink(downstream)
+        let localUpstream = upstream
+        let localDownstream = downstream
+        cancellable = Cancellable<Demand>.join {
+            await localUpstream.sink(localDownstream)
+        }
         isRunning = true
         continuation.resume()
         return .none

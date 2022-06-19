@@ -12,7 +12,7 @@ public func CurrentValueSubject<Output>(
 ) -> StateTask<DistributorState<Output>, DistributorState<Output>.Action> {
     .init(
         channel: .init(buffering: buffering),
-        initialState: { _ in .init(currentValue: currentValue, nextKey: 0, downstreams: [:]) },
+        initialState: { channel in .init(currentValue: currentValue, nextKey: 0, downstreams: [:]) },
         onStartup: onStartup,
         reducer: Reducer(
             onCompletion: DistributorState<Output>.complete,

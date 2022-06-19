@@ -48,6 +48,6 @@ class ScanTests: XCTestCase {
             let count = await counter.count
             XCTFail("Timed out, count = \(count)")
         }
-        c1.cancel()
+        let _ = await c1.result
     }
 }

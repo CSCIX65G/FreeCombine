@@ -15,7 +15,11 @@ class DistributorTests: XCTestCase {
     override func tearDownWithError() throws { }
 
     func testSimpleReceiveValue() async throws {
-        var distributor = DistributorState(currentValue: 13, nextKey: 0, downstreams: [:])
+        var distributor = DistributorState(
+            currentValue: 13,
+            nextKey: 0,
+            downstreams: [:]
+        )
 
         do {
             _ = try await distributor.reduce(action: .receive(.value(15), .none))
@@ -41,7 +45,11 @@ class DistributorTests: XCTestCase {
                 let cancellable: Cancellable<Demand> = try await withUnsafeThrowingContinuation { taskC in
                     Task {
                         do {
-                            var distributor = DistributorState(currentValue: 13, nextKey: 0, downstreams: [:])
+                            var distributor = DistributorState(
+                                currentValue: 13,
+                                nextKey: 0,
+                                downstreams: [:]
+                            )
                             XCTAssert(distributor.repeaters.count == 0, "Incorrect number of repeaters = \(distributor.repeaters.count)")
                             _ = try await distributor.reduce(action: .subscribe(downstream, taskC))
                             XCTAssert(distributor.repeaters.count == 1, "Incorrect number of repeaters = \(distributor.repeaters.count)")
@@ -100,7 +108,9 @@ class DistributorTests: XCTestCase {
 
         let taskSync = await CheckedExpectation<Void>()
         var t: Task<Void, Swift.Error>!
-        let distributorValue = ValueRef(value: DistributorState(currentValue: 13, nextKey: 0, downstreams: [:]))
+        let distributorValue = ValueRef(
+            value: DistributorState(currentValue: 13, nextKey: 0, downstreams: [:])
+        )
         let _: Void = await withUnsafeContinuation { c in
             t = Task {
                 let cancellable1: Cancellable<Demand> = try await withUnsafeThrowingContinuation { taskC in

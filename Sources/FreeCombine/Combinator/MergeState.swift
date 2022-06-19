@@ -85,8 +85,10 @@ struct MergeState<Output: Sendable> {
             case let .setValue(value, continuation):
                 return try await reduceValue(value, continuation)
             case let .removeCancellable(index, continuation):
-                cancellables.removeValue(forKey: index)
                 continuation.resume(returning: .done)
+                if let c = cancellables.removeValue(forKey: index) {
+                    let _ = await c.result
+                }
                 if cancellables.count == 0 {
                     let c: Completion = Task.isCancelled ? .cancelled : .finished
                     mostRecentDemand = try await downstream(.completion(c))

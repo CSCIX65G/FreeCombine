@@ -5,31 +5,41 @@
 ## Like Combine. Only free. And concurrent.
 
 * Protocol-free.
+  * No protocols, only concrete types
+  * Eager type erasure
+  * Continuation-passing style
 * Race-free.
   * Yield-free.
   * Sleep-free.
 * Leak-free.
+  * Memory-bound Task cancellation
+  * Memory-bound UnsafeContinuation resolution
   * Unbounded queue-free.
 * Lock-free.
+  * Queueing channel instead of locking channel
 * Dependency-free.
+  * depends only on Swift std lib
 
 ## Salient features
 
 1. "Small things that compose"
-2. Implement all operations supported by Combine, but some require modification
-3. Uses "imprecise" errors throughout in the manner of Swift concurrency
-4. Futures _AND_ Streams
+1. Implement all operations supported by Combine, but some require modification
+1. Uses "imprecise" errors throughout in the manner of Swift concurrency.
+1. Tasks and Continuations can _always_ fail due to cancellation
+1. Principled handling of cancellation throughout 
+1. Futures _AND_ Streams
 
 ## Todo
 
+1. Implement leak prevention on UnsafeContinuation
 1. maybe add an additional repo (FreeCombineDispatch) that depends on libdispatch to get delay, debounce, throttle
-2. revamp StateThread to be exactly a concurrency aware version of TCA's store
-3. Add support for Promise/Future
-4. Add a repo which implements asyncPublishers for everything in Foundation that currently has a `publisher`
-5. fully implement all Combine operators
-6. Add a Buffer publisher/operator to reintroduce a push model via an independent source of demand upstream
-7. Get to 100% test coverage
-8. Document this at the level of writing a book in the form of playgrounds
+1. revamp StateThread to be exactly a concurrency aware version of TCA's store
+1. Add support for Promise/Future
+1. Add a repo which implements asyncPublishers for everything in Foundation that currently has a `publisher`
+1. fully implement all Combine operators
+1. Add a Buffer publisher/operator to reintroduce a push model via an independent source of demand upstream
+1. Get to 100% test coverage
+1. Document this at the level of writing a book in the form of playgrounds
 
   ## Introduction
 

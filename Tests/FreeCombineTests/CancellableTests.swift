@@ -23,21 +23,31 @@ final class CancellableTests: XCTestCase {
         let expectation2a = await CheckedExpectation<Bool>()
         let expectation3a = await CheckedExpectation<Bool>()
 
-        _ = await Cancellable(task: Task<(Cancellable<Void>, Cancellable<Void>, Cancellable<Void>), Swift.Error> {
-            let t1 = Cancellable(task: Task<Void, Swift.Error> {
+        var c: Cancellable<(Cancellable<Void>, Cancellable<Void>, Cancellable<Void>)>? = .none
+        c = Cancellable {
+            let t1 = Cancellable(deinitBehavior: .none) {
                 try await expectation1.value
                 try await expectation1a.complete(Task.isCancelled)
-            })
-            let t2 = Cancellable(task: Task<Void, Swift.Error> {
+            }
+            let t2 = Cancellable(deinitBehavior: .none) {
                 try await expectation2.value
                 try await expectation2a.complete(Task.isCancelled)
-            })
-            let t3 = Cancellable(task: Task<Void, Swift.Error> {
+            }
+            let t3 = Cancellable(deinitBehavior: .none) {
                 try await expectation3.value
                 try await expectation3a.complete(Task.isCancelled)
-            })
+            }
             return (t1, t2, t3)
-        }).result
+        }
+        let _ = await c?.result
+        if let c = c {
+            XCTAssert(c.isCompleting, "Not marked as completing")
+        } else {
+            XCTFail("should exist")
+        }
+        c = .none
+
+        try await Task.sleep(nanoseconds: 10_000)
 
         try await expectation1.complete()
         try await expectation2.complete()

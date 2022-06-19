@@ -6,8 +6,8 @@
 //
 
 public struct Channel<Element>: AsyncSequence {
-    private let stream: AsyncStream<Element>
-    private let continuation: AsyncStream<Element>.Continuation
+    let stream: AsyncStream<Element>
+    let continuation: AsyncStream<Element>.Continuation
 
     init(
         stream: AsyncStream<Element>,
@@ -109,4 +109,13 @@ public extension Channel {
             reducer: reducer
         )
     }
+}
+
+public extension Channel {
+//    func map<B>(_ f: @escaping (Element) async -> B) -> Channel<B> {
+//        let downstream = Channel<B>()
+//        for await element in self { downstream.yield(await f(element)) }
+//        downstream.finish()
+//        return downstream
+//    }
 }

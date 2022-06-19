@@ -58,20 +58,25 @@ public extension Publisher {
     @discardableResult
     func callAsFunction(
         onStartup: UnsafeContinuation<Void, Never>?,
-        _ f: @Sendable @escaping (AsyncStream<Output>.Result) async throws -> Demand
+        _ downstream: @Sendable @escaping (AsyncStream<Output>.Result) async throws -> Demand
     ) -> Cancellable<Demand> {
         call(onStartup, { result in
-            guard !Task.isCancelled else {
-                do { _ = try await f(.completion(.cancelled)) } catch { }
-                return .done
-            }
-            switch result {
-                case let .value(value):
-                    return try await f(.value(value))
-                case let .completion(.failure(error)):
-                    return try await f(.completion(.failure(error)))
-                case .completion(.finished), .completion(.cancelled):
-                    return try await f(result)
+            try await withTaskCancellationHandler(handler: {
+                Task {
+                    try await handleCancellation(of: downstream)
+                }
+            }) {
+                guard !Task.isCancelled else {
+                    return try await handleCancellation(of: downstream)
+                }
+                switch result {
+                    case let .value(value):
+                        return try await downstream(.value(value))
+                    case let .completion(.failure(error)):
+                        return try await downstream(.completion(.failure(error)))
+                    case .completion(.finished), .completion(.cancelled):
+                        return try await downstream(result)
+                }
             }
         } )
     }
@@ -175,3 +180,9 @@ func errorFlattener<B>(
     } }
 }
 
+func handleCancellation<Output>(
+    of f: @Sendable @escaping (AsyncStream<Output>.Result) async throws -> Demand
+) async throws -> Demand {
+    _ = try await f(.completion(.cancelled))
+    return .done
+}

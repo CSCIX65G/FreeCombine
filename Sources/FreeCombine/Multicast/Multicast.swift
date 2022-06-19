@@ -13,15 +13,21 @@ public struct Multicaster<Output> {
 
 public extension Multicaster {
     func publisher() -> Publisher<Output> {
-        .init(stateTask: self.stateTask)
+        .init(stateTask: stateTask)
     }
 
     func connect() async throws -> Void {
         return try await withUnsafeThrowingContinuation({ continuation in
             let queueStatus = stateTask.send(.connect(continuation))
-            guard case .enqueued = queueStatus else {
-                continuation.resume(throwing: PublisherError.enqueueError)
-                return
+            switch queueStatus {
+                case .enqueued:
+                    ()
+                case .terminated:
+                    continuation.resume(throwing: PublisherError.completed)
+                case .dropped:
+                    continuation.resume(throwing: PublisherError.enqueueError)
+                @unknown default:
+                    continuation.resume(throwing: PublisherError.enqueueError)
             }
         })
     }
@@ -60,7 +66,7 @@ public extension Multicaster {
 public extension Publisher {
     func multicast() async -> Multicaster<Output> {
         await .init(
-            stateTask: Channel.init().stateTask(
+            stateTask: Channel().stateTask(
                 initialState: MulticasterState<Output>.create(upstream: self),
                 reducer: Reducer(
                     onCompletion: MulticasterState<Output>.complete,
