@@ -15,7 +15,7 @@ class RepeaterTests: XCTestCase {
     override func tearDownWithError() throws { }
 
     func testSimpleRepeater() async throws {
-        let expectation = await CheckedExpectation<Void>()
+        let expectation = await Expectation<Void>()
         let downstream: @Sendable (AsyncStream<Int>.Result) async throws -> Demand = { result in
             switch result {
                 case .value:

@@ -6,7 +6,7 @@
 //
 @preconcurrency import Atomics
 
-public enum CancellableDeinitBehavior: Sendable {
+public enum DeinitBehavior: Sendable {
     case assert
     case log
     case none
@@ -19,7 +19,7 @@ public final class Cancellable<Output: Sendable>: Sendable {
 
     public let file: StaticString
     public let line: UInt
-    public let deinitBehavior: CancellableDeinitBehavior
+    public let deinitBehavior: DeinitBehavior
 
     public var isCancelled: Bool { task.isCancelled }
     public var isCompleting: Bool { deallocGuard.load(ordering: .relaxed) }
@@ -42,7 +42,7 @@ public final class Cancellable<Output: Sendable>: Sendable {
     init(
         file: StaticString = #file,
         line: UInt = #line,
-        deinitBehavior: CancellableDeinitBehavior = .assert,
+        deinitBehavior: DeinitBehavior = .assert,
         operation: @Sendable @escaping () async throws -> Output
     ) {
         let atomic = ManagedAtomic<Bool>(false)
@@ -51,14 +51,9 @@ public final class Cancellable<Output: Sendable>: Sendable {
         self.line = line
         self.deinitBehavior = deinitBehavior
         self.task = .init {
-            do {
-                let retValue = try await operation()
-                atomic.store(true, ordering: .relaxed)
-                return retValue
-            } catch {
-                atomic.store(true, ordering: .relaxed)
-                throw error
-            }
+            defer { atomic.store(true, ordering: .sequentiallyConsistent) }
+            do { return try await operation() }
+            catch { throw error }
         }
     }
 

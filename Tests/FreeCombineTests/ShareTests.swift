@@ -14,8 +14,8 @@ class ShareTests: XCTestCase {
     override func tearDownWithError() throws { }
 
     func xtestSimpleShare() async throws {
-        let expectation1 = await CheckedExpectation<Void>()
-        let expectation2 = await CheckedExpectation<Void>()
+        let expectation1 = await Expectation<Void>()
+        let expectation2 = await Expectation<Void>()
 
         let n = 2
 

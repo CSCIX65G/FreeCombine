@@ -15,8 +15,8 @@ class JustTests: XCTestCase {
     override func tearDownWithError() throws { }
 
     func testSimpleSynchronousJust() async throws {
-        let expectation1 = await CheckedExpectation<Void>()
-        let expectation2 = await CheckedExpectation<Void>()
+        let expectation1 = await Expectation<Void>()
+        let expectation2 = await Expectation<Void>()
 
         let just = Just(7)
 
@@ -67,7 +67,7 @@ class JustTests: XCTestCase {
     }
 
     func testSimpleSequenceJust() async throws {
-        let expectation1 = await CheckedExpectation<Void>()
+        let expectation1 = await Expectation<Void>()
         let just = Just([1, 2, 3, 4])
         let c1 = await just.sink { (result: AsyncStream<[Int]>.Result) in
             switch result {
@@ -102,8 +102,8 @@ class JustTests: XCTestCase {
     }
 
     func testSimpleAsyncJust() async throws {
-        let expectation1 = await CheckedExpectation<Void>()
-        let expectation2 = await CheckedExpectation<Void>()
+        let expectation1 = await Expectation<Void>()
+        let expectation2 = await Expectation<Void>()
 
         let just = Just(7)
 

@@ -15,13 +15,13 @@ final class CancellableTests: XCTestCase {
     override func tearDownWithError() throws { }
 
     func testCancellable() async throws {
-        let expectation1 = await CheckedExpectation<Void>()
-        let expectation2 = await CheckedExpectation<Void>()
-        let expectation3 = await CheckedExpectation<Void>()
+        let expectation1 = await Expectation<Void>()
+        let expectation2 = await Expectation<Void>()
+        let expectation3 = await Expectation<Void>()
 
-        let expectation1a = await CheckedExpectation<Bool>()
-        let expectation2a = await CheckedExpectation<Bool>()
-        let expectation3a = await CheckedExpectation<Bool>()
+        let expectation1a = await Expectation<Bool>()
+        let expectation2a = await Expectation<Bool>()
+        let expectation3a = await Expectation<Bool>()
 
         var c: Cancellable<(Cancellable<Void>, Cancellable<Void>, Cancellable<Void>)>? = .none
         c = Cancellable {

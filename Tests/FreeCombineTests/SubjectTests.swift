@@ -14,7 +14,7 @@ class SubjectTests: XCTestCase {
     override func tearDownWithError() throws { }
 
     func testSimpleSubject() async throws {
-        let expectation = await CheckedExpectation<Void>()
+        let expectation = await Expectation<Void>()
 
         let subject = await CurrentValueSubject(
             currentValue: 14,
@@ -74,8 +74,8 @@ class SubjectTests: XCTestCase {
     }
 
     func testMultisubscriptionSubject() async throws {
-        let expectation1 = await CheckedExpectation<Void>()
-        let expectation2 = await CheckedExpectation<Void>()
+        let expectation1 = await Expectation<Void>()
+        let expectation2 = await Expectation<Void>()
 
         let subject = await CurrentValueSubject(currentValue: 14)
         let publisher = subject.publisher()
@@ -153,9 +153,9 @@ class SubjectTests: XCTestCase {
 
     func xtestSimpleCancellation() async throws {
         let counter = Counter()
-        let expectation = await CheckedExpectation<Void>()
-        let expectation3 = await CheckedExpectation<Void>()
-        let release = await CheckedExpectation<Void>()
+        let expectation = await Expectation<Void>()
+        let expectation3 = await Expectation<Void>()
+        let release = await Expectation<Void>()
 
         let subject = await PassthroughSubject(Int.self, buffering: .unbounded)
         let p = subject.publisher()
@@ -232,7 +232,7 @@ class SubjectTests: XCTestCase {
 
     func testSimpleTermination() async throws {
         let counter = Counter()
-        let expectation = await CheckedExpectation<Void>()
+        let expectation = await Expectation<Void>()
 
         let subject = await PassthroughSubject(Int.self)
         let p = subject.publisher()
@@ -275,7 +275,7 @@ class SubjectTests: XCTestCase {
 
     func testSimpleSubjectSend() async throws {
         let counter = Counter()
-        let expectation = await CheckedExpectation<Void>()
+        let expectation = await Expectation<Void>()
 
         let subject = await PassthroughSubject(Int.self)
         let p = subject.publisher()
@@ -317,7 +317,7 @@ class SubjectTests: XCTestCase {
     }
 
     func testSyncAsync() async throws {
-        let expectation = await CheckedExpectation<Void>()
+        let expectation = await Expectation<Void>()
         let fsubject1 = await FreeCombine.PassthroughSubject(Int.self)
         let fsubject2 = await FreeCombine.PassthroughSubject(String.self)
         

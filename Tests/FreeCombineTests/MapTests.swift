@@ -15,7 +15,7 @@ class MapTests: XCTestCase {
     override func tearDownWithError() throws { }
 
     func testSimpleMap() async throws {
-        let expectation1 = await CheckedExpectation<Void>()
+        let expectation1 = await Expectation<Void>()
 
         let just = Just(7)
 

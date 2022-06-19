@@ -14,7 +14,7 @@ class ZipTests: XCTestCase {
     override func tearDownWithError() throws { }
 
     func testSimpleJustZip() async throws {
-        let expectation = await CheckedExpectation<Void>()
+        let expectation = await Expectation<Void>()
 
         let publisher1 = Just(100)
         let publisher2 = Just("abcdefghijklmnopqrstuvwxyz")
@@ -52,7 +52,7 @@ class ZipTests: XCTestCase {
     }
 
     func testEmptyZip() async throws {
-        let expectation = await CheckedExpectation<Void>()
+        let expectation = await Expectation<Void>()
 
         let publisher1 = Just(100)
         let publisher2 = Empty(String.self)
@@ -89,7 +89,7 @@ class ZipTests: XCTestCase {
     }
 
     func testSimpleSequenceZip() async throws {
-        let expectation = await CheckedExpectation<Void>()
+        let expectation = await Expectation<Void>()
 
         let publisher1 = (0 ... 100).asyncPublisher
         let publisher2 = "abcdefghijklmnopqrstuvwxyz".asyncPublisher
@@ -125,7 +125,7 @@ class ZipTests: XCTestCase {
     }
 
     func testSimpleZip() async throws {
-        let expectation = await CheckedExpectation<Void>()
+        let expectation = await Expectation<Void>()
 
         let publisher1 = (0 ... 100).asyncPublisher
         let publisher2 = Unfolded("abcdefghijklmnopqrstuvwxyz")
@@ -163,7 +163,7 @@ class ZipTests: XCTestCase {
     }
 
     func testComplexZip() async throws {
-        let expectation = await CheckedExpectation<Void>()
+        let expectation = await Expectation<Void>()
 
         let p1 = Unfolded(0 ... 100)
         let p2 = Unfolded("abcdefghijklmnopqrstuvwxyz")
@@ -208,8 +208,8 @@ class ZipTests: XCTestCase {
     }
 
     func testMultiComplexZip() async throws {
-        let expectation1 = await CheckedExpectation<Void>()
-        let expectation2 = await CheckedExpectation<Void>()
+        let expectation1 = await Expectation<Void>()
+        let expectation2 = await Expectation<Void>()
 
         let p1 = Unfolded(0 ... 100)
         let p2 = Unfolded("abcdefghijklmnopqrstuvwxyz")

@@ -15,8 +15,8 @@ class MulticastTests: XCTestCase {
     override func tearDownWithError() throws { }
 
     func testSimpleMulticast() async throws {
-        let expectation1 = await CheckedExpectation<Void>()
-        let expectation2 = await CheckedExpectation<Void>()
+        let expectation1 = await Expectation<Void>()
+        let expectation2 = await Expectation<Void>()
 
         let unfolded = await Unfolded(0 ..< 100)
             .multicast()

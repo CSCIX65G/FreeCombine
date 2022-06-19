@@ -6,7 +6,7 @@
 //
 
 import Atomics
-public class CheckedExpectation<Arg> {
+public class Expectation<Arg> {
     public enum Error: Swift.Error, Equatable {
         case alreadyCancelled
         case alreadyCompleted
@@ -27,9 +27,9 @@ public class CheckedExpectation<Arg> {
         private let atomic = ManagedAtomic<UInt8>(Status.waiting.rawValue)
         private(set) var resumption: UnsafeContinuation<Arg, Swift.Error>
 
-        init(task: inout Task<Arg, Swift.Error>!, resumption: UnsafeContinuation<Arg, Swift.Error>) async {
+        init(_ cancellable: inout Cancellable<Arg>!) async {
             self.resumption = await withCheckedContinuation { cc in
-                task = Task<Arg, Swift.Error> {
+                cancellable = .init {
                     do { return try await withUnsafeThrowingContinuation(cc.resume) }
                     catch { throw error }
                 }
@@ -63,41 +63,36 @@ public class CheckedExpectation<Arg> {
         }
     }
 
-    private let task: Task<Arg, Swift.Error>
+    private let cancellable: Cancellable<Arg>
     private let state: State
 
     public init() async {
-        var localTask: Task<Arg, Swift.Error>!
-        state = await .init(task: &localTask, resumption: await withCheckedContinuation { cc in
-            localTask = Task<Arg, Swift.Error> {
-                do { return try await withUnsafeThrowingContinuation(cc.resume) }
-                catch { throw error }
-            }
-        })
-        task = localTask
+        var localCancellable: Cancellable<Arg>!
+        state = await .init(&localCancellable)
+        cancellable = localCancellable
     }
 
     deinit { cancel() }
-    public var isCancelled: Bool { task.isCancelled }
-    public func cancel() -> Void { task.cancel() }
+    public var isCancelled: Bool { cancellable.isCancelled }
+    public func cancel() -> Void { cancellable.cancel() }
 
     public func status() async -> Status { state.status }
     public func complete(_ arg: Arg) throws -> Void { try state.complete(arg) }
     public func fail(_ error: Error) throws -> Void { try state.fail(error) }
 
     public var result: Result<Arg, Swift.Error> {
-        get async { await task.result }
+        get async { await cancellable.result }
     }
     
     public var value: Arg {
         get async throws {
-            do { return try await task.value }
+            do { return try await cancellable.value }
             catch { throw error }
         }
     }
 }
 
-extension CheckedExpectation where Arg == Void {
+extension Expectation where Arg == Void {
     nonisolated public func complete() async throws -> Void {
         try state.complete(())
     }

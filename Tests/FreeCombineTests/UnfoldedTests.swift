@@ -15,8 +15,8 @@ class UnfoldedTests: XCTestCase {
     override func tearDownWithError() throws { }
 
     func testSimpleUnfolded() async throws {
-        let expectation1 = await CheckedExpectation<Void>()
-        let expectation2 = await CheckedExpectation<Void>()
+        let expectation1 = await Expectation<Void>()
+        let expectation2 = await Expectation<Void>()
 
         let unfolded = Unfolded(0 ..< 10)
 
@@ -79,8 +79,8 @@ class UnfoldedTests: XCTestCase {
     }
 
     func testVariableUnfolded() async throws {
-        let expectation1 = await CheckedExpectation<Void>()
-        let expectation2 = await CheckedExpectation<Void>()
+        let expectation1 = await Expectation<Void>()
+        let expectation2 = await Expectation<Void>()
 
         let unfolded = (0 ..< 10).asyncPublisher
 

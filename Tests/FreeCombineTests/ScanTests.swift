@@ -14,7 +14,7 @@ class ScanTests: XCTestCase {
     override func tearDownWithError() throws { }
 
     func testSimpleScan() async throws {
-        let expectation = await CheckedExpectation<Void>()
+        let expectation = await Expectation<Void>()
 
         let publisher = [1, 2, 3, 1, 2, 3, 4, 1, 2, 5].asyncPublisher
         let counter = Counter()

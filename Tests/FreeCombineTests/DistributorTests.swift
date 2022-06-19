@@ -74,7 +74,7 @@ class DistributorTests: XCTestCase {
 
     func testSimpleSubscribeAndSend() async throws {
         let counter = Counter()
-        let expectation1: CheckedExpectation<Void> = await .init()
+        let expectation1: Expectation<Void> = await .init()
         let downstream1: @Sendable (AsyncStream<Int>.Result) async throws -> Demand = { result in
             switch result {
                 case .value:
@@ -90,7 +90,7 @@ class DistributorTests: XCTestCase {
             }
         }
 
-        let expectation2: CheckedExpectation<Void> = await .init()
+        let expectation2: Expectation<Void> = await .init()
         let downstream2: @Sendable (AsyncStream<Int>.Result) async throws -> Demand = { result in
             switch result {
                 case .value:
@@ -106,7 +106,7 @@ class DistributorTests: XCTestCase {
             }
         }
 
-        let taskSync = await CheckedExpectation<Void>()
+        let taskSync = await Expectation<Void>()
         var t: Task<Void, Swift.Error>!
         let distributorValue = ValueRef(
             value: DistributorState(currentValue: 13, nextKey: 0, downstreams: [:])
