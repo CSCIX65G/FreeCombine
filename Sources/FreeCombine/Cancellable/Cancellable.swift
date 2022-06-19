@@ -83,9 +83,7 @@ public extension Cancellable {
     ) -> Cancellable<B> {
         .init(file: file, line: line, operation: {
             try await withTaskCancellationHandler(handler: {
-                Task<Void, Swift.Error> {
-                    try! await outer.value.cancel()
-                }
+                Task<Void, Swift.Error> { try! await outer.value.cancel() }
             }, operation: {
                 return try await outer.value.value
             })

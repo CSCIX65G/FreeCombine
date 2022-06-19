@@ -27,15 +27,15 @@ final class CancellableTests: XCTestCase {
         c = Cancellable {
             let t1 = Cancellable(deinitBehavior: .none) {
                 try await expectation1.value
-                try await expectation1a.complete(Task.isCancelled)
+                try expectation1a.complete(Task.isCancelled)
             }
             let t2 = Cancellable(deinitBehavior: .none) {
                 try await expectation2.value
-                try await expectation2a.complete(Task.isCancelled)
+                try expectation2a.complete(Task.isCancelled)
             }
             let t3 = Cancellable(deinitBehavior: .none) {
                 try await expectation3.value
-                try await expectation3a.complete(Task.isCancelled)
+                try expectation3a.complete(Task.isCancelled)
             }
             return (t1, t2, t3)
         }

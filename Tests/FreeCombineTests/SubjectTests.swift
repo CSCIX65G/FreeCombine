@@ -153,9 +153,9 @@ class SubjectTests: XCTestCase {
 
     func xtestSimpleCancellation() async throws {
         let counter = Counter()
-        let expectation = await CheckedExpectation<Void>(name: "expectation")
-        let expectation3 = await CheckedExpectation<Void>(name: "expectation3")
-        let release = await CheckedExpectation<Void>(name: "release")
+        let expectation = await CheckedExpectation<Void>()
+        let expectation3 = await CheckedExpectation<Void>()
+        let release = await CheckedExpectation<Void>()
 
         let subject = await PassthroughSubject(Int.self, buffering: .unbounded)
         let p = subject.publisher()
