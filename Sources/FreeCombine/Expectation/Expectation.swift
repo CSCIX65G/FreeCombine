@@ -13,6 +13,7 @@ public class Expectation<Arg> {
         case alreadyFailed
         case cancelled
         case timedOut
+        case internalInconsistency
     }
 
     public enum Status: UInt8, Equatable, RawRepresentable {
@@ -61,14 +62,19 @@ public class Expectation<Arg> {
     }
 
     private func change(to newStatus: Status) throws -> UnsafeContinuation<Arg, Swift.Error> {
-        let (_, original) = atomic.compareExchange(
+        let (success, original) = atomic.compareExchange(
             expected: Status.waiting.rawValue,
             desired: newStatus.rawValue,
             ordering: .sequentiallyConsistent
         )
-        guard original != Status.completed.rawValue else { throw Error.alreadyCompleted }
-        guard original != Status.cancelled.rawValue else { throw Error.alreadyCancelled }
-        guard original != Status.failed.rawValue else { throw Error.alreadyFailed }
+        guard success else {
+            switch original {
+                case Status.completed.rawValue: throw Error.alreadyCompleted
+                case Status.cancelled.rawValue: throw Error.alreadyCancelled
+                case Status.failed.rawValue: throw Error.alreadyFailed
+                default: throw Error.internalInconsistency
+            }
+        }
         return resumption
     }
 
@@ -94,7 +100,6 @@ public class Expectation<Arg> {
 
     public func cancel() throws {
         try change(to: .cancelled).resume(throwing: Error.cancelled)
-        cancellable.cancel()
     }
     public func complete(_ arg: Arg) throws {
         try change(to: .completed).resume(returning: arg)
