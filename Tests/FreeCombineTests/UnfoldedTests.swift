@@ -138,7 +138,7 @@ class UnfoldedTests: XCTestCase {
         } catch {
             XCTFail("Timed out")
         }
-        u1.cancel()
-        u2.cancel()
+        let _ = await u1.result
+        let _ = await u2.result
     }
 }

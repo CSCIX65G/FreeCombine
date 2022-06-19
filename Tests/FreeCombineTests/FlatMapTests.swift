@@ -46,6 +46,6 @@ class FlatMapTests: XCTestCase {
         do {
             try await FreeCombine.wait(for: expectation, timeout: 100_000_000)
         }
-        c1.cancel()
+        let _ = await c1.result
     }
 }

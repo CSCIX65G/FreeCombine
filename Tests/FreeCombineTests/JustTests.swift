@@ -62,8 +62,8 @@ class JustTests: XCTestCase {
         } catch {
             XCTFail("Timed out")
         }
-        c1.cancel()
-        c2.cancel()
+        let _ = await c1.result
+        let _ = await c2.result
     }
 
     func testSimpleSequenceJust() async throws {
@@ -163,6 +163,6 @@ class JustTests: XCTestCase {
             XCTFail("Timed out")
         }
 
-        c1.cancel()
+        let _ = await c1.result
     }
 }

@@ -27,14 +27,15 @@ public final class Cancellable<Output: Sendable>: Sendable {
     public var result: Result<Output, Swift.Error> {  get async { await task.result } }
 
     @Sendable public func cancel() -> Void {
+        guard !isCompleting else { return }
         task.cancel()
     }
     @Sendable public func cancelAndAwaitValue() async throws -> Output {
-        task.cancel()
+        cancel()
         return try await task.value
     }
     @Sendable public func cancelAndAwaitResult() async -> Result<Output, Swift.Error> {
-        task.cancel()
+        cancel()
         return await task.result
     }
 
