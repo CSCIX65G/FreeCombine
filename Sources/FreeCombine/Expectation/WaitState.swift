@@ -66,7 +66,7 @@ struct WaitState<FinalResult, PartialResult> {
     }
 
     mutating func cancel() -> Void {
-        expectations.values.forEach { $0.cancel() }
+        expectations.values.forEach { try? $0.cancel() }
         expectations.removeAll()
         tasks.removeAll()
     }
