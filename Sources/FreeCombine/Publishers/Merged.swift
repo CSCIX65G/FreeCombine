@@ -48,11 +48,7 @@ public func merge<Output>(
         buffering: .bufferingOldest(2 + otherUpstreams.count),
         reducer: Reducer(
             onCompletion: MergeState<Output>.complete,
-            disposer: { action, error in
-                if case let .setValue(_, continuation) = action {
-                    continuation.resume(returning: .done)
-                }
-            },
+            disposer: MergeState<Output>.dispose,
             reducer: MergeState<Output>.reduce
         ),
         extractor: \.mostRecentDemand

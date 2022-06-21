@@ -8,23 +8,23 @@ public actor Semaphore<State, Action> {
     public enum Error: Swift.Error {
         case complete
     }
-    private let continuation: UnsafeContinuation<State, Never>
+    private let resumption: Resumption<State>
     private let reducer: (inout State, Action) -> Void
 
     private var state: State
     private var count: Int
 
     public init(
-        continuation: UnsafeContinuation<State, Never>,
+        resumption: Resumption<State>,
         reducer: @escaping (inout State, Action) -> Void,
         initialState: State,
         count: Int
     ) {
-        self.continuation = continuation
+        self.resumption = resumption
         self.reducer = reducer
         self.state = initialState
         self.count = count
-        if count == 0 { continuation.resume(returning: initialState) }
+        if count == 0 { resumption.resume(returning: initialState) }
     }
 
     public func decrement(with action: Action, function: String = #function, file: String = #file, line: Int = #line) -> Void {
@@ -34,7 +34,7 @@ public actor Semaphore<State, Action> {
         count -= 1
         reducer(&state, action)
         if count == 0 {
-            continuation.resume(returning: state)
+            resumption.resume(returning: state)
         }
     }
 

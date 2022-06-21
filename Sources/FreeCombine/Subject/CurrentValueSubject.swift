@@ -8,7 +8,7 @@
 public func CurrentValueSubject<Output>(
     currentValue: Output,
     buffering: AsyncStream<DistributorState<Output>.Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
-    onStartup: UnsafeContinuation<Void, Never>? = .none
+    onStartup: Resumption<Void>? = .none
 ) -> StateTask<DistributorState<Output>, DistributorState<Output>.Action> {
     .init(
         channel: .init(buffering: buffering),

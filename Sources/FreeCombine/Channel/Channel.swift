@@ -5,7 +5,7 @@
 //  Created by Van Simmons on 1/28/22.
 //
 
-public struct Channel<Element>: AsyncSequence {
+public struct Channel<Element: Sendable>: AsyncSequence {
     let stream: AsyncStream<Element>
     let continuation: AsyncStream<Element>.Continuation
 
@@ -56,24 +56,28 @@ public extension Channel {
 //    }
 
     func consume<Upstream>(
+        file: StaticString = #file,
+        line: UInt = #line,
         publisher: Publisher<Upstream>
-    ) async -> Cancellable<Demand> where Element == (AsyncStream<Upstream>.Result, UnsafeContinuation<Demand, Error>) {
-        await consume(publisher: publisher, using: { ($0, $1) })
+    ) async -> Cancellable<Demand> where Element == (AsyncStream<Upstream>.Result, Resumption<Demand>) {
+        await consume(file: file, line: line, publisher: publisher, using: { ($0, $1) })
     }
 
     func consume<Upstream>(
+        file: StaticString = #file,
+        line: UInt = #line,
         publisher: Publisher<Upstream>,
-        using action: @escaping (AsyncStream<Upstream>.Result, UnsafeContinuation<Demand, Swift.Error>) -> Element
+        using action: @escaping (AsyncStream<Upstream>.Result, Resumption<Demand>) -> Element
     ) async -> Cancellable<Demand>  {
         await publisher { upstreamValue in
-            try await withUnsafeThrowingContinuation { continuation in
-                switch self.yield(action(upstreamValue, continuation)) {
+            try await withResumption(file: file, line: line) { resumption in
+                switch self.yield(action(upstreamValue, resumption)) {
                     case .enqueued:
                         ()
                     case .dropped:
-                        continuation.resume(throwing: PublisherError.enqueueError)
+                        resumption.resume(throwing: PublisherError.enqueueError)
                     case .terminated:
-                        continuation.resume(throwing: PublisherError.cancelled)
+                        resumption.resume(throwing: PublisherError.cancelled)
                     @unknown default:
                         fatalError("Unhandled continuation value")
                 }
@@ -84,13 +88,13 @@ public extension Channel {
     func stateTask<State>(
         initialState: @escaping (Self) async -> State,
         reducer: Reducer<State, Self.Element>
-    ) async -> StateTask<State, Self.Element> {
+    ) async throws -> StateTask<State, Self.Element> {
         var stateTask: StateTask<State, Self.Element>!
-        await withUnsafeContinuation { stateTaskContinuation in
+        let _: Void = try await withResumption { resumption in
             stateTask = .init(
                 channel: self,
                 initialState: initialState,
-                onStartup: stateTaskContinuation,
+                onStartup: resumption,
                 reducer: reducer
             )
         }
@@ -99,7 +103,7 @@ public extension Channel {
 
     func stateTask<State>(
         initialState: @escaping (Self) async -> State,
-        onStartup: UnsafeContinuation<Void, Never>?,
+        onStartup: Resumption<Void>?,
         reducer: Reducer<State, Self.Element>
     ) -> StateTask<State, Self.Element> {
         .init(

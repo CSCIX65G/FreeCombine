@@ -4,31 +4,29 @@
 //
 //  Created by Van Simmons on 3/3/22.
 //
-
 public class UnsafeExpectation<Arg> {
-    private let task: Task<Arg, Swift.Error>
+    private let cancellable: Cancellable<Arg>
     private let resumption: UnsafeContinuation<Arg, Swift.Error>
 
     public init() async {
-        var localTask: Task<Arg, Swift.Error>!
-        let localResumption: UnsafeContinuation<Arg, Swift.Error>!
-        localResumption = await withCheckedContinuation { cc in
-            localTask = Task<Arg, Swift.Error> {  try await withUnsafeThrowingContinuation { inner in
+        var localCancellable: Cancellable<Arg>!
+        resumption = await withCheckedContinuation { cc in
+            localCancellable = .init {  try await withUnsafeThrowingContinuation { inner in
                 cc.resume(returning: inner)
             } }
         }
-        resumption = localResumption
-        task = localTask
+        cancellable = localCancellable
     }
 
     deinit {
         cancel()
     }
 
-    public var isCancelled: Bool { task.isCancelled }
-    public var result: Result<Arg, Swift.Error> { get async { await task.result } }
-    public var value: Arg { get async throws { try await task.value } }
-    public func cancel() -> Void { task.cancel() }
+    public var isCancelled: Bool { cancellable.isCancelled }
+    public var value: Arg { get async throws { try await cancellable.value } }
+    public var result: Result<Arg, Swift.Error> { get async { await cancellable.result } }
+
+    public func cancel() -> Void { cancellable.cancel() }
     public func complete(_ arg: Arg) -> Void { resumption.resume(returning: arg) }
     public func fail(_ error: Error) throws -> Void { resumption.resume(throwing: error) }
 }

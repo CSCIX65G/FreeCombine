@@ -40,35 +40,39 @@ class DistributorTests: XCTestCase {
         }
 
         var t: Task<Void, Swift.Error>!
-        let demand: Demand = await withUnsafeContinuation { c in
-            t = Task {
-                let cancellable: Cancellable<Demand> = try await withUnsafeThrowingContinuation { taskC in
-                    Task {
-                        do {
-                            var distributor = DistributorState(
-                                currentValue: 13,
-                                nextKey: 0,
-                                downstreams: [:]
-                            )
-                            XCTAssert(distributor.repeaters.count == 0, "Incorrect number of repeaters = \(distributor.repeaters.count)")
-                            _ = try await distributor.reduce(action: .subscribe(downstream, taskC))
-                            XCTAssert(distributor.repeaters.count == 1, "Incorrect number of repeaters = \(distributor.repeaters.count)")
-                        } catch {
-                            XCTFail("Caught: \(error)")
+        do {
+            let demand: Demand = try await withResumption { c in
+                t = Task {
+                    let cancellable: Cancellable<Demand> = try await withResumption { taskC in
+                        Task {
+                            do {
+                                var distributor = DistributorState(
+                                    currentValue: 13,
+                                    nextKey: 0,
+                                    downstreams: [:]
+                                )
+                                XCTAssert(distributor.repeaters.count == 0, "Incorrect number of repeaters = \(distributor.repeaters.count)")
+                                _ = try await distributor.reduce(action: .subscribe(downstream, taskC))
+                                XCTAssert(distributor.repeaters.count == 1, "Incorrect number of repeaters = \(distributor.repeaters.count)")
+                            } catch {
+                                XCTFail("Caught: \(error)")
+                            }
                         }
                     }
+                    cancellable.cancel()
+                    let d = try await cancellable.value
+                    c.resume(returning: d)
                 }
-                cancellable.cancel()
-                let d = try await cancellable.value
-                c.resume(returning: d)
             }
-        }
-        do {
-            _ = try await t.value
-            XCTAssert(demand == .more, "incorrect demand")
-        }
-        catch {
-            XCTFail("Should have completed")
+            do {
+                _ = try await t.value
+                XCTAssert(demand == .more, "incorrect demand")
+            }
+            catch {
+                XCTFail("Should have completed")
+            }
+        } catch {
+            XCTFail("Resumption failed")
         }
     }
 
@@ -111,9 +115,9 @@ class DistributorTests: XCTestCase {
         let distributorValue = ValueRef(
             value: DistributorState(currentValue: 13, nextKey: 0, downstreams: [:])
         )
-        let _: Void = await withUnsafeContinuation { c in
+        do { let _: Void = try await withResumption { c in
             t = Task {
-                let cancellable1: Cancellable<Demand> = try await withUnsafeThrowingContinuation { taskC in
+                let cancellable1: Cancellable<Demand> = try await withResumption { taskC in
                     Task {
                         do {
                             var distributor = await distributorValue.value
@@ -126,7 +130,7 @@ class DistributorTests: XCTestCase {
                         }
                     }
                 }
-                let cancellable2: Cancellable<Demand> = try await withUnsafeThrowingContinuation { taskC in
+                let cancellable2: Cancellable<Demand> = try await withResumption { taskC in
                     Task {
                         do {
                             _ = try await taskSync.value
@@ -154,6 +158,8 @@ class DistributorTests: XCTestCase {
                     XCTFail("Failed to complete tasks")
                 }
             }
+        } } catch {
+            XCTFail("Resumption threw")
         }
         do {
             try await FreeCombine.wait(

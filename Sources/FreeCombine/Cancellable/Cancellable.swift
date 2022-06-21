@@ -9,7 +9,7 @@
 public enum DeinitBehavior: Sendable {
     case assert
     case log
-    case none
+    case silent
 }
 
 // Can't be a protocol bc we have to implement deinit
@@ -51,9 +51,15 @@ public final class Cancellable<Output: Sendable>: Sendable {
         self.line = line
         self.deinitBehavior = deinitBehavior
         self.task = .init {
-            defer { atomic.store(true, ordering: .sequentiallyConsistent) }
-            do { return try await operation() }
-            catch { throw error }
+            do {
+                let retVal = try await operation()
+                atomic.store(true, ordering: .sequentiallyConsistent)
+                return retVal
+            }
+            catch {
+                atomic.store(true, ordering: .sequentiallyConsistent)
+                throw error
+            }
         }
     }
 
@@ -61,10 +67,10 @@ public final class Cancellable<Output: Sendable>: Sendable {
         let shouldCancel = !(isCompleting || task.isCancelled)
         switch deinitBehavior {
             case .assert:
-                assert(!shouldCancel, "ABORTING DUE TO LEAKED TASK CREATED @ \(file): \(line)")
+                assert(!shouldCancel, "ABORTING DUE TO LEAKED \(type(of: Self.self)) CREATED @ \(file): \(line)")
             case .log:
-                if shouldCancel { print("CANCELLING LEAKED TASK CREATED @ \(file): \(line)") }
-            case .none:
+                if shouldCancel { print("CANCELLING LEAKED \(type(of: Self.self)) CREATED @ \(file): \(line)") }
+            case .silent:
                 ()
         }
         if shouldCancel { task.cancel() }

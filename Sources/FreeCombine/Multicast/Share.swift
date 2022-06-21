@@ -10,7 +10,7 @@ public extension Publisher {
     func share() async -> Self {
         let multicaster = await LazyValueRef(
             creator: {  await Multicaster<Output>.init(
-                stateTask: Channel.init(buffering: .unbounded).stateTask(
+                stateTask: try Channel.init(buffering: .unbounded).stateTask(
                     initialState: MulticasterState<Output>.create(upstream: self),
                     reducer: Reducer(
                         onCompletion: MulticasterState<Output>.complete,

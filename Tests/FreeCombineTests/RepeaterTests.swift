@@ -26,18 +26,18 @@ class RepeaterTests: XCTestCase {
             }
         }
         let nextKey = 1
-        let _: Void = await withUnsafeContinuation { continuation in
+        let _: Void = try await withResumption { resumption in
             Task {
                 let repeaterState = RepeaterState(id: nextKey, downstream: downstream)
                 let repeater: StateTask<RepeaterState<Int, Int>, RepeaterState<Int, Int>.Action> = .init(
                     channel: .init(buffering: .bufferingOldest(1)),
                     initialState: {_ in repeaterState },
-                    onStartup: continuation,
+                    onStartup: resumption,
                     reducer: Reducer(reducer: RepeaterState.reduce)
                 )
-                await withUnsafeContinuation { (completedContinuation: UnsafeContinuation<[Int], Never>) in
+                try await withResumption { (completedResumption: Resumption<[Int]>) in
                     let semaphore = Semaphore.init(
-                        continuation: completedContinuation,
+                        resumption: completedResumption,
                         reducer: { (completedIds: inout [Int], action: RepeatedAction<Int>) in
                             guard case let .repeated(id, .done) = action else { return }
                             completedIds.append(id)
@@ -51,9 +51,9 @@ class RepeaterTests: XCTestCase {
                     }
                 }.forEach { key in fatalError("should not have key") }
 
-                await withUnsafeContinuation { (completedContinuation: UnsafeContinuation<[Int], Never>) in
+                try await withResumption { (completedResumption: Resumption<[Int]>) in
                     let semaphore = Semaphore.init(
-                        continuation: completedContinuation,
+                        resumption: completedResumption,
                         reducer: { (completedIds: inout [Int], action: RepeatedAction<Int>) in
                             guard case let .repeated(id, .done) = action else { return }
                             completedIds.append(id)
@@ -67,9 +67,9 @@ class RepeaterTests: XCTestCase {
                     }
                 }.forEach { key in fatalError("should not have key") }
 
-                await withUnsafeContinuation { (completedContinuation: UnsafeContinuation<[Int], Never>) in
+                try await withResumption { (completedResumption: Resumption<[Int]>) in
                     let semaphore = Semaphore.init(
-                        continuation: completedContinuation,
+                        resumption: completedResumption,
                         reducer: { (completedIds: inout [Int], action: RepeatedAction<Int>) in
                             guard case let .repeated(id, .done) = action else { return }
                             completedIds.append(id)

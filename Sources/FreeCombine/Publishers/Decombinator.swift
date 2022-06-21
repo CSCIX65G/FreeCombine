@@ -29,8 +29,12 @@ public extension Publisher {
         self = .init { continuation, downstream in
             Cancellable<Cancellable<Demand>>.join(.init {
                 var enqueueStatus: AsyncStream<DistributorState<Output>.Action>.Continuation.YieldResult!
-                let c: Cancellable<Demand> = try await withUnsafeThrowingContinuation { demandContinuation in
-                    enqueueStatus = stateTask.send(.subscribe(downstream, demandContinuation))
+                let c: Cancellable<Demand> = try await withResumption { demandResumption in
+                    enqueueStatus = stateTask.send(.subscribe(downstream, demandResumption))
+                    guard case .enqueued = enqueueStatus else {
+                        demandResumption.resume(throwing: PublisherError.enqueueError)
+                        return
+                    }
                 }
                 continuation?.resume()
                 guard case .enqueued = enqueueStatus else {
@@ -57,11 +61,10 @@ public extension Publisher {
     ) {
         self = .init { continuation, downstream in Cancellable<Cancellable<Demand>>.join(.init {
             do {
-                let c: Cancellable<Demand> = try await withUnsafeThrowingContinuation { demandContinuation in
-                    let enqueueStatus = stateTask.send(.distribute(.subscribe(downstream, demandContinuation)))
+                let c: Cancellable<Demand> = try await withResumption { demandResumption in
+                    let enqueueStatus = stateTask.send(.distribute(.subscribe(downstream, demandResumption)))
                     guard case .enqueued = enqueueStatus else {
-//                        do { try await downstream(.completion(.finished)) } catch { }
-                        return demandContinuation.resume(throwing: EnqueueError.enqueueError)
+                        return demandResumption.resume(throwing: EnqueueError.enqueueError)
                     }
                 }
                 continuation?.resume()

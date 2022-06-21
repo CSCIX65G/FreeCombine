@@ -11,9 +11,9 @@ public struct LazyValueRefState<Value: Sendable> {
         case dropped
     }
     public enum Action: Sendable {
-        case value(UnsafeContinuation<Value, Swift.Error>)
-        case retain(UnsafeContinuation<Void, Swift.Error>)
-        case release(UnsafeContinuation<Void, Swift.Error>)
+        case value(Resumption<Value>)
+        case retain(Resumption<Void>)
+        case release(Resumption<Void>)
     }
     var value: Value?
     var refCount: Int = 0
@@ -46,22 +46,22 @@ public struct LazyValueRefState<Value: Sendable> {
         action: Self.Action
     ) async throws -> Reducer<Self, Action>.Effect {
         switch action {
-            case let .value(continuation):
+            case let .value(resumption):
                 guard let value = value else {
                     guard let creator = creator else {
-                        continuation.resume(throwing: Error.deallocated)
+                        resumption.resume(throwing: Error.deallocated)
                         return .completion(.failure(Error.deallocated))
                     }
                     do {
                         value = try await creator()
                         self.creator = .none
                         refCount += 1
-                        continuation.resume(returning: value!)
+                        resumption.resume(returning: value!)
                         return .none
                     }
                 }
                 refCount += 1
-                continuation.resume(returning: value)
+                resumption.resume(returning: value)
                 return .none
             case let .retain(continuation):
                 guard let _ = value else {
@@ -92,7 +92,7 @@ public extension StateTask {
     static func stateTask<Value>(
         creator: @escaping () async throws -> Value
     ) async -> StateTask where State == LazyValueRefState<Value>, Action == LazyValueRefState<Value>.Action  {
-        await Channel<LazyValueRefState<Value>.Action>.init(buffering: .unbounded)
+        try! await Channel<LazyValueRefState<Value>.Action>.init(buffering: .unbounded)
             .stateTask(
                 initialState: { _ in await .init(creator: creator) },
                 reducer: .init(
@@ -112,15 +112,15 @@ public func LazyValueRef<Value>(
 
 public extension StateTask {
     func value<Value>() async throws -> Value? where State == LazyValueRefState<Value>, Action == LazyValueRefState<Value>.Action {
-        let value: Value = try await withUnsafeThrowingContinuation({ continuation in
-            let queueStatus = self.channel.yield(.value(continuation))
+        let value: Value = try await withResumption({ resumption in
+            let queueStatus = self.channel.yield(.value(resumption))
             switch queueStatus {
                 case .enqueued:
                     ()
                 case .terminated:
-                    continuation.resume(throwing: LazyValueRefState<Value>.Error.finished)
+                    resumption.resume(throwing: LazyValueRefState<Value>.Error.finished)
                 case .dropped:
-                    continuation.resume(throwing: LazyValueRefState<Value>.Error.dropped)
+                    resumption.resume(throwing: LazyValueRefState<Value>.Error.dropped)
                 @unknown default:
                     fatalError("Handle new case")
             }
@@ -128,7 +128,7 @@ public extension StateTask {
         return value
     }
     func retain<Value>() async throws -> Void where State == LazyValueRefState<Value>, Action == LazyValueRefState<Value>.Action {
-        let _: Void = try await withUnsafeThrowingContinuation({ continuation in
+        let _: Void = try await withResumption({ continuation in
             let queueStatus = self.channel.yield(.retain(continuation))
             switch queueStatus {
                 case .enqueued:
@@ -143,15 +143,15 @@ public extension StateTask {
         })
     }
     func release<Value>() async throws -> Void where State == LazyValueRefState<Value>, Action == LazyValueRefState<Value>.Action {
-        let _: Void = try await withUnsafeThrowingContinuation({ continuation in
-            let queueStatus = self.channel.yield(.release(continuation))
+        let _: Void = try await withResumption({ resumption in
+            let queueStatus = self.channel.yield(.release(resumption))
             switch queueStatus {
                 case .enqueued:
                     ()
                 case .terminated:
-                    continuation.resume(throwing: LazyValueRefState<Value>.Error.finished)
+                    resumption.resume(throwing: LazyValueRefState<Value>.Error.finished)
                 case .dropped:
-                    continuation.resume(throwing: LazyValueRefState<Value>.Error.dropped)
+                    resumption.resume(throwing: LazyValueRefState<Value>.Error.dropped)
                 @unknown default:
                     fatalError("Handle new case")
             }

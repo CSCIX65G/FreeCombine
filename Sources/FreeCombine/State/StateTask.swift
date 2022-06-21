@@ -26,21 +26,40 @@
  */
 
 public final class StateTask<State, Action: Sendable> {
+    let file: StaticString
+    let line: UInt
+    let deinitBehavior: DeinitBehavior
     let channel: Channel<Action>
     let cancellable: Cancellable<State>
 
-    fileprivate init(channel: Channel<Action>, cancellable: Cancellable<State>) {
+    fileprivate init(
+        file: StaticString = #file,
+        line: UInt = #line,
+        deinitBehavior: DeinitBehavior = .assert,
+        channel: Channel<Action>,
+        cancellable: Cancellable<State>
+    ) {
+        self.file = file
+        self.line = line
+        self.deinitBehavior = deinitBehavior
         self.channel = channel
         self.cancellable = cancellable
     }
 
     deinit {
-        finish()
-        cancel()
+        let shouldCancel = !(cancellable.isCancelled || cancellable.isCompleting)
+        switch deinitBehavior {
+            case .assert:
+                assert(!shouldCancel, "ABORTING DUE TO LEAKED \(type(of: Self.self)) CREATED @ \(file): \(line)")
+            case .log:
+                if shouldCancel { print("CANCELLING LEAKED \(type(of: Self.self)) CREATED @ \(file): \(line)") }
+            case .silent:
+                ()
+        }
+        if shouldCancel { cancellable.cancel() }
     }
 
     @Sendable func cancel() -> Void {
-        channel.finish()
         cancellable.cancel()
     }
 
@@ -81,7 +100,7 @@ extension StateTask {
     public convenience init(
         channel: Channel<Action>,
         initialState: @escaping (Channel<Action>) async -> State,
-        onStartup: UnsafeContinuation<Void, Never>? = .none,
+        onStartup: Resumption<Void>? = .none,
         reducer: Reducer<State, Action>
     ) {
         self.init(
@@ -91,9 +110,15 @@ extension StateTask {
                 onStartup?.resume()
                 do { try await withTaskCancellationHandler(handler: channel.finish) {
                     for await action in channel {
-                        guard !Task.isCancelled else { throw Error.cancelled }
+                        guard !Task.isCancelled else {
+                            await reducer(action, .cancel);
+                            throw Error.cancelled
+                        }
                         let effect = try await reducer(&state, action)
-                        guard !Task.isCancelled else { throw Error.cancelled }
+                        guard !Task.isCancelled else {
+                            await reducer(action, .cancel);
+                            throw Error.cancelled
+                        }
                         switch effect {
                             case .none: continue
                             case .published(_):
@@ -139,7 +164,7 @@ public extension StateTask {
         reducer: Reducer<State, Action>
     ) async -> Self {
         var stateTask: Self!
-        await withUnsafeContinuation { stateTaskContinuation in
+        try! await withResumption { stateTaskContinuation in
             stateTask = Self.init(
                 channel: channel,
                 initialState: initialState,

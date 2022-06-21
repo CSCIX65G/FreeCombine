@@ -128,7 +128,7 @@ class JustTests: XCTestCase {
         }
 
         var t: Cancellable<Demand>! = .none
-        _ = await withUnsafeContinuation { continuation in
+        do { _ = try await withResumption { continuation in
             t = just.sink(onStartup: continuation, { result in
                 switch result {
                     case let .value(value):
@@ -148,6 +148,8 @@ class JustTests: XCTestCase {
                         return .done
                 }
             } )
+        } } catch {
+            XCTFail("Resumption failed")
         }
 
         do {

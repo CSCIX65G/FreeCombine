@@ -25,15 +25,15 @@ final class CancellableTests: XCTestCase {
 
         var c: Cancellable<(Cancellable<Void>, Cancellable<Void>, Cancellable<Void>)>? = .none
         c = Cancellable {
-            let t1 = Cancellable(deinitBehavior: .none) {
+            let t1 = Cancellable(deinitBehavior: .silent) {
                 try await expectation1.value
                 try expectation1a.complete(Task.isCancelled)
             }
-            let t2 = Cancellable(deinitBehavior: .none) {
+            let t2 = Cancellable(deinitBehavior: .silent) {
                 try await expectation2.value
                 try expectation2a.complete(Task.isCancelled)
             }
-            let t3 = Cancellable(deinitBehavior: .none) {
+            let t3 = Cancellable(deinitBehavior: .silent) {
                 try await expectation3.value
                 try expectation3a.complete(Task.isCancelled)
             }

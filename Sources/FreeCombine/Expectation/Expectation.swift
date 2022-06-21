@@ -24,7 +24,7 @@ public class Expectation<Arg> {
     }
 
     private let atomic = ManagedAtomic<UInt8>(Status.waiting.rawValue)
-    private(set) var resumption: UnsafeContinuation<Arg, Swift.Error>
+    private(set) var resumption: Resumption<Arg>
     private let cancellable: Cancellable<Arg>
     public let file: StaticString
     public let line: UInt
@@ -39,9 +39,9 @@ public class Expectation<Arg> {
         self.file = file
         self.line = line
         self.deinitBehavior = deinitBehavior
-        self.resumption = await withCheckedContinuation { cc in
+        self.resumption = try! await withResumption { outer in
             localCancellable = .init {
-                do { return try await withUnsafeThrowingContinuation(cc.resume) }
+                do { return try await withResumption(outer.resume) }
                 catch { throw error }
             }
         }
@@ -52,16 +52,16 @@ public class Expectation<Arg> {
         let shouldCancel = status == .waiting
         switch deinitBehavior {
             case .assert:
-                assert(!shouldCancel, "ABORTING DUE TO LEAKED EXPECTATION CREATED @ \(file): \(line)")
+                assert(!shouldCancel, "ABORTING DUE TO LEAKED \(type(of: Self.self)) CREATED @ \(file): \(line)")
             case .log:
-                if shouldCancel { print("CANCELLING LEAKED EXPECTATION CREATED @ \(file): \(line)") }
-            case .none:
+                if shouldCancel { print("CANCELLING LEAKED \(type(of: Self.self)) CREATED @ \(file): \(line)") }
+            case .silent:
                 ()
         }
         if shouldCancel { try? cancel() }
     }
 
-    private func change(to newStatus: Status) throws -> UnsafeContinuation<Arg, Swift.Error> {
+    private func set(status newStatus: Status) throws -> Resumption<Arg> {
         let (success, original) = atomic.compareExchange(
             expected: Status.waiting.rawValue,
             desired: newStatus.rawValue,
@@ -82,7 +82,6 @@ public class Expectation<Arg> {
         .init(rawValue: atomic.load(ordering: .relaxed))!
     }
 
-
     public var isCancelled: Bool {
         cancellable.isCancelled
     }
@@ -92,20 +91,17 @@ public class Expectation<Arg> {
     }
     
     public var value: Arg {
-        get async throws {
-            do { return try await cancellable.value }
-            catch { throw error }
-        }
+        get async throws { try await cancellable.value  }
     }
 
     public func cancel() throws {
-        try change(to: .cancelled).resume(throwing: Error.cancelled)
+        try set(status: .cancelled).resume(throwing: Error.cancelled)
     }
     public func complete(_ arg: Arg) throws {
-        try change(to: .completed).resume(returning: arg)
+        try set(status: .completed).resume(returning: arg)
     }
     func fail(_ error: Swift.Error) throws {
-        try change(to: .failed).resume(throwing: error)
+        try set(status: .failed).resume(throwing: error)
     }
 }
 
