@@ -71,6 +71,10 @@ public extension Channel {
     ) async -> Cancellable<Demand>  {
         await publisher { upstreamValue in
             try await withResumption(file: file, line: line) { resumption in
+                if Task.isCancelled {
+                    resumption.resume(throwing: PublisherError.cancelled)
+                    return
+                }
                 switch self.yield(action(upstreamValue, resumption)) {
                     case .enqueued:
                         ()

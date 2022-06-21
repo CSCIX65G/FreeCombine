@@ -32,7 +32,7 @@ public final class Resumption<Output: Sendable>: Sendable {
     }
 
     public var hasResumed: Bool {
-        deallocGuard.load(ordering: .relaxed)
+        deallocGuard.load(ordering: .sequentiallyConsistent)
     }
 
     deinit {
@@ -48,17 +48,15 @@ public final class Resumption<Output: Sendable>: Sendable {
     }
 
     public func resume(returning output: Output) -> Void {
-        let (success, _) = deallocGuard.compareExchange(expected: false, desired: true, ordering: .acquiring)
-        assert(success, "RESUMPTION FAILED TO RETURN. ALREADY RESUMED")
+        let (success, _) = deallocGuard.compareExchange(expected: false, desired: true, ordering: .sequentiallyConsistent)
+        assert(success, "\(type(of: Self.self)) FAILED. ALREADY RESUMED")
         continuation.resume(returning: output)
-        deallocGuard.store(true, ordering: .releasing)
     }
 
     public func resume(throwing error: Swift.Error) -> Void {
-        let (success, _) = deallocGuard.compareExchange(expected: false, desired: true, ordering: .acquiring)
-        assert(success, "RESUMPTION FAILED TO THROW. ALREADY RESUMED")
+        let (success, _) = deallocGuard.compareExchange(expected: false, desired: true, ordering: .sequentiallyConsistent)
+        assert(success, "\(type(of: Self.self)) FAILED. ALREADY RESUMED")
         continuation.resume(throwing: error)
-        deallocGuard.store(true, ordering: .releasing)
     }
 }
 

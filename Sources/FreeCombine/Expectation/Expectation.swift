@@ -79,7 +79,7 @@ public class Expectation<Arg> {
     }
 
     public var status: Status {
-        .init(rawValue: atomic.load(ordering: .relaxed))!
+        .init(rawValue: atomic.load(ordering: .sequentiallyConsistent))!
     }
 
     public var isCancelled: Bool {

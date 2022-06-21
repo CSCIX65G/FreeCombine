@@ -110,15 +110,7 @@ extension StateTask {
                 onStartup?.resume()
                 do { try await withTaskCancellationHandler(handler: channel.finish) {
                     for await action in channel {
-                        guard !Task.isCancelled else {
-                            await reducer(action, .cancel);
-                            throw Error.cancelled
-                        }
                         let effect = try await reducer(&state, action)
-                        guard !Task.isCancelled else {
-                            await reducer(action, .cancel);
-                            throw Error.cancelled
-                        }
                         switch effect {
                             case .none: continue
                             case .published(_):
@@ -127,7 +119,8 @@ extension StateTask {
                             case .completion(.exit): throw Error.completed
                             case let .completion(.failure(error)): throw error
                             case .completion(.finished): throw Error.internalError
-                            case .completion(.cancel): throw Error.cancelled
+                            case .completion(.cancel):
+                                throw Error.cancelled
                         }
                     }
                     await reducer(&state, .finished)
