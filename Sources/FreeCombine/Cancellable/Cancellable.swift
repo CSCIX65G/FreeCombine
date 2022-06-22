@@ -96,15 +96,20 @@ public extension Cancellable {
         file: StaticString = #file,
         line: UInt = #line,
         _ generator: @escaping () async throws -> Cancellable<Output>
-    ) -> Cancellable<Output> {
-        .init(file: file, line: line, operation: {
-            let outer = try await generator()
-            return try await withTaskCancellationHandler(handler: {
-                Task<Void, Swift.Error> { outer.cancel() }
-            }, operation: {
-                return try await outer.value
+    ) async throws -> Cancellable<Output> {
+        var returnValue: Cancellable<Output>!
+        let _: Void = try await withResumption { resumption in
+            returnValue = .init(file: file, line: line, operation: {
+                let outer = try await generator()
+                return try await withTaskCancellationHandler(handler: {
+                    Task<Void, Swift.Error> { outer.cancel() }
+                }, operation: {
+                    resumption.resume()
+                    return try await outer.value
+                })
             })
-        })
+        }
+        return returnValue
     }
 
     func map<B>(

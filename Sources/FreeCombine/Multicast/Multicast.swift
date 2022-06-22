@@ -24,7 +24,7 @@ public extension Multicaster {
     }
 
     func connect() async throws -> Void {
-        return try await withResumption({ continuation in
+        let _: Void = try await withResumption { continuation in
             let queueStatus = stateTask.send(.connect(continuation))
             switch queueStatus {
                 case .enqueued:
@@ -36,7 +36,7 @@ public extension Multicaster {
                 @unknown default:
                     continuation.resume(throwing: PublisherError.enqueueError)
             }
-        })
+        }
     }
 
     func disconnect() async throws -> Void {
@@ -77,6 +77,7 @@ public extension Publisher {
                 initialState: MulticasterState<Output>.create(upstream: self),
                 reducer: Reducer(
                     onCompletion: MulticasterState<Output>.complete,
+                    disposer: MulticasterState<Output>.dispose,
                     reducer: MulticasterState<Output>.reduce
                 )
             )
