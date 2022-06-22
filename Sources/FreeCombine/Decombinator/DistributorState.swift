@@ -14,21 +14,13 @@ public struct DistributorState<Output: Sendable> {
         case alreadyCompleted
     }
 
-    public enum Action: Sendable, CustomStringConvertible {
+    public enum Action: Sendable {
         case receive(AsyncStream<Output>.Result, Resumption<Void>?)
         case subscribe(
             @Sendable (AsyncStream<Output>.Result) async throws -> Demand,
             Resumption<Cancellable<Demand>>
         )
         case unsubscribe(Int)
-
-        public var description: String {
-            switch self {
-                case let .receive(result, _): return "receive(\(result)"
-                case .subscribe: return "subscribe"
-                case let .unsubscribe(key): return "unsubscribe(\(key))"
-            }
-        }
     }
 
     public init(
@@ -36,35 +28,9 @@ public struct DistributorState<Output: Sendable> {
         nextKey: Int,
         downstreams: [Int: StateTask<RepeaterState<Int, Output>, RepeaterState<Int, Output>.Action>]
     ) {
-//        self.channel = channel
         self.currentValue = currentValue
         self.nextKey = nextKey
         self.repeaters = downstreams
-    }
-
-    static func dispose(action: Self.Action, completion: Reducer<Self, Self.Action>.Completion) async -> Void {
-        switch action {
-            case let .receive(_, continuation): continuation?.resume()
-            case let .subscribe(downstream, continuation):
-                switch completion {
-                    case .failure(PublisherError.completed):
-                        let c = Cancellable { try await downstream(.completion(.finished)) }
-                        continuation.resume(returning: c)
-                    case .failure(PublisherError.cancelled):
-                        continuation.resume(
-                            returning: .init { return try await downstream(.completion(.cancelled))}
-                        )
-                    case let .failure(error):
-                        continuation.resume(
-                            returning: .init { return try await downstream(.completion(.failure(error)))}
-                        )
-                    default:
-                        continuation.resume(
-                            returning: .init { return try await downstream(.completion(.finished))}
-                        )
-                }
-            case .unsubscribe: ()
-        }
     }
 
     static func complete(state: inout Self, completion: Reducer<Self, Self.Action>.Completion) async -> Void {
@@ -82,8 +48,43 @@ public struct DistributorState<Output: Sendable> {
         state.repeaters.removeAll()
     }
 
+    static func dispose(action: Self.Action, completion: Reducer<Self, Self.Action>.Completion) async -> Void {
+        switch action {
+            case let .receive(_, continuation):
+                continuation?.resume()
+            case let .subscribe(downstream, continuation):
+                switch completion {
+                    case .failure(PublisherError.completed):
+                        let _ = try? await downstream(.completion(.finished))
+                        continuation.resume(returning: .init { throw PublisherError.cancelled })
+                    case .failure(PublisherError.cancelled):
+                        let _ = try? await downstream(.completion(.cancelled))
+                        continuation.resume(throwing: PublisherError.cancelled)
+                    case let .failure(error):
+                        let _ = try? await downstream(.completion(.failure(error)))
+                        continuation.resume(throwing: error)
+                    default:
+                        let _ = try? await downstream(.completion(.finished))
+                        continuation.resume(returning: .init { return .done })
+                }
+            case .unsubscribe:
+                ()
+        }
+    }
+
     static func reduce(`self`: inout Self, action: Self.Action) async throws -> Reducer<Self, Action>.Effect {
-        try await `self`.reduce(action: action)
+        if Task.isCancelled {
+            switch action {
+                case .receive(_, let resumption):
+                    resumption?.resume(throwing: PublisherError.cancelled)
+                case .subscribe(_, let resumption):
+                    resumption.resume(throwing: PublisherError.cancelled)
+                case .unsubscribe(_):
+                    ()
+            }
+            return .completion(.cancel)
+        }
+        return try await `self`.reduce(action: action)
     }
 
     mutating func reduce(action: Action) async throws -> Reducer<Self, Action>.Effect {

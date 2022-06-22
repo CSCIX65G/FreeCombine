@@ -141,7 +141,7 @@ class MulticastTests: XCTestCase {
 
         for i in (0 ..< 100) {
             do { try await subj.send(i) }
-            catch { XCTFail("Failed to send on \(i)") }
+            catch { XCTFail("Failed to send on \(i) with error: \(error)") }
         }
 
         try await subj.finish()

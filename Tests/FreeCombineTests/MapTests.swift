@@ -44,6 +44,6 @@ class MapTests: XCTestCase {
         } catch {
             XCTFail("Timed out")
         }
-        m1.cancel()
+        _ = await m1.result
     }
 }

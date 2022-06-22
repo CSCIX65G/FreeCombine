@@ -10,6 +10,13 @@ struct MergeState<Output: Sendable> {
         case setValue(AsyncStream<(Int, Output)>.Result, Resumption<Demand>)
         case removeCancellable(Int, Resumption<Demand>)
         case failure(Int, Error, Resumption<Demand>)
+        var resumption: Resumption<Demand> {
+            switch self {
+                case .setValue(_, let resumption): return resumption
+                case .removeCancellable(_, let resumption): return resumption
+                case .failure(_, _, let resumption): return resumption
+            }
+        }
     }
 
     let downstream: (AsyncStream<Output>.Result) async throws -> Demand
@@ -93,7 +100,10 @@ struct MergeState<Output: Sendable> {
     private mutating func reduce(
         action: Self.Action
     ) async throws -> Reducer<Self, Action>.Effect {
-        guard !Task.isCancelled else { return .completion(.cancel) }
+        guard !Task.isCancelled else {
+            action.resumption.resume(throwing: PublisherError.cancelled)
+            return .completion(.cancel)
+        }
         switch action {
             case let .setValue(value, continuation):
                 return try await reduceValue(value, continuation)
@@ -108,8 +118,7 @@ struct MergeState<Output: Sendable> {
                     return .completion(.exit)
                 }
                 return .none
-            case let .failure(index, error, continuation):
-                cancellables.removeValue(forKey: index)
+            case let .failure(_, error, continuation):
                 continuation.resume(returning: .done)
                 cancellables.removeAll()
                 mostRecentDemand = try await downstream(.completion(.failure(error)))

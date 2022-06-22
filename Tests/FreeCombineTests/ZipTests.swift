@@ -48,7 +48,7 @@ class ZipTests: XCTestCase {
             let count = await counter.count
             XCTFail("Timed out, count = \(count)")
         }
-        c1.cancel()
+        _ = await c1.result
     }
 
     func testEmptyZip() async throws {
@@ -85,7 +85,7 @@ class ZipTests: XCTestCase {
             let count = await counter.count
             XCTFail("Timed out, count = \(count)")
         }
-        z1.cancel()
+        _ = await z1.result
     }
 
     func testSimpleSequenceZip() async throws {
@@ -121,7 +121,7 @@ class ZipTests: XCTestCase {
             let count = await counter.count
             XCTFail("Timed out, count = \(count)")
         }
-        z1.cancel()
+        _ = await z1.result
     }
 
     func testSimpleZip() async throws {

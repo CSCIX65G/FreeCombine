@@ -83,6 +83,7 @@ class RepeaterTests: XCTestCase {
                         fatalError("Internal failure in Repeater reducer processing key, queueStatus: \(queueStatus)")
                     }
                 }.forEach { _ in () }
+                _ = await repeater.cancellable.cancelAndAwaitResult()
             }
         }
         do {

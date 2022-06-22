@@ -11,6 +11,12 @@ struct ZipState<Left: Sendable, Right: Sendable> {
     enum Action {
         case setLeft(AsyncStream<Left>.Result, Resumption<Demand>)
         case setRight(AsyncStream<Right>.Result, Resumption<Demand>)
+        var resumption: Resumption<Demand> {
+            switch self {
+                case .setLeft(_, let resumption): return resumption
+                case .setRight(_, let resumption): return resumption
+            }
+        }
     }
 
     let downstream: (AsyncStream<(Left, Right)>.Result) async throws -> Demand
@@ -46,15 +52,14 @@ struct ZipState<Left: Sendable, Right: Sendable> {
         if let left = state.left {
             left.resumption.resume(returning: .done)
             state.left = .none
-        } else {
-            state.leftCancellable.cancel()
         }
+        state.leftCancellable.cancel()
         if let right = state.right {
             right.resumption.resume(returning: .done)
             state.right = .none
-        } else {
-            state.rightCancellable.cancel()
         }
+        state.rightCancellable.cancel()
+
         switch completion {
             case .cancel:
                 _ = try? await state.downstream(.completion(.cancelled))
@@ -66,17 +71,14 @@ struct ZipState<Left: Sendable, Right: Sendable> {
     }
 
     static func dispose(action: Self.Action, completion: Reducer<Self, Self.Action>.Completion) async -> Void {
-        switch action {
-            case let .setLeft(_, resumption) where !resumption.hasResumed:
-                resumption.resume(throwing: PublisherError.cancelled)
-            case let .setRight(_, resumption) where !resumption.hasResumed:
-                resumption.resume(throwing: PublisherError.cancelled)
-            default:
-                ()
-        }
+        action.resumption.resume(returning: .done)
     }
 
     static func reduce(`self`: inout Self, action: Self.Action) async throws -> Reducer<Self, Action>.Effect {
+        guard !Task.isCancelled else {
+            action.resumption.resume(throwing: PublisherError.cancelled)
+            return .completion(.cancel)
+        }
         return try await `self`.reduce(action: action)
     }
 

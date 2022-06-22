@@ -31,7 +31,7 @@
 
 ## Todo
 
-1. Implement leak prevention on UnsafeContinuation
+1. ~~Implement leak prevention on UnsafeContinuation, Task, and AsyncStream.Continuation~~
 1. maybe add an additional repo (FreeCombineDispatch) that depends on libdispatch to get delay, debounce, throttle
 1. revamp StateThread to be exactly a concurrency aware version of TCA's store
 1. Add support for Promise/Future
@@ -43,9 +43,14 @@
 
   ## Introduction
 
-  For a long time I've been exploring the idea of what Apple's Swift Combine framework would look like without using protocols. The advent of Concurrency support in Swift 5.5 provided an impetus to complete that exploration. This repository represents the current state of that effort and consists of material that I intend to incorporate into classes I teach on iOS development at [Harvard](https://courses.dce.harvard.edu/?details&srcdb=202203&crn=33540) and at [Tufts](https://www.cs.tufts.edu/t/courses/description/fall2021/CS/151-02).
+  For a long time I've been exploring the idea of what Apple's Swift Combine framework would look like if written without using protocols. The advent of Concurrency support in Swift 5.5 provided an impetus to complete that exploration. This repository represents the current state of that effort and consists of material that I intend to incorporate into classes I teach on iOS development at [Harvard](https://courses.dce.harvard.edu/?details&srcdb=202203&crn=33540) and at [Tufts](https://www.cs.tufts.edu/t/courses/description/fall2021/CS/151-02).
 
-  Ideally, this material would become the core of an expanded course on Functional Concurrent Programming using Swift, but that course is still fairly far off.
+  Ideally, this material would become the core of an expanded course on Functional Concurrent Programming using Swift, but that course is still fairly far off.  
+  
+  Secondarily, this repo is my own feeble attempt to answer the following: 
+  
+  1. Why does Swift's Structured Concurrency, not have the same set of primitives as Concurrent Haskell?
+  2. Are there differences between what we mean when we refer to Structured Concurrency and what we mean when we refer to Functional Concurrency and precisely what would those differences be?
 
   ### Functional Requirements
 

@@ -98,14 +98,20 @@ extension StateTask {
         case cancelled
     }
     public convenience init(
+        file: StaticString = #file,
+        line: UInt = #line,
+        deinitBehavior: DeinitBehavior = .assert,
         channel: Channel<Action>,
         initialState: @escaping (Channel<Action>) async -> State,
         onStartup: Resumption<Void>? = .none,
         reducer: Reducer<State, Action>
     ) {
-        self.init(
+        self.init (
+            file: file,
+            line: line,
+            deinitBehavior: deinitBehavior,
             channel: channel,
-            cancellable: .init {
+            cancellable: .init(file: file, line: line, deinitBehavior: deinitBehavior) {
                 var state = await initialState(channel)
                 onStartup?.resume()
                 do { try await withTaskCancellationHandler(handler: channel.finish) {
