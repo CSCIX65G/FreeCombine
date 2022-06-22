@@ -120,6 +120,20 @@ public struct MulticasterState<Output: Sendable> {
     }
 
     static func reduce(`self`: inout Self, action: Self.Action) async throws -> Reducer<Self, Action>.Effect {
+        if Task.isCancelled {
+            switch action {
+                case let .connect(continuation):
+                    continuation.resume(throwing: PublisherError.cancelled)
+                case let .pause(continuation):
+                    continuation.resume(throwing: PublisherError.cancelled)
+                case let .resume(continuation):
+                    continuation.resume(throwing: PublisherError.cancelled)
+                case let .disconnect(continuation):
+                    continuation.resume(throwing: PublisherError.cancelled)
+                case let .distribute(distributorAction):
+                    await DistributorState<Output>.dispose(action: distributorAction, completion: .cancel)
+            }
+        }
         return try await `self`.reduce(action: action)
     }
 
@@ -147,7 +161,7 @@ public struct MulticasterState<Output: Sendable> {
         }
         let localUpstream = upstream
         let localDownstream = downstream
-        cancellable = Cancellable<Demand>.join {
+        cancellable = try await Cancellable.join {
             await localUpstream.sink(localDownstream)
         }
         isRunning = true

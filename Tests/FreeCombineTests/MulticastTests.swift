@@ -87,16 +87,16 @@ class MulticastTests: XCTestCase {
         let _ = try await unfolded.cancelAndAwaitResult()
     }
 
-    func xtestSubjectMulticast() async throws {
+    func testSubjectMulticast() async throws {
         let subj = await PassthroughSubject(Int.self)
 
-        let unfolded = await subj
+        let multicaster = await subj
             .publisher()
-            .map { $0 % 47 }
+            .map { $0 }
             .multicast()
 
         let counter1 = Counter()
-        let u1 = await unfolded.publisher().sink({ result in
+        let u1 = await multicaster.publisher().sink({ result in
             switch result {
                 case .value:
                     await counter1.increment()
@@ -117,7 +117,7 @@ class MulticastTests: XCTestCase {
         })
 
         let counter2 = Counter()
-        let u2 = await unfolded.publisher().sink { (result: AsyncStream<Int>.Result) in
+        let u2 = await multicaster.publisher().sink { (result: AsyncStream<Int>.Result) in
             switch result {
                 case .value:
                     await counter2.increment()
@@ -137,7 +137,7 @@ class MulticastTests: XCTestCase {
             }
         }
 
-        try await unfolded.connect()
+        try await multicaster.connect()
 
         for i in (0 ..< 100) {
             do { try await subj.send(i) }
