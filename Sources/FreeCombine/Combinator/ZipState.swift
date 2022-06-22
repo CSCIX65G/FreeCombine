@@ -4,11 +4,19 @@
 //
 //  Created by Van Simmons on 3/16/22.
 //
+
+// NEVER return from complete/dispose/reduce w/o resuming the action
 struct ZipState<Left: Sendable, Right: Sendable> {
     typealias CombinatorAction = Self.Action
     enum Action {
-        case setLeft(AsyncStream<Left>.Result, UnsafeContinuation<Demand, Swift.Error>)
-        case setRight(AsyncStream<Right>.Result, UnsafeContinuation<Demand, Swift.Error>)
+        case setLeft(AsyncStream<Left>.Result, Resumption<Demand>)
+        case setRight(AsyncStream<Right>.Result, Resumption<Demand>)
+        var resumption: Resumption<Demand> {
+            switch self {
+                case .setLeft(_, let resumption): return resumption
+                case .setRight(_, let resumption): return resumption
+            }
+        }
     }
 
     let downstream: (AsyncStream<(Left, Right)>.Result) async throws -> Demand
@@ -16,8 +24,8 @@ struct ZipState<Left: Sendable, Right: Sendable> {
     let rightCancellable: Cancellable<Demand>
 
     var mostRecentDemand: Demand = .more
-    var left: (value: Left, continuation: UnsafeContinuation<Demand, Swift.Error>)? = .none
-    var right: (value: Right, continuation: UnsafeContinuation<Demand, Swift.Error>)? = .none
+    var left: (value: Left, resumption: Resumption<Demand>)? = .none
+    var right: (value: Right, resumption: Resumption<Demand>)? = .none
 
     init(
         channel: Channel<ZipState<Left, Right>.Action>,
@@ -40,10 +48,18 @@ struct ZipState<Left: Sendable, Right: Sendable> {
     }
 
     static func complete(state: inout Self, completion: Reducer<Self, Self.Action>.Completion) async -> Void {
-        state.left?.continuation.resume(returning: .done)
+        state.mostRecentDemand = .done
+        if let left = state.left {
+            left.resumption.resume(returning: .done)
+            state.left = .none
+        }
         state.leftCancellable.cancel()
-        state.right?.continuation.resume(returning: .done)
+        if let right = state.right {
+            right.resumption.resume(returning: .done)
+            state.right = .none
+        }
         state.rightCancellable.cancel()
+
         switch completion {
             case .cancel:
                 _ = try? await state.downstream(.completion(.cancelled))
@@ -54,8 +70,15 @@ struct ZipState<Left: Sendable, Right: Sendable> {
         }
     }
 
+    static func dispose(action: Self.Action, completion: Reducer<Self, Self.Action>.Completion) async -> Void {
+        action.resumption.resume(returning: .done)
+    }
+
     static func reduce(`self`: inout Self, action: Self.Action) async throws -> Reducer<Self, Action>.Effect {
-        guard !Task.isCancelled else { return .completion(.cancel) }
+        guard !Task.isCancelled else {
+            action.resumption.resume(throwing: PublisherError.cancelled)
+            return .completion(.cancel)
+        }
         return try await `self`.reduce(action: action)
     }
 
@@ -63,59 +86,78 @@ struct ZipState<Left: Sendable, Right: Sendable> {
         action: Self.Action
     ) async throws -> Reducer<Self, Action>.Effect {
         switch action {
-            case let .setLeft(leftResult, leftContinuation):
-                if mostRecentDemand == .done { leftContinuation.resume(returning: .done) }
-                else { return try await handleLeft(leftResult, leftContinuation) }
-            case let .setRight(rightResult, rightContinuation):
-                if mostRecentDemand == .done { rightContinuation.resume(returning: .done) }
-                else { return try await handleRight(rightResult, rightContinuation) }
+            case let .setLeft(leftResult, leftResumption):
+                if mostRecentDemand == .done { leftResumption.resume(returning: .done) }
+                else { return try await handleLeft(leftResult, leftResumption) }
+            case let .setRight(rightResult, rightResumption):
+                if mostRecentDemand == .done { rightResumption.resume(returning: .done) }
+                else { return try await handleRight(rightResult, rightResumption) }
         }
         return .none
     }
 
     private mutating func handleLeft(
         _ leftResult: AsyncStream<Left>.Result,
-        _ leftContinuation: UnsafeContinuation<Demand, Error>
+        _ leftResumption: Resumption<Demand>
     ) async throws -> Reducer<Self, Action>.Effect {
         guard left == nil else { throw PublisherError.internalError }
         switch leftResult {
             case let .value((value)):
-                left = (value, leftContinuation)
+                left = (value, leftResumption)
                 if let right = right {
-                    mostRecentDemand = try await downstream(.value((value, right.value)))
-                    try resume(returning: mostRecentDemand)
+                    do {
+                        mostRecentDemand = try await downstream(.value((value, right.value)))
+                        resume(returning: mostRecentDemand)
+                    } catch {
+                        leftResumption.resume(throwing: error)
+                    }
                 }
                 return .none
             case .completion(_):
+                if let right = right {
+                    right.resumption.resume(returning: .done)
+                }
+                leftResumption.resume(returning: .done)
+                left = .none
+                right = .none
                 return .completion(.exit)
         }
     }
 
     private mutating func handleRight(
         _ rightResult: AsyncStream<Right>.Result,
-        _ rightContinuation: UnsafeContinuation<Demand, Error>
+        _ rightResumption: Resumption<Demand>
     ) async throws -> Reducer<Self, Self.Action>.Effect {
         guard right == nil else { throw PublisherError.internalError }
         switch rightResult {
             case let .value((value)):
-                right = (value, rightContinuation)
+                right = (value, rightResumption)
                 if let left = left {
-                    guard !Task.isCancelled else { return .completion(.cancel) }
-                    mostRecentDemand = try await downstream(.value((left.value, value)))
-                    try resume(returning: mostRecentDemand)
+                    do {
+                        mostRecentDemand = try await downstream(.value((left.value, value)))
+                        resume(returning: mostRecentDemand)
+                    } catch {
+                        rightResumption.resume(throwing: error)
+                    }
                 }
                 return .none
             case .completion(_) :
+                if let left = left {
+                    left.resumption.resume(returning: .done)
+                }
+                rightResumption.resume(returning: .done)
+                left = .none
+                right = .none
                 return .completion(.exit)
         }
     }
 
-    private mutating func resume(returning demand: Demand) throws {
-        if let left = left { left.continuation.resume(returning: demand) }
+    private mutating func resume(returning demand: Demand) {
+        if let left = left { left.resumption.resume(returning: demand) }
         else if demand == .done { leftCancellable.cancel() }
         left = .none
 
-        if let right = right { right.continuation.resume(returning: demand) }
+        if let right = right { right.resumption.resume(returning: demand) }
         else if demand == .done { rightCancellable.cancel() }
         right = .none
     }

@@ -7,9 +7,16 @@
 struct MergeState<Output: Sendable> {
     typealias CombinatorAction = Self.Action
     enum Action {
-        case setValue(AsyncStream<(Int, Output)>.Result, UnsafeContinuation<Demand, Swift.Error>)
-        case removeCancellable(Int, UnsafeContinuation<Demand, Swift.Error>)
-        case failure(Int, Error, UnsafeContinuation<Demand, Swift.Error>)
+        case setValue(AsyncStream<(Int, Output)>.Result, Resumption<Demand>)
+        case removeCancellable(Int, Resumption<Demand>)
+        case failure(Int, Error, Resumption<Demand>)
+        var resumption: Resumption<Demand> {
+            switch self {
+                case .setValue(_, let resumption): return resumption
+                case .removeCancellable(_, let resumption): return resumption
+                case .failure(_, _, let resumption): return resumption
+            }
+        }
     }
 
     let downstream: (AsyncStream<Output>.Result) async throws -> Demand
@@ -70,6 +77,19 @@ struct MergeState<Output: Sendable> {
         } catch { }
     }
 
+    static func dispose(action: Self.Action, completion: Reducer<Self, Self.Action>.Completion) async -> Void {
+        switch action {
+            case let .setValue(_, resumption) where !resumption.hasResumed:
+                resumption.resume(throwing: PublisherError.cancelled)
+            case let .removeCancellable(_, resumption) where !resumption.hasResumed:
+                resumption.resume(throwing: PublisherError.cancelled)
+            case let .failure(_, _, resumption) where !resumption.hasResumed:
+                resumption.resume(throwing: PublisherError.cancelled)
+            default:
+                ()
+        }
+    }
+
     static func reduce(
         `self`: inout Self,
         action: Self.Action
@@ -80,21 +100,25 @@ struct MergeState<Output: Sendable> {
     private mutating func reduce(
         action: Self.Action
     ) async throws -> Reducer<Self, Action>.Effect {
-        guard !Task.isCancelled else { return .completion(.cancel) }
+        guard !Task.isCancelled else {
+            action.resumption.resume(throwing: PublisherError.cancelled)
+            return .completion(.cancel)
+        }
         switch action {
             case let .setValue(value, continuation):
                 return try await reduceValue(value, continuation)
             case let .removeCancellable(index, continuation):
-                cancellables.removeValue(forKey: index)
                 continuation.resume(returning: .done)
+                if let c = cancellables.removeValue(forKey: index) {
+                    let _ = await c.result
+                }
                 if cancellables.count == 0 {
                     let c: Completion = Task.isCancelled ? .cancelled : .finished
                     mostRecentDemand = try await downstream(.completion(c))
                     return .completion(.exit)
                 }
                 return .none
-            case let .failure(index, error, continuation):
-                cancellables.removeValue(forKey: index)
+            case let .failure(_, error, continuation):
                 continuation.resume(returning: .done)
                 cancellables.removeAll()
                 mostRecentDemand = try await downstream(.completion(.failure(error)))
@@ -104,7 +128,7 @@ struct MergeState<Output: Sendable> {
 
     private mutating func reduceValue(
         _ value: AsyncStream<(Int, Output)>.Result,
-        _ continuation: UnsafeContinuation<Demand, Swift.Error>
+        _ resumption: Resumption<Demand>
     ) async throws -> Reducer<Self, Action>.Effect {
         switch value {
             case let .value((index, output)):
@@ -113,21 +137,21 @@ struct MergeState<Output: Sendable> {
                 }
                 do {
                     mostRecentDemand = try await downstream(.value(output))
-                    continuation.resume(returning: mostRecentDemand)
+                    resumption.resume(returning: mostRecentDemand)
                     return .none
                 }
                 catch {
-                    continuation.resume(throwing: error)
+                    resumption.resume(throwing: error)
                     return .completion(.failure(error))
                 }
             case let .completion(.failure(error)):
-                continuation.resume(returning: .done)
+                resumption.resume(returning: .done)
                 return .completion(.failure(error))
             case .completion(.finished):
-                continuation.resume(returning: .done)
+                resumption.resume(returning: .done)
                 return .none
             case .completion(.cancelled):
-                continuation.resume(returning: .done)
+                resumption.resume(returning: .done)
                 return .none
         }
     }

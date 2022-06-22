@@ -14,7 +14,7 @@ class ZipTests: XCTestCase {
     override func tearDownWithError() throws { }
 
     func testSimpleJustZip() async throws {
-        let expectation = await CheckedExpectation<Void>()
+        let expectation = await Expectation<Void>()
 
         let publisher1 = Just(100)
         let publisher2 = Just("abcdefghijklmnopqrstuvwxyz")
@@ -48,11 +48,11 @@ class ZipTests: XCTestCase {
             let count = await counter.count
             XCTFail("Timed out, count = \(count)")
         }
-        c1.cancel()
+        _ = await c1.result
     }
 
     func testEmptyZip() async throws {
-        let expectation = await CheckedExpectation<Void>()
+        let expectation = await Expectation<Void>()
 
         let publisher1 = Just(100)
         let publisher2 = Empty(String.self)
@@ -85,11 +85,11 @@ class ZipTests: XCTestCase {
             let count = await counter.count
             XCTFail("Timed out, count = \(count)")
         }
-        z1.cancel()
+        _ = await z1.result
     }
 
     func testSimpleSequenceZip() async throws {
-        let expectation = await CheckedExpectation<Void>()
+        let expectation = await Expectation<Void>()
 
         let publisher1 = (0 ... 100).asyncPublisher
         let publisher2 = "abcdefghijklmnopqrstuvwxyz".asyncPublisher
@@ -121,11 +121,11 @@ class ZipTests: XCTestCase {
             let count = await counter.count
             XCTFail("Timed out, count = \(count)")
         }
-        z1.cancel()
+        _ = await z1.result
     }
 
     func testSimpleZip() async throws {
-        let expectation = await CheckedExpectation<Void>()
+        let expectation = await Expectation<Void>()
 
         let publisher1 = (0 ... 100).asyncPublisher
         let publisher2 = Unfolded("abcdefghijklmnopqrstuvwxyz")
@@ -163,7 +163,7 @@ class ZipTests: XCTestCase {
     }
 
     func testComplexZip() async throws {
-        let expectation = await CheckedExpectation<Void>()
+        let expectation = await Expectation<Void>()
 
         let p1 = Unfolded(0 ... 100)
         let p2 = Unfolded("abcdefghijklmnopqrstuvwxyz")
@@ -204,12 +204,12 @@ class ZipTests: XCTestCase {
             let count = await counter.count
             XCTFail("Timed out, count = \(count)")
         }
-        z1.cancel()
+        let _ = await z1.result
     }
 
     func testMultiComplexZip() async throws {
-        let expectation1 = await CheckedExpectation<Void>()
-        let expectation2 = await CheckedExpectation<Void>()
+        let expectation1 = await Expectation<Void>()
+        let expectation2 = await Expectation<Void>()
 
         let p1 = Unfolded(0 ... 100)
         let p2 = Unfolded("abcdefghijklmnopqrstuvwxyz")
@@ -276,7 +276,7 @@ class ZipTests: XCTestCase {
         } catch {
             XCTFail("Timed out")
         }
-        z1.cancel()
-        z2.cancel()
+        _ = await z1.result
+        _ = await z2.result
     }
 }

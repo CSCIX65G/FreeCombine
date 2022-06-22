@@ -19,16 +19,52 @@ Task {
         try await Task.sleep(nanoseconds: 3_000_000_000)
         print("ending inner task 3")
     }
-    do {
-        try await Task.sleep(nanoseconds: 1_000_000_000)
-    } catch {
-        print("Cancelled the sleep")
-    }
-    print("ending outer task")
+    await withTaskCancellationHandler(handler: {
+        //        s1.cancel()
+        //        s2.cancel()
+        //        s3.cancel()
+    }, operation: {
+        do {
+            try await Task.sleep(nanoseconds: 1_000_000_000)
+        } catch {
+            print("Cancelled the sleep")
+        }
+        print("ending outer task")
+    } )
 }
+//t.cancel()
 
 /*:
-A better approach
+ Intuitively, this is what `async let` is for but this does not compile bc async let
+ variables cannot escape their parent task.
+ */
+
+//Task<(Void, Void, Void), Swift.Error> {
+//    async let t1: Void = {
+//        try await Task.sleep(nanoseconds: 4_000_000_000)
+//        print("ending inner task 1")
+//    }()
+//
+//    async let t2: Void = {
+//        try await Task.sleep(nanoseconds: 5_000_000_000)
+//        print("ending inner task 2")
+//    }()
+//
+//    async let t3: Void = {
+//        try await Task.sleep(nanoseconds: 3_000_000_000)
+//        print("ending inner task 3")
+//    }()
+//
+//    do { try await Task.sleep(nanoseconds: 1_000_000_000) }
+//    catch { print("Cancelled the sleep") }
+//
+//    print("ending outer task")
+//    return try await (t1, t2, t3)
+//}
+
+/*:
+ An additional approach, scope Tasks to the lifetime of an object rather than to a parent.
+ Then if you ever leak a reference to the task, it cancels.
  */
 public final class Cancellable<Output: Sendable>: Sendable {
     private let _cancel: @Sendable () -> Void
@@ -75,6 +111,14 @@ public extension Cancellable {
         )
     }
 }
+
+Task {
+    let _: Void = await withUnsafeContinuation { continuation in
+        return
+    }
+    print("Exiting continuation task")
+}
+
 
 Cancellable(task: .init {
     Cancellable(task: .init {

@@ -29,6 +29,7 @@ public func combineLatest<Left, Right>(
         buffering: .bufferingOldest(2),
         reducer: Reducer(
             onCompletion: CombineLatestState<Left, Right>.complete,
+            disposer: CombineLatestState<Left, Right>.dispose,
             reducer: CombineLatestState<Left, Right>.reduce
         ),
         extractor: \.mostRecentDemand

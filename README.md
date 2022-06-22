@@ -5,37 +5,52 @@
 ## Like Combine. Only free. And concurrent.
 
 * Protocol-free.
+  * No protocols, only concrete types
+  * Eager type erasure
+  * Continuation-passing style
 * Race-free.
   * Yield-free.
   * Sleep-free.
 * Leak-free.
+  * Memory-bound Task cancellation
+  * Memory-bound UnsafeContinuation resolution
   * Unbounded queue-free.
 * Lock-free.
+  * Queueing channel instead of locking channel
 * Dependency-free.
+  * depends only on Swift std lib
 
 ## Salient features
 
 1. "Small things that compose"
-2. Implement all operations supported by Combine, but some require modification
-3. Uses "imprecise" errors throughout in the manner of Swift concurrency
-4. Futures _AND_ Streams
+1. Implement all operations supported by Combine, but some require modification
+1. Uses "imprecise" errors throughout in the manner of Swift concurrency.
+1. Tasks and Continuations can _always_ fail due to cancellation
+1. Principled handling of cancellation throughout 
+1. Futures _AND_ Streams
 
 ## Todo
 
+1. ~~Implement leak prevention on UnsafeContinuation, Task, and AsyncStream.Continuation~~
 1. maybe add an additional repo (FreeCombineDispatch) that depends on libdispatch to get delay, debounce, throttle
-2. revamp StateThread to be exactly a concurrency aware version of TCA's store
-3. Add support for Promise/Future
-4. Add a repo which implements asyncPublishers for everything in Foundation that currently has a `publisher`
-5. fully implement all Combine operators
-6. Add a Buffer publisher/operator to reintroduce a push model via an independent source of demand upstream
-7. Get to 100% test coverage
-8. Document this at the level of writing a book in the form of playgrounds
+1. revamp StateThread to be exactly a concurrency aware version of TCA's store
+1. Add support for Promise/Future
+1. Add a repo which implements asyncPublishers for everything in Foundation that currently has a `publisher`
+1. fully implement all Combine operators
+1. Add a Buffer publisher/operator to reintroduce a push model via an independent source of demand upstream
+1. Get to 100% test coverage
+1. Document this at the level of writing a book in the form of playgrounds
 
   ## Introduction
 
-  For a long time I've been exploring the idea of what Apple's Swift Combine framework would look like without using protocols. The advent of Concurrency support in Swift 5.5 provided an impetus to complete that exploration. This repository represents the current state of that effort and consists of material that I intend to incorporate into classes I teach on iOS development at [Harvard](https://courses.dce.harvard.edu/?details&srcdb=202203&crn=33540) and at [Tufts](https://www.cs.tufts.edu/t/courses/description/fall2021/CS/151-02).
+  For a long time I've been exploring the idea of what Apple's Swift Combine framework would look like if written without using protocols. The advent of Concurrency support in Swift 5.5 provided an impetus to complete that exploration. This repository represents the current state of that effort and consists of material that I intend to incorporate into classes I teach on iOS development at [Harvard](https://courses.dce.harvard.edu/?details&srcdb=202203&crn=33540) and at [Tufts](https://www.cs.tufts.edu/t/courses/description/fall2021/CS/151-02).
 
-  Ideally, this material would become the core of an expanded course on Functional Concurrent Programming using Swift, but that course is still fairly far off.
+  Ideally, this material would become the core of an expanded course on Functional Concurrent Programming using Swift, but that course is still fairly far off.  
+  
+  Secondarily, this repo is my own feeble attempt to answer the following: 
+  
+  1. Why does Swift's Structured Concurrency, not have the same set of primitives as Concurrent Haskell?
+  2. Are there differences between what we mean when we refer to Structured Concurrency and what we mean when we refer to Functional Concurrency and precisely what would those differences be?
 
   ### Functional Requirements
 

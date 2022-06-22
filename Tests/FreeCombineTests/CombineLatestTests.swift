@@ -14,7 +14,7 @@ class CombineLatestTests: XCTestCase {
     override func tearDownWithError() throws { }
 
     func testSimpleJustCombineLatest() async throws {
-        let expectation = await CheckedExpectation<Void>()
+        let expectation = await Expectation<Void>()
 
         let publisher1 = Just(100)
         let publisher2 = Just("abcdefghijklmnopqrstuvwxyz")
@@ -46,11 +46,11 @@ class CombineLatestTests: XCTestCase {
             let count = await counter.count
             XCTFail("Timed out, count = \(count)")
         }
-        c1.cancel()
+        let _ = await c1.result
     }
 
     func testEmptyCombineLatest() async throws {
-        let expectation = await CheckedExpectation<Void>()
+        let expectation = await Expectation<Void>()
 
         let publisher1 = Just(100)
         let publisher2 = Empty(String.self)
@@ -82,11 +82,11 @@ class CombineLatestTests: XCTestCase {
             let count = await counter.count
             XCTFail("Timed out, count = \(count)")
         }
-        z1.cancel()
+        let _ = await z1.result
     }
 
     func testSimpleSequenceCombineLatest() async throws {
-        let expectation = await CheckedExpectation<Void>()
+        let expectation = await Expectation<Void>()
 
         let publisher1 = (0 ..< 100).asyncPublisher
         let publisher2 = "abcdefghijklmnopqrstuvwxyz".asyncPublisher
@@ -122,7 +122,7 @@ class CombineLatestTests: XCTestCase {
     }
 
     func testSimpleCombineLatest() async throws {
-        let expectation = await CheckedExpectation<Void>()
+        let expectation = await Expectation<Void>()
 
         let publisher1 = (0 ..< 100).asyncPublisher
         let publisher2 = Unfolded("abcdefghijklmnopqrstuvwxyz")
@@ -160,7 +160,7 @@ class CombineLatestTests: XCTestCase {
     }
 
     func testComplexCombineLatest() async throws {
-        let expectation = await CheckedExpectation<Void>()
+        let expectation = await Expectation<Void>()
 
         let p1 = Unfolded(0 ... 100)
         let p2 = Unfolded("abcdefghijklmnopqrstuvwxyz")
@@ -197,12 +197,12 @@ class CombineLatestTests: XCTestCase {
             let count = await counter.count
             XCTFail("Timed out, count = \(count)")
         }
-        z1.cancel()
+        _ = await z1.result
     }
 
     func testMultiComplexCombineLatest() async throws {
-        let expectation1 = await CheckedExpectation<Void>()
-        let expectation2 = await CheckedExpectation<Void>()
+        let expectation1 = await Expectation<Void>()
+        let expectation2 = await Expectation<Void>()
 
         let p1 = Unfolded(0 ..< 100)
         let p2 = Unfolded("abcdefghijklmnopqrstuvwxyz")

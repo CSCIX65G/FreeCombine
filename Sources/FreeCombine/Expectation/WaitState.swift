@@ -15,7 +15,7 @@ struct WaitState<FinalResult, PartialResult> {
     let watchdog: Task<Void, Swift.Error>
     let resultReducer: (inout FinalResult, PartialResult) throws -> Void
 
-    var expectations: [Int: CheckedExpectation<PartialResult>]
+    var expectations: [Int: Expectation<PartialResult>]
     var tasks: [Int: Task<PartialResult, Swift.Error>]
     var finalResult: FinalResult
 
@@ -25,7 +25,7 @@ struct WaitState<FinalResult, PartialResult> {
         timeout: UInt64,
         reducer: @escaping (inout FinalResult, PartialResult) throws -> Void,
         initialValue: FinalResult
-    ) where S.Element == CheckedExpectation<PartialResult> {
+    ) where S.Element == Expectation<PartialResult> {
         let tasks = expectations.enumerated().map { index, expectation in
             Task<PartialResult, Swift.Error> {
                 guard !Task.isCancelled else {
@@ -42,7 +42,7 @@ struct WaitState<FinalResult, PartialResult> {
                 return pValue
             }
         }
-        let expectationDict: [Int: CheckedExpectation<PartialResult>] = .init(
+        let expectationDict: [Int: Expectation<PartialResult>] = .init(
             uniqueKeysWithValues: expectations.enumerated().map { ($0, $1) }
         )
         let taskDict: [Int: Task<PartialResult, Swift.Error>] = .init(
@@ -66,7 +66,7 @@ struct WaitState<FinalResult, PartialResult> {
     }
 
     mutating func cancel() -> Void {
-        expectations.values.forEach { $0.cancel() }
+        expectations.values.forEach { try? $0.cancel() }
         expectations.removeAll()
         tasks.removeAll()
     }
@@ -93,7 +93,7 @@ struct WaitState<FinalResult, PartialResult> {
                 }
             case .timeout:
                 cancel()
-                throw CheckedExpectation<FinalResult>.Error.timedOut
+                throw Expectation<FinalResult>.Error.timedOut
         }
         return .none
     }

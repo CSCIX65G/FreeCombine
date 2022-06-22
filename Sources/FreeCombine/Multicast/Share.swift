@@ -10,7 +10,7 @@ public extension Publisher {
     func share() async -> Self {
         let multicaster = await LazyValueRef(
             creator: {  await Multicaster<Output>.init(
-                stateTask: Channel.init().stateTask(
+                stateTask: try Channel.init(buffering: .unbounded).stateTask(
                     initialState: MulticasterState<Output>.create(upstream: self),
                     reducer: Reducer(
                         onCompletion: MulticasterState<Output>.complete,
@@ -28,20 +28,31 @@ public extension Publisher {
                     case .value:
                         return try await downstream(r)
                     case .completion:
+//                        try await multicaster.release()
                         let finalValue = try await downstream(r)
-                        try await multicaster.release()
                         return finalValue
                 }
             }
         }
         return .init { continuation, downstream in
             Cancellable<Cancellable<Demand>>.join(.init {
-                let m = try await multicaster.value()
-                try await multicaster.retain()
-                let cancellable = await m.publisher().sink(lift(downstream))
-                try await m.connect()
-                continuation?.resume()
-                return cancellable
+                do {
+                    guard let m = try await multicaster.value() else {
+                        return Cancellable<Demand> { .done }
+                    }
+                    let cancellable = await m.publisher().sink(lift(downstream))
+                    if cancellable.isCancelled {
+                        fatalError("Should not be cancelled")
+                    }
+                    do {
+                        try await m.connect()
+                    }
+                    catch { /* ignore failed connects after the first one */ }
+                    continuation?.resume()
+                    return cancellable
+                } catch {
+                    throw error
+                }
             } )
         }
     }

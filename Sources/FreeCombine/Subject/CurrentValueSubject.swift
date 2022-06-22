@@ -8,11 +8,11 @@
 public func CurrentValueSubject<Output>(
     currentValue: Output,
     buffering: AsyncStream<DistributorState<Output>.Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
-    onStartup: UnsafeContinuation<Void, Never>? = .none
+    onStartup: Resumption<Void>? = .none
 ) -> StateTask<DistributorState<Output>, DistributorState<Output>.Action> {
     .init(
         channel: .init(buffering: buffering),
-        initialState: { _ in .init(currentValue: currentValue, nextKey: 0, downstreams: [:]) },
+        initialState: { channel in .init(currentValue: currentValue, nextKey: 0, downstreams: [:]) },
         onStartup: onStartup,
         reducer: Reducer(
             onCompletion: DistributorState<Output>.complete,

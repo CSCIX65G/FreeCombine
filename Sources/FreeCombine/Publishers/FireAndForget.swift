@@ -26,7 +26,7 @@ public extension Publisher {
                 do {
                     try await operation()
                     guard !Task.isCancelled else {
-                        return try await downstream(.completion(.failure(PublisherError.cancelled)))
+                        return try await handleCancellation(of: downstream)
                     }
                     return try await downstream(.completion(.finished))
                 } catch {

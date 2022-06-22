@@ -6,12 +6,22 @@
 //
 
 public struct MulticasterState<Output: Sendable> {
-    public enum Action: Sendable {
-        case connect(UnsafeContinuation<Void, Swift.Error>)
-        case pause(UnsafeContinuation<Void, Swift.Error>)
-        case resume(UnsafeContinuation<Void, Swift.Error>)
-        case disconnect(UnsafeContinuation<Void, Swift.Error>)
+    public enum Action: Sendable, CustomStringConvertible {
+        case connect(Resumption<Void>)
+        case pause(Resumption<Void>)
+        case resume(Resumption<Void>)
+        case disconnect(Resumption<Void>)
         case distribute(DistributorState<Output>.Action)
+
+        public var description: String {
+            switch self {
+                case .connect: return "connect"
+                case .pause: return "pause"
+                case .resume: return "resume"
+                case .disconnect: return "disconnect"
+                case let .distribute(subaction): return "distribute(\(subaction))"
+            }
+        }
     }
 
     public enum Error: Swift.Error {
@@ -28,7 +38,7 @@ public struct MulticasterState<Output: Sendable> {
     let downstream: @Sendable (AsyncStream<Output>.Result) async throws -> Demand
 
     var cancellable: Cancellable<Demand>?
-    var upstreamContinuation: UnsafeContinuation<Demand, Swift.Error>?
+    var upstreamContinuation: Resumption<Demand>?
     var isRunning: Bool = false
     var distributor: DistributorState<Output>
 
@@ -39,34 +49,47 @@ public struct MulticasterState<Output: Sendable> {
         self.upstream = upstream
         self.distributor = .init(currentValue: .none, nextKey: 0, downstreams: [:])
         self.downstream = { r in
-            await withUnsafeContinuation { continuation in
-                channel.yield(.distribute(.receive(r, continuation)))
+            var queueStatus: AsyncStream<MulticasterState<Output>.Action>.Continuation.YieldResult!
+            let _: Void = try await withResumption { resumption in
+                queueStatus = channel.yield(.distribute(.receive(r, resumption)))
+                switch queueStatus {
+                    case .enqueued:
+                        ()
+                    case .terminated:
+                        resumption.resume(throwing: PublisherError.cancelled)
+                    case .dropped:
+                        fatalError("Should never drop")
+                    case .none:
+                        fatalError("must have a queue status")
+                    @unknown default:
+                        fatalError("Handle new case")
+                }
             }
-            return .more
+            if case .enqueued = queueStatus { return .more }
+            return .done
         }
     }
 
     static func create(
         upstream: Publisher<Output>
     ) -> (Channel<MulticasterState<Output>.Action>) -> Self {
-        { channel in .init(upstream: upstream, channel: channel) }
+        { channel in return .init(upstream: upstream, channel: channel) }
     }
 
     static func complete(state: inout Self, completion: Reducer<Self, Self.Action>.Completion) async -> Void {
         switch completion {
-            case .finished:
-                await state.distributor.process(currentRepeaters: state.distributor.repeaters, with: .completion(.finished))
-            case .exit:
-                fatalError("Multicaster should never exit")
+            case .finished, .exit:
+                try? await state.distributor.process(currentRepeaters: state.distributor.repeaters, with: .completion(.finished))
             case let .failure(error):
-                await state.distributor.process(currentRepeaters: state.distributor.repeaters, with: .completion(.failure(error)))
+                try? await state.distributor.process(currentRepeaters: state.distributor.repeaters, with: .completion(.failure(error)))
             case .cancel:
-                await state.distributor.process(currentRepeaters: state.distributor.repeaters, with: .completion(.cancelled))
+                try? await state.distributor.process(currentRepeaters: state.distributor.repeaters, with: .completion(.cancelled))
         }
         for (_, repeater) in state.distributor.repeaters {
             repeater.finish()
         }
         state.distributor.repeaters.removeAll()
+        state.cancellable?.cancel()
     }
 
     static func distributorCompletion(
@@ -76,7 +99,8 @@ public struct MulticasterState<Output: Sendable> {
             case .finished: return .finished
             case .exit: return .exit
             case let .failure(error): return .failure(error)
-            case .cancel: return .cancel
+            case .cancel:
+                return .cancel
         }
     }
 
@@ -96,7 +120,7 @@ public struct MulticasterState<Output: Sendable> {
     }
 
     static func reduce(`self`: inout Self, action: Self.Action) async throws -> Reducer<Self, Action>.Effect {
-        try await `self`.reduce(action: action)
+        return try await `self`.reduce(action: action)
     }
 
     mutating func reduce(action: Action) async throws -> Reducer<Self, Action>.Effect {
@@ -115,61 +139,65 @@ public struct MulticasterState<Output: Sendable> {
     }
 
     mutating func connect(
-        _ continuation: UnsafeContinuation<Void, Swift.Error>
+        _ resumption: Resumption<Void>
     ) async throws -> Reducer<Self, Action>.Effect {
         guard case .none = cancellable else {
-            continuation.resume()
+            resumption.resume()
             return .none
         }
-        cancellable = await upstream.sink(downstream)
+        let localUpstream = upstream
+        let localDownstream = downstream
+        cancellable = Cancellable<Demand>.join {
+            await localUpstream.sink(localDownstream)
+        }
         isRunning = true
-        continuation.resume()
+        resumption.resume()
         return .none
     }
 
     mutating func pause(
-        _ continuation: UnsafeContinuation<Void, Swift.Error>
+        _ resumption: Resumption<Void>
     ) async throws -> Reducer<Self, Action>.Effect {
         guard let _ = cancellable else {
-            continuation.resume(throwing: Error.disconnected)
+            resumption.resume(throwing: Error.disconnected)
             return .completion(.failure(Error.disconnected))
         }
         guard isRunning else {
-            continuation.resume(throwing: Error.alreadyPaused)
+            resumption.resume(throwing: Error.alreadyPaused)
             return .completion(.failure(Error.alreadyPaused))
         }
         isRunning = false
-        continuation.resume()
+        resumption.resume()
         return .none
     }
 
     mutating func resume(
-        _ continuation: UnsafeContinuation<Void, Swift.Error>
+        _ resumption: Resumption<Void>
     ) async throws -> Reducer<Self, Action>.Effect {
         guard let _ = cancellable else {
-            continuation.resume(throwing: Error.disconnected)
+            resumption.resume(throwing: Error.disconnected)
             return .completion(.failure(Error.disconnected))
         }
         guard !isRunning else {
-            continuation.resume(throwing: Error.alreadyResumed)
+            resumption.resume(throwing: Error.alreadyResumed)
             return .completion(.failure(Error.alreadyResumed))
         }
         isRunning = true
         upstreamContinuation?.resume(returning: .more)
-        continuation.resume()
+        resumption.resume()
         return .none
     }
 
     mutating func disconnect(
-        _ continuation: UnsafeContinuation<Void, Swift.Error>
+        _ resumption: Resumption<Void>
     ) async throws -> Reducer<Self, Action>.Effect {
         guard let _ = cancellable else {
-            continuation.resume(throwing: Error.alreadyDisconnected)
+            resumption.resume(throwing: Error.alreadyDisconnected)
             return .completion(.failure(Error.alreadyDisconnected))
         }
         isRunning = false
         upstreamContinuation?.resume(returning: .done)
-        continuation.resume()
+        resumption.resume()
         return .completion(.exit)
     }
 

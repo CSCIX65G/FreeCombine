@@ -26,21 +26,47 @@
  */
 
 public final class StateTask<State, Action: Sendable> {
+    let file: StaticString
+    let line: UInt
+    let deinitBehavior: DeinitBehavior
     let channel: Channel<Action>
     let cancellable: Cancellable<State>
 
-    fileprivate init(channel: Channel<Action>, cancellable: Cancellable<State>) {
+    fileprivate init(
+        file: StaticString = #file,
+        line: UInt = #line,
+        deinitBehavior: DeinitBehavior = .assert,
+        channel: Channel<Action>,
+        cancellable: Cancellable<State>
+    ) {
+        self.file = file
+        self.line = line
+        self.deinitBehavior = deinitBehavior
         self.channel = channel
         self.cancellable = cancellable
     }
 
     deinit {
-        finish()
-        cancel()
+        let shouldCancel = !(cancellable.isCancelled || cancellable.isCompleting)
+        switch deinitBehavior {
+            case .assert:
+                assert(!shouldCancel, "ABORTING DUE TO LEAKED \(type(of: Self.self)) CREATED @ \(file): \(line)")
+            case .log:
+                if shouldCancel { print("CANCELLING LEAKED \(type(of: Self.self)) CREATED @ \(file): \(line)") }
+            case .silent:
+                ()
+        }
+        if shouldCancel { cancellable.cancel() }
     }
 
     @Sendable func cancel() -> Void {
         cancellable.cancel()
+    }
+
+    public var isCancelled: Bool {
+        @Sendable get {
+            cancellable.isCancelled
+        }
     }
 
     @Sendable func finish() -> Void {
@@ -51,6 +77,12 @@ public final class StateTask<State, Action: Sendable> {
         channel.yield(element)
     }
 
+    public var value: State {
+        get async throws {
+            try await cancellable.value
+        }
+    }
+    
     var result: Result<State, Swift.Error> {
         get async {
             do { return .success(try await value) }
@@ -60,38 +92,50 @@ public final class StateTask<State, Action: Sendable> {
 }
 
 extension StateTask {
+    private enum Error: Swift.Error {
+        case completed
+        case internalError
+        case cancelled
+    }
     public convenience init(
+        file: StaticString = #file,
+        line: UInt = #line,
+        deinitBehavior: DeinitBehavior = .assert,
         channel: Channel<Action>,
         initialState: @escaping (Channel<Action>) async -> State,
-        onStartup: UnsafeContinuation<Void, Never>? = .none,
+        onStartup: Resumption<Void>? = .none,
         reducer: Reducer<State, Action>
     ) {
-        self.init(
+        self.init (
+            file: file,
+            line: line,
+            deinitBehavior: deinitBehavior,
             channel: channel,
-            cancellable: .init {
+            cancellable: .init(file: file, line: line, deinitBehavior: deinitBehavior) {
                 var state = await initialState(channel)
                 onStartup?.resume()
-                do {
+                do { try await withTaskCancellationHandler(handler: channel.finish) {
                     for await action in channel {
-                        guard !Task.isCancelled else { throw PublisherError.cancelled }
                         let effect = try await reducer(&state, action)
-                        guard !Task.isCancelled else { throw PublisherError.cancelled }
                         switch effect {
                             case .none: continue
                             case .published(_):
-                                // FIXME: Need to handle the publisher   channel.consume(publisher: publisher)
+                                // FIXME: Need to handle the publisher, i.e. channel.consume(publisher: publisher)
                                 continue
-                            case .completion(.exit): throw PublisherError.completed
+                            case .completion(.exit): throw Error.completed
                             case let .completion(.failure(error)): throw error
-                            case .completion(.finished): throw PublisherError.internalError
-                            case .completion(.cancel): throw PublisherError.cancelled
+                            case .completion(.finished): throw Error.internalError
+                            case .completion(.cancel):
+                                throw Error.cancelled
                         }
                     }
                     await reducer(&state, .finished)
-                } catch {
+                } } catch {
                     channel.finish()
-                    for await action in channel { await reducer(action, .failure(error)); continue }
-                    guard let completion = error as? PublisherError else {
+                    for await action in channel {
+                        await reducer(action, .failure(error)); continue
+                    }
+                    guard let completion = error as? Error else {
                         await reducer(&state, .failure(error))
                         throw error
                     }
@@ -104,24 +148,11 @@ extension StateTask {
                         case .internalError:
                             await reducer(&state, .failure(PublisherError.internalError))
                             throw completion
-                        case .enqueueError:
-                            await reducer(&state, .failure(PublisherError.enqueueError))
-                            throw completion
                     }
                 }
                 return state
             }
         )
-    }
-
-    public var isCancelled: Bool {
-        cancellable.isCancelled
-    }
-
-    public var value: State {
-        get async throws {
-            try await cancellable.value
-        }
     }
 }
 
@@ -132,7 +163,7 @@ public extension StateTask {
         reducer: Reducer<State, Action>
     ) async -> Self {
         var stateTask: Self!
-        await withUnsafeContinuation { stateTaskContinuation in
+        try! await withResumption { stateTaskContinuation in
             stateTask = Self.init(
                 channel: channel,
                 initialState: initialState,

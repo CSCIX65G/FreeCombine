@@ -27,36 +27,21 @@ public extension Publisher {
         stateTask: StateTask<DistributorState<Output>, DistributorState<Output>.Action>
     ) {
         self = .init { continuation, downstream in
-            let t: Task<Cancellable<Demand>, Swift.Error> = .init {
-                let c: Cancellable<Demand> = try await withUnsafeThrowingContinuation { demandContinuation in
-                    let enqueueStatus = stateTask.send(.subscribe(downstream, demandContinuation))
+            Cancellable<Cancellable<Demand>>.join(.init {
+                var enqueueStatus: AsyncStream<DistributorState<Output>.Action>.Continuation.YieldResult!
+                let c: Cancellable<Demand> = try await withResumption { demandResumption in
+                    enqueueStatus = stateTask.send(.subscribe(downstream, demandResumption))
                     guard case .enqueued = enqueueStatus else {
-                        return demandContinuation.resume(throwing: PublisherError.enqueueError)
+                        demandResumption.resume(throwing: PublisherError.enqueueError)
+                        return
                     }
                 }
                 continuation?.resume()
-                return c
-            }
-            return .init(
-                cancel: { Task {
-                    await t.result.map {
-                        $0.cancel()
-                    }
-                } },
-                isCancelled: { t.isCancelled },
-                value: {
-                    let cancellable = try await t.value
-                    let value = try await cancellable.value
-                    return value
-                },
-                result: {
-                    let r = await t.result
-                    switch r {
-                        case let .success(result):  return await result.result
-                        case let .failure(error): return .failure(error)
-                    }
+                guard case .enqueued = enqueueStatus else {
+                    return .init { try await downstream(.completion(.finished)) }
                 }
-            )
+                return c
+            } )
         }
     }
 }
@@ -68,31 +53,39 @@ public func Decombinator<Output>(
 }
 
 public extension Publisher {
+    private enum EnqueueError: Error {
+        case enqueueError
+    }
     init(
         stateTask: StateTask<MulticasterState<Output>, MulticasterState<Output>.Action>
     ) {
-        self = .init { continuation, downstream in
-            let t: Task<Cancellable<Demand>, Swift.Error> = .init {
-                let c: Cancellable<Demand> = try await withUnsafeThrowingContinuation { demandContinuation in
-                    let enqueueStatus = stateTask.send(.distribute(.subscribe(downstream, demandContinuation)))
+        self = .init { continuation, downstream in Cancellable<Cancellable<Demand>>.join(.init {
+            do {
+                let c: Cancellable<Demand> = try await withResumption { demandResumption in
+                    let enqueueStatus = stateTask.send(.distribute(.subscribe(downstream, demandResumption)))
                     guard case .enqueued = enqueueStatus else {
-                        return demandContinuation.resume(throwing: PublisherError.enqueueError)
+                        return demandResumption.resume(throwing: EnqueueError.enqueueError)
                     }
                 }
                 continuation?.resume()
                 return c
-            }
-            return .init(
-                cancel: { Task { await t.result.map {  $0.cancel() } } },
-                isCancelled: { t.isCancelled },
-                value: {  try await t.value.value },
-                result: {
-                    switch await t.result {
-                        case let .success(result):  return await result.result
-                        case let .failure(error): return .failure(error)
+            } catch {
+                let c1 = Cancellable<Demand>.init {
+                    switch error {
+                        case EnqueueError.enqueueError:
+                            let returnValue = try await downstream(.completion(.finished))
+                            continuation?.resume()
+                            return returnValue
+                        case PublisherError.completed:
+                            continuation?.resume()
+                            return .done
+                        default:
+                            continuation?.resume()
+                            throw error
                     }
                 }
-            )
-        }
+                return c1
+            }
+        } ) }
     }
 }

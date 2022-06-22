@@ -15,9 +15,9 @@ class CancellationTests: XCTestCase {
     override func tearDownWithError() throws { }
 
     func testSimpleZipCancellation() async throws {
-        let expectation = await CheckedExpectation<Void>()
-        let waiter = await CheckedExpectation<Void>()
-        let startup = await CheckedExpectation<Void>()
+        let expectation = await Expectation<Void>()
+        let waiter = await Expectation<Void>()
+        let startup = await Expectation<Void>()
 
         let publisher1 = (0 ... 100).asyncPublisher
         let publisher2 = "abcdefghijklmnopqrstuvwxyz".asyncPublisher
@@ -62,19 +62,14 @@ class CancellationTests: XCTestCase {
         catch {
             XCTFail("Timed out with count: \(await counter.count)")
         }
-        do {
-            let _ = try await z1.value
-            XCTFail("Should have cancelled")
-        }
-        catch { }
     }
 
     func testMultiZipCancellation() async throws {
-        let expectation = await CheckedExpectation<Void>()
-        let expectation2 = await CheckedExpectation<Void>()
-        let waiter = await CheckedExpectation<Void>()
-        let startup1 = await CheckedExpectation<Void>()
-        let startup2 = await CheckedExpectation<Void>()
+        let expectation = await Expectation<Void>()
+        let expectation2 = await Expectation<Void>()
+        let waiter = await Expectation<Void>()
+        let startup1 = await Expectation<Void>()
+        let startup2 = await Expectation<Void>()
 
         let publisher1 = Unfolded(0 ... 100)
         let publisher2 = Unfolded("abcdefghijklmnopqrstuvwxyz")
@@ -149,18 +144,13 @@ class CancellationTests: XCTestCase {
         } catch {
             XCTFail("Timed out")
         }
-        do {
-            let _ = try await z1.value
-            let _ = try await z2.value
-            XCTFail("Should have cancelled")
-        }
-        catch { }
+        _ = await z1.result
     }
 
     func testSimpleMergeCancellation() async throws {
-        let expectation = await CheckedExpectation<Void>()
-        let waiter = await CheckedExpectation<Void>()
-        let startup = await CheckedExpectation<Void>()
+        let expectation = await Expectation<Void>()
+        let waiter = await Expectation<Void>()
+        let startup = await Expectation<Void>()
 
         let publisher1 = "zyxwvutsrqponmlkjihgfedcba".asyncPublisher
         let publisher2 = "abcdefghijklmnopqrstuvwxyz".asyncPublisher
@@ -204,10 +194,5 @@ class CancellationTests: XCTestCase {
 
         do { try await FreeCombine.wait(for: expectation, timeout: 100_000_000) }
         catch { XCTFail("Timed out with count: \(await counter.count)") }
-        do {
-            let _ = try await z1.value
-            XCTFail("Should have cancelled")
-        }
-        catch { }
     }
 }

@@ -32,13 +32,13 @@ public enum PublisherError: Swift.Error, Sendable, CaseIterable {
 
 public struct Publisher<Output: Sendable>: Sendable {
     private let call: @Sendable (
-        UnsafeContinuation<Void, Never>?,
+        Resumption<Void>?,
         @Sendable @escaping (AsyncStream<Output>.Result) async throws -> Demand
     ) -> Cancellable<Demand>
 
     internal init(
         _ call: @Sendable @escaping (
-            UnsafeContinuation<Void, Never>?,
+            Resumption<Void>?,
             @Sendable @escaping (AsyncStream<Output>.Result) async throws -> Demand
         ) -> Cancellable<Demand>
     ) {
@@ -49,7 +49,7 @@ public struct Publisher<Output: Sendable>: Sendable {
 public extension Publisher {
     @discardableResult
     func sink(
-        onStartup: UnsafeContinuation<Void, Never>?,
+        onStartup: Resumption<Void>?,
         _ f: @Sendable @escaping (AsyncStream<Output>.Result) async throws -> Demand
     ) -> Cancellable<Demand> {
         self(onStartup: onStartup, f)
@@ -57,21 +57,26 @@ public extension Publisher {
 
     @discardableResult
     func callAsFunction(
-        onStartup: UnsafeContinuation<Void, Never>?,
-        _ f: @Sendable @escaping (AsyncStream<Output>.Result) async throws -> Demand
+        onStartup: Resumption<Void>?,
+        _ downstream: @Sendable @escaping (AsyncStream<Output>.Result) async throws -> Demand
     ) -> Cancellable<Demand> {
         call(onStartup, { result in
-            guard !Task.isCancelled else {
-                do { _ = try await f(.completion(.cancelled)) } catch { }
-                return .done
-            }
-            switch result {
-                case let .value(value):
-                    return try await f(.value(value))
-                case let .completion(.failure(error)):
-                    return try await f(.completion(.failure(error)))
-                case .completion(.finished), .completion(.cancelled):
-                    return try await f(result)
+            try await withTaskCancellationHandler(handler: {
+                Task {
+                    try await handleCancellation(of: downstream)
+                }
+            }) {
+                guard !Task.isCancelled else {
+                    return try await handleCancellation(of: downstream)
+                }
+                switch result {
+                    case let .value(value):
+                        return try await downstream(.value(value))
+                    case let .completion(.failure(error)):
+                        return try await downstream(.completion(.failure(error)))
+                    case .completion(.finished), .completion(.cancelled):
+                        return try await downstream(result)
+                }
             }
         } )
     }
@@ -88,7 +93,7 @@ public extension Publisher {
         _ f: @Sendable @escaping (AsyncStream<Output>.Result) async throws -> Demand
     ) async -> Cancellable<Demand> {
         var cancellable: Cancellable<Demand>!
-        let _: Void = await withUnsafeContinuation { continuation in
+        let _: Void = try! await withResumption { continuation in
             cancellable = self(onStartup: continuation, f)
         }
         return cancellable
@@ -117,7 +122,7 @@ extension Publisher {
     }
 
     func sink(
-        onStartup: UnsafeContinuation<Void, Never>?,
+        onStartup: Resumption<Void>?,
         receiveValue: @Sendable @escaping (Output) async -> Void
     ) -> Cancellable<Demand> {
         sink(onStartup: onStartup, receiveCompletion: void, receiveValue: receiveValue)
@@ -130,7 +135,7 @@ extension Publisher {
     }
 
     func sink(
-        onStartup: UnsafeContinuation<Void, Never>?,
+        onStartup: Resumption<Void>?,
         receiveCompletion: @Sendable @escaping (Completion) async -> Void,
         receiveValue: @Sendable @escaping (Output) async -> Void
     ) -> Cancellable<Demand> {
@@ -175,3 +180,9 @@ func errorFlattener<B>(
     } }
 }
 
+func handleCancellation<Output>(
+    of f: @Sendable @escaping (AsyncStream<Output>.Result) async throws -> Demand
+) async throws -> Demand {
+    _ = try await f(.completion(.cancelled))
+    return .done
+}

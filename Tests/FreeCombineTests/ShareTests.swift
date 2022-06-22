@@ -14,13 +14,13 @@ class ShareTests: XCTestCase {
     override func tearDownWithError() throws { }
 
     func xtestSimpleShare() async throws {
-        let expectation1 = await CheckedExpectation<Void>()
-        let expectation2 = await CheckedExpectation<Void>()
+        let expectation1 = await Expectation<Void>()
+        let expectation2 = await Expectation<Void>()
 
         let n = 2
 
         let unfolded = await Unfolded(0 ..< n)
-            .map { $0 }
+            .map { $0 * 2 }
             .share()
 
         let counter1 = Counter()
@@ -40,13 +40,11 @@ class ShareTests: XCTestCase {
                         XCTFail("Incorrect count: \(count) in subscription 1")
                         return .done
                     }
-                    do {
-                        try await expectation1.complete()
-                    }
-                    catch { XCTFail("Failed to complete with error: \(error)") }
+                    do { try await expectation1.complete() }
+                    catch { XCTFail("u1 Failed to complete with error: \(error)") }
                     return .done
                 case .completion(.cancelled):
-                    XCTFail("Should not have cancelled")
+                    XCTFail("u1 should not have cancelled")
                     return .done
             }
         }
@@ -60,29 +58,25 @@ class ShareTests: XCTestCase {
                     await value2.set(value: value)
                     return .more
                 case let .completion(.failure(error)):
-                    XCTFail("Got an error? \(error)")
+                    XCTFail("u2 completed with error: \(error)")
+                    do { try await expectation2.complete() }
+                    catch { XCTFail("u2 Failed to complete with error: \(error)") }
                     return .done
                 case .completion(.finished):
                     // Note number received here is unpredictable
-                    let count = await counter2.count
-                    let last = await value2.value
-                    print("Finished 2. count = \(count), last = \(last)")
-                    do {
-                        try await expectation2.complete()
-                    }
-                    catch { XCTFail("Failed to complete with error: \(error)") }
+                    do { try await expectation2.complete() }
+                    catch { XCTFail("u2 Failed to complete with error: \(error)") }
                     return .done
                 case .completion(.cancelled):
-                    XCTFail("Should not have cancelled")
+                    let count = await counter2.count
+                    let last = await value2.value
+                    XCTFail("u2 should not have cancelled, count = \(count), last = \(last)")
                     return .done
             }
         }
 
         do {
-            try await FreeCombine.wait(for: expectation1, timeout: 100_000_000)
-            let count = await counter1.count
-            let last = await value1.value
-            print("Finished 1. count = \(count), last = \(last)")
+            try await FreeCombine.wait(for: expectation1, timeout: 200_000_000)
         } catch {
             XCTFail("Timed out")
             return
@@ -94,7 +88,9 @@ class ShareTests: XCTestCase {
         do {
             try await FreeCombine.wait(for: expectation2, timeout: 100_000_000)
         } catch {
-            XCTFail("Timed out")
+            let count = await counter2.count
+            let last = await value2.value
+            XCTFail("u2 Timed out count = \(count), last = \(last)")
             return
         }
 
@@ -102,16 +98,15 @@ class ShareTests: XCTestCase {
         XCTAssert(d2 == .done, "Second chain has wrong value")
     }
 
-    func testSubjectShare() async throws {
+    func xtestSubjectShare() async throws {
         let subj = await PassthroughSubject(Int.self)
 
-        let unfolded = await subj
-            .publisher()
+        let publisher = await subj.publisher()
             .map { $0 % 47 }
             .share()
 
         let counter1 = Counter()
-        let u1 = await unfolded.sink( { result in
+        let u1 = await publisher.sink( { result in
             switch result {
                 case .value:
                     await counter1.increment()
@@ -132,7 +127,7 @@ class ShareTests: XCTestCase {
         })
 
         let counter2 = Counter()
-        let u2 = await unfolded.share().sink { (result: AsyncStream<Int>.Result) in
+        let u2 = await publisher.sink { (result: AsyncStream<Int>.Result) in
             switch result {
                 case .value:
                     await counter2.increment()

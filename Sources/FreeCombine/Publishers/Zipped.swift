@@ -29,6 +29,7 @@ public func zip<Left, Right>(
         buffering: .bufferingOldest(2),
         reducer: Reducer(
             onCompletion: ZipState<Left, Right>.complete,
+            disposer: ZipState<Left, Right>.dispose,
             reducer: ZipState<Left, Right>.reduce
         ),
         extractor: \.mostRecentDemand

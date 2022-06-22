@@ -48,7 +48,6 @@ public struct RepeaterState<ID: Hashable & Sendable, Output: Sendable>: Identifi
     }
 
     mutating func reduce(action: Self.Action) async throws -> Reducer<Self, Action>.Effect {
-        guard !Task.isCancelled else { throw PublisherError.cancelled }
         switch action {
             case let .repeat(output, semaphore):
                 do {

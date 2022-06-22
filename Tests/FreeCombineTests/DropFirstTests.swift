@@ -15,7 +15,7 @@ class DropFirstTests: XCTestCase {
     override func tearDownWithError() throws { }
 
     func testSimpleDropFirst() async throws {
-        let expectation1 = await CheckedExpectation<Void>()
+        let expectation1 = await Expectation<Void>()
         let unfolded = (0 ..< 100).asyncPublisher
 
         let counter1 = Counter()

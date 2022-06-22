@@ -19,11 +19,14 @@ let package = Package(
         ),
     ],
     dependencies: [
+        .package(url: "https://github.com/apple/swift-atomics.git", .upToNextMajor(from: "1.0.0")),
     ],
     targets: [
         .target(
             name: "FreeCombine",
-            dependencies: []
+            dependencies: [
+                .product(name: "Atomics", package: "swift-atomics")
+            ]
         ),
         .testTarget(
             name: "FreeCombineTests",

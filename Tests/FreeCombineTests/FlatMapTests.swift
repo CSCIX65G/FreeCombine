@@ -15,7 +15,7 @@ class FlatMapTests: XCTestCase {
     override func tearDownWithError() throws { }
 
     func testSimpleFlatMap() async throws {
-        let expectation = await CheckedExpectation<Void>()
+        let expectation = await Expectation<Void>()
 
         let checksum = Counter()
         let c1 = await Unfolded(0 ... 3)
@@ -46,6 +46,6 @@ class FlatMapTests: XCTestCase {
         do {
             try await FreeCombine.wait(for: expectation, timeout: 100_000_000)
         }
-        c1.cancel()
+        let _ = await c1.result
     }
 }

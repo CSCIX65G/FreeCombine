@@ -27,7 +27,7 @@ public extension Publisher {
     ) {
         self = .init { continuation, downstream in
             .init {
-                let stateTask = await Channel(buffering: buffering).stateTask(
+                let stateTask = try await Channel(buffering: buffering).stateTask(
                     initialState: initialState(downstream),
                     reducer: reducer
                 )
