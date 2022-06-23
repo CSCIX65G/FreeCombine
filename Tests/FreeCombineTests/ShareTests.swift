@@ -13,19 +13,19 @@ class ShareTests: XCTestCase {
 
     override func tearDownWithError() throws { }
 
-    func xtestSimpleShare() async throws {
+    func testSimpleShare() async throws {
         let expectation1 = await Expectation<Void>()
         let expectation2 = await Expectation<Void>()
 
-        let n = 2
-
-        let unfolded = await Unfolded(0 ..< n)
+        let n = 5
+        let unfolded = await (0 ..< n)
+            .asyncPublisher
             .map { $0 * 2 }
             .share()
 
         let counter1 = Counter()
         let value1 = ValueRef<Int>(value: -1)
-        let u1 = await unfolded.sink { (result: AsyncStream<Int>.Result) in
+        let u1 = await unfolded.sink { result in
             switch result {
                 case let .value(value):
                     await counter1.increment()
@@ -51,7 +51,7 @@ class ShareTests: XCTestCase {
 
         let counter2 = Counter()
         let value2 = ValueRef<Int>(value: -1)
-        let u2 = await unfolded.sink { (result: AsyncStream<Int>.Result) in
+        let u2 = await unfolded.sink { result in
             switch result {
                 case let .value(value):
                     await counter2.increment()
@@ -78,27 +78,27 @@ class ShareTests: XCTestCase {
         do {
             try await FreeCombine.wait(for: expectation1, timeout: 200_000_000)
         } catch {
-            XCTFail("Timed out")
-            return
+            let count = await counter2.count
+            let last = await value2.value
+            XCTFail("u1 Timed out count = \(count), last = \(last)")
+        }
+
+        do {
+            try await FreeCombine.wait(for: expectation2, timeout: 200_000_000)
+        } catch {
+            let count = await counter2.count
+            let last = await value2.value
+            XCTFail("u2 Timed out count = \(count), last = \(last)")
         }
 
         let d1 = try await u1.value
         XCTAssert(d1 == .done, "First chain has wrong value")
 
-        do {
-            try await FreeCombine.wait(for: expectation2, timeout: 100_000_000)
-        } catch {
-            let count = await counter2.count
-            let last = await value2.value
-            XCTFail("u2 Timed out count = \(count), last = \(last)")
-            return
-        }
-
         let d2 = try await u2.value
         XCTAssert(d2 == .done, "Second chain has wrong value")
     }
 
-    func xtestSubjectShare() async throws {
+    func testSubjectShare() async throws {
         let subj = await PassthroughSubject(Int.self)
 
         let publisher = await subj.publisher()

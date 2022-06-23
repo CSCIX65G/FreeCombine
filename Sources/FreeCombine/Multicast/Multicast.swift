@@ -16,6 +16,10 @@ public final class Multicaster<Output: Sendable> {
         stateTask.cancel()
         return await stateTask.result
     }
+    public func finish() async -> Void {
+        stateTask.finish()
+        _ = await stateTask.result
+    }
 }
 
 public extension Multicaster {

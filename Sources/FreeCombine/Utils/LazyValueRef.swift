@@ -18,12 +18,20 @@ public struct LazyValueRefState<Value: Sendable> {
     var value: Value?
     var refCount: Int = 0
     var creator: (() async throws -> Value)?
+    var disposer: (Value) async -> Void
 
-    public init(creator: @escaping () async throws -> Value) async {
+    public init(
+        creator: @escaping () async throws -> Value,
+        disposer: @escaping (Value) async -> Void = {_ in }
+    ) async {
         self.creator = creator
+        self.disposer = disposer
     }
 
     static func complete(state: inout Self, completion: Reducer<Self, Self.Action>.Completion) async -> Void {
+        if let value = state.value {
+            await state.disposer(value)
+        }
         state.value = .none
         state.creator = .none
         state.refCount = 0
@@ -77,24 +85,20 @@ public struct LazyValueRefState<Value: Sendable> {
                     return .completion(.failure(Error.deallocated))
                 }
                 refCount -= 1
-                if refCount == 0 {
-                    value = .none
-                    continuation.resume()
-                    return .completion(.exit)
-                }
                 continuation.resume()
-                return .none
+                return refCount == 0 ? .completion(.exit) : .none
         }
     }
 }
 
 public extension StateTask {
     static func stateTask<Value>(
-        creator: @escaping () async throws -> Value
+        creator: @escaping () async throws -> Value,
+        disposer: @escaping (Value) async -> Void
     ) async -> StateTask where State == LazyValueRefState<Value>, Action == LazyValueRefState<Value>.Action  {
         try! await Channel<LazyValueRefState<Value>.Action>.init(buffering: .unbounded)
             .stateTask(
-                initialState: { _ in await .init(creator: creator) },
+                initialState: { _ in await .init(creator: creator, disposer: disposer) },
                 reducer: .init(
                     onCompletion: LazyValueRefState<Value>.complete,
                     disposer: LazyValueRefState<Value>.dispose,
@@ -105,9 +109,10 @@ public extension StateTask {
 }
 
 public func LazyValueRef<Value>(
-    creator: @escaping () async throws -> Value
+    creator: @escaping () async throws -> Value,
+    disposer: @escaping (Value) async -> Void
 ) async -> StateTask<LazyValueRefState<Value>, LazyValueRefState<Value>.Action> {
-    await .stateTask(creator: creator)
+    await .stateTask(creator: creator, disposer: disposer)
 }
 
 public extension StateTask {
@@ -156,5 +161,6 @@ public extension StateTask {
                     fatalError("Handle new case")
             }
         })
+        return
     }
 }
