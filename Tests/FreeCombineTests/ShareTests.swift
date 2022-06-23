@@ -153,6 +153,7 @@ class ShareTests: XCTestCase {
         }
 
         try subj.nonBlockingFinish()
+        _ = await subj.result
         let d1 = try await u1.value
         XCTAssert(d1 == .done, "First chain has wrong value")
         let d2 = try await u2.value

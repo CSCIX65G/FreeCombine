@@ -133,7 +133,14 @@ extension StateTask {
                 } } catch {
                     channel.finish()
                     for await action in channel {
-                        await reducer(action, .failure(error)); continue
+                        switch error {
+                            case Error.completed:
+                                await reducer(action, .finished); continue
+                            case Error.cancelled:
+                                await reducer(action, .cancel); continue
+                            default:
+                                await reducer(action, .failure(error)); continue
+                        }
                     }
                     guard let completion = error as? Error else {
                         await reducer(&state, .failure(error))

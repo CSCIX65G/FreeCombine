@@ -9,9 +9,11 @@
 public extension Publisher {
     func share() async -> Self {
         let multicaster = await LazyValueRef(
+            deinitBehavior: .silentCancel,
             creator: {  await Multicaster<Output>.init(
                 stateTask: try Channel.init(buffering: .unbounded)
                     .stateTask(
+                        deinitBehavior: .silentCancel,
                         initialState: MulticasterState<Output>.create(upstream: self),
                         reducer: Reducer(
                             onCompletion: MulticasterState<Output>.complete,
@@ -43,6 +45,7 @@ public extension Publisher {
                 do {
                     guard let m = try await multicaster.value() else {
                         _ = try? await downstream(.completion(.finished))
+                        multicaster.cancel()
                         return Cancellable<Demand> { .done }
                     }
                     let cancellable = await m.publisher().sink(lift(downstream))

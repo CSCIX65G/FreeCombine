@@ -93,11 +93,17 @@ public struct LazyValueRefState<Value: Sendable> {
 
 public extension StateTask {
     static func stateTask<Value>(
+        file: StaticString = #file,
+        line: UInt = #line,
+        deinitBehavior: DeinitBehavior = .assert,
         creator: @escaping () async throws -> Value,
         disposer: @escaping (Value) async -> Void
     ) async -> StateTask where State == LazyValueRefState<Value>, Action == LazyValueRefState<Value>.Action  {
         try! await Channel<LazyValueRefState<Value>.Action>.init(buffering: .unbounded)
             .stateTask(
+                file: file,
+                line: line,
+                deinitBehavior: deinitBehavior,
                 initialState: { _ in await .init(creator: creator, disposer: disposer) },
                 reducer: .init(
                     onCompletion: LazyValueRefState<Value>.complete,
@@ -109,10 +115,19 @@ public extension StateTask {
 }
 
 public func LazyValueRef<Value>(
+    file: StaticString = #file,
+    line: UInt = #line,
+    deinitBehavior: DeinitBehavior = .assert,
     creator: @escaping () async throws -> Value,
     disposer: @escaping (Value) async -> Void
 ) async -> StateTask<LazyValueRefState<Value>, LazyValueRefState<Value>.Action> {
-    await .stateTask(creator: creator, disposer: disposer)
+    await .stateTask(
+        file: file,
+        line: line,
+        deinitBehavior: deinitBehavior,
+        creator: creator,
+        disposer: disposer
+    )
 }
 
 public extension StateTask {

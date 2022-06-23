@@ -12,6 +12,9 @@ public final class Multicaster<Output: Sendable> {
     public var value: MulticasterState<Output> {
         get async throws { try await stateTask.value }
     }
+    public var result: Result<MulticasterState<Output>, Swift.Error> {
+        get async { await stateTask.result }
+    }
     public func cancelAndAwaitResult() async throws -> Result<MulticasterState<Output>, Swift.Error> {
         stateTask.cancel()
         return await stateTask.result

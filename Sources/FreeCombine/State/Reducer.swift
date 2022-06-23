@@ -12,7 +12,7 @@ public struct Reducer<State, Action> {
         case completion(Completion)
 
         static func fireAndForget(_ f: @escaping () async throws -> Void) -> Self {
-            .published(FireAndForget(operation: f))
+            .published(SideEffect(operation: f))
         }
     }
 
