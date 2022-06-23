@@ -145,6 +145,8 @@ class MulticastTests: XCTestCase {
         }
 
         try await subj.finish()
+        _ = await subj.result
+        _ = await multicaster.result
         let d1 = try await u1.value
         XCTAssert(d1 == .done, "First chain has wrong value")
         let d2 = try await u2.value

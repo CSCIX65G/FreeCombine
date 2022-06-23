@@ -51,9 +51,9 @@ public final class StateTask<State, Action: Sendable> {
         switch deinitBehavior {
             case .assert:
                 assert(!shouldCancel, "ABORTING DUE TO LEAKED \(type(of: Self.self)) CREATED @ \(file): \(line)")
-            case .log:
+            case .logAndCancel:
                 if shouldCancel { print("CANCELLING LEAKED \(type(of: Self.self)) CREATED @ \(file): \(line)") }
-            case .silent:
+            case .silentCancel:
                 ()
         }
         if shouldCancel { cancellable.cancel() }
@@ -133,7 +133,14 @@ extension StateTask {
                 } } catch {
                     channel.finish()
                     for await action in channel {
-                        await reducer(action, .failure(error)); continue
+                        switch error {
+                            case Error.completed:
+                                await reducer(action, .finished); continue
+                            case Error.cancelled:
+                                await reducer(action, .cancel); continue
+                            default:
+                                await reducer(action, .failure(error)); continue
+                        }
                     }
                     guard let completion = error as? Error else {
                         await reducer(&state, .failure(error))

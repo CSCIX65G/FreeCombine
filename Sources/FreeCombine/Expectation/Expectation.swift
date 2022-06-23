@@ -53,9 +53,9 @@ public class Expectation<Arg> {
         switch deinitBehavior {
             case .assert:
                 assert(!shouldCancel, "ABORTING DUE TO LEAKED \(type(of: Self.self)) CREATED @ \(file): \(line)")
-            case .log:
+            case .logAndCancel:
                 if shouldCancel { print("CANCELLING LEAKED \(type(of: Self.self)) CREATED @ \(file): \(line)") }
-            case .silent:
+            case .silentCancel:
                 ()
         }
         if shouldCancel { try? cancel() }

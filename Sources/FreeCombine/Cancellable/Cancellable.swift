@@ -8,8 +8,8 @@
 
 public enum DeinitBehavior: Sendable {
     case assert
-    case log
-    case silent
+    case logAndCancel
+    case silentCancel
 }
 
 // Can't be a protocol bc we have to implement deinit
@@ -68,9 +68,9 @@ public final class Cancellable<Output: Sendable>: Sendable {
         switch deinitBehavior {
             case .assert:
                 assert(!shouldCancel, "ABORTING DUE TO LEAKED \(type(of: Self.self)) CREATED @ \(file): \(line)")
-            case .log:
+            case .logAndCancel:
                 if shouldCancel { print("CANCELLING LEAKED \(type(of: Self.self)) CREATED @ \(file): \(line)") }
-            case .silent:
+            case .silentCancel:
                 ()
         }
         if shouldCancel { task.cancel() }

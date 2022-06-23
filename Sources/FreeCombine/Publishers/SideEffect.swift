@@ -4,7 +4,7 @@
 //
 //  Created by Van Simmons on 5/26/22.
 //
-public func FireAndForget<Element>(
+public func SideEffect<Element>(
     _ elementType: Element.Type = Element.self,
     operation: @escaping () async throws -> Void
 ) -> Publisher<Element> {
@@ -13,7 +13,7 @@ public func FireAndForget<Element>(
 
 public extension Publisher {
     static func fireAndForget(_ f: @escaping () async throws -> Void) -> Self {
-        FireAndForget(Output.self, operation: f)
+        SideEffect(Output.self, operation: f)
     }
 
     init(

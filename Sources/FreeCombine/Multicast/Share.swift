@@ -9,16 +9,22 @@
 public extension Publisher {
     func share() async -> Self {
         let multicaster = await LazyValueRef(
+            deinitBehavior: .silentCancel,
             creator: {  await Multicaster<Output>.init(
-                stateTask: try Channel.init(buffering: .unbounded).stateTask(
-                    initialState: MulticasterState<Output>.create(upstream: self),
-                    reducer: Reducer(
-                        onCompletion: MulticasterState<Output>.complete,
-                        disposer: MulticasterState<Output>.dispose,
-                        reducer: MulticasterState<Output>.reduce
+                stateTask: try Channel.init(buffering: .unbounded)
+                    .stateTask(
+                        deinitBehavior: .silentCancel,
+                        initialState: MulticasterState<Output>.create(upstream: self),
+                        reducer: Reducer(
+                            onCompletion: MulticasterState<Output>.complete,
+                            disposer: MulticasterState<Output>.dispose,
+                            reducer: MulticasterState<Output>.reduce
+                        )
                     )
-                )
-            ) }
+            ) },
+            disposer: { value in
+                await value.finish()
+            }
         )
         @Sendable func lift(
             _ downstream: @Sendable @escaping (AsyncStream<Output>.Result) async throws -> Demand
@@ -28,8 +34,8 @@ public extension Publisher {
                     case .value:
                         return try await downstream(r)
                     case .completion:
-//                        try await multicaster.release()
                         let finalValue = try await downstream(r)
+                        try await multicaster.release()
                         return finalValue
                 }
             }
@@ -38,6 +44,8 @@ public extension Publisher {
             Cancellable<Cancellable<Demand>>.join(.init {
                 do {
                     guard let m = try await multicaster.value() else {
+                        _ = try? await downstream(.completion(.finished))
+                        multicaster.cancel()
                         return Cancellable<Demand> { .done }
                     }
                     let cancellable = await m.publisher().sink(lift(downstream))
@@ -47,7 +55,13 @@ public extension Publisher {
                     do {
                         try await m.connect()
                     }
-                    catch { /* ignore failed connects after the first one */ }
+                    catch {
+                        /*
+                         ignore failed connects after the first one bc
+                         we have no way to prevent a race condition between
+                         multiple connects
+                         */
+                    }
                     continuation?.resume()
                     return cancellable
                 } catch {
