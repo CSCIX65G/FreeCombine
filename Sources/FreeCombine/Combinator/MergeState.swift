@@ -78,16 +78,7 @@ struct MergeState<Output: Sendable> {
     }
 
     static func dispose(action: Self.Action, completion: Reducer<Self, Self.Action>.Completion) async -> Void {
-        switch action {
-            case let .setValue(_, resumption) where !resumption.hasResumed:
-                resumption.resume(throwing: PublisherError.cancelled)
-            case let .removeCancellable(_, resumption) where !resumption.hasResumed:
-                resumption.resume(throwing: PublisherError.cancelled)
-            case let .failure(_, _, resumption) where !resumption.hasResumed:
-                resumption.resume(throwing: PublisherError.cancelled)
-            default:
-                ()
-        }
+        action.resumption.resume(throwing: PublisherError.cancelled)
     }
 
     static func reduce(

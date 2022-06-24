@@ -6,11 +6,11 @@
 //
 
 fileprivate actor Deduplicator<A> {
-    let predicate: (A, A) -> Bool
+    let isEquivalent: (A, A) -> Bool
     var currentValue: A!
 
     init(_ predicate: @escaping (A, A) -> Bool) {
-        self.predicate = predicate
+        self.isEquivalent = predicate
     }
 
     func forward(
@@ -21,7 +21,7 @@ fileprivate actor Deduplicator<A> {
             currentValue = value
             return try await downstream(.value(value))
         }
-        guard !(predicate(value, current)) else {
+        guard !(isEquivalent(value, current)) else {
             return .more
         }
         currentValue = value

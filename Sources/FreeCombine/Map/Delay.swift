@@ -16,14 +16,13 @@ public extension Publisher {
                 }
                 switch r {
                     case .value:
-                        do { try await Task.sleep(nanoseconds: interval.inNanoseconds) }
-                        catch {
-                            guard !Task.isCancelled else {
-                                return try await handleCancellation(of: downstream)
-                            }
-                            return try await downstream(.completion(.failure(error)))
+                        do {
+                            try await Task.sleep(nanoseconds: interval.inNanoseconds)
+                            return try await downstream(r)
                         }
-                        return try await downstream(r)
+                        catch {
+                            return try await handleCancellation(of: downstream)
+                        }
                     case let .completion(value):
                         return try await downstream(.completion(value))
                 }
