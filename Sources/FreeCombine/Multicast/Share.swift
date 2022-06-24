@@ -5,8 +5,8 @@
 //  Created by Van Simmons on 6/7/22.
 //
 
-// Need join on Cancellable
 public extension Publisher {
+    /// Share inescapably violates the no leak policy of this library.  To be avoided.
     func share() async -> Self {
         let multicaster = await LazyValueRef(
             deinitBehavior: .silentCancel,

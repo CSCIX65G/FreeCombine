@@ -61,22 +61,16 @@ public extension Publisher {
         _ downstream: @Sendable @escaping (AsyncStream<Output>.Result) async throws -> Demand
     ) -> Cancellable<Demand> {
         call(onStartup, { result in
-            try await withTaskCancellationHandler(handler: {
-                Task {
-                    try await handleCancellation(of: downstream)
-                }
-            }) {
-                guard !Task.isCancelled else {
-                    return try await handleCancellation(of: downstream)
-                }
-                switch result {
-                    case let .value(value):
-                        return try await downstream(.value(value))
-                    case let .completion(.failure(error)):
-                        return try await downstream(.completion(.failure(error)))
-                    case .completion(.finished), .completion(.cancelled):
-                        return try await downstream(result)
-                }
+            guard !Task.isCancelled else {
+                return try await handleCancellation(of: downstream)
+            }
+            switch result {
+                case let .value(value):
+                    return try await downstream(.value(value))
+                case let .completion(.failure(error)):
+                    return try await downstream(.completion(.failure(error)))
+                case .completion(.finished), .completion(.cancelled):
+                    return try await downstream(result)
             }
         } )
     }
@@ -90,10 +84,13 @@ public extension Publisher {
 
     @discardableResult
     func callAsFunction(
+        file: StaticString = #file,
+        line: UInt = #line,
+        deinitBehavior: DeinitBehavior = .assert,
         _ f: @Sendable @escaping (AsyncStream<Output>.Result) async throws -> Demand
     ) async -> Cancellable<Demand> {
         var cancellable: Cancellable<Demand>!
-        let _: Void = try! await withResumption { continuation in
+        let _: Void = try! await withResumption(file: file, line: line, deinitBehavior: deinitBehavior) { continuation in
             cancellable = self(onStartup: continuation, f)
         }
         return cancellable

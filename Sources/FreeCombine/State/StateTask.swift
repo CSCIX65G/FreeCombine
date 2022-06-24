@@ -165,12 +165,15 @@ extension StateTask {
 
 public extension StateTask {
     static func stateTask(
+        file: StaticString = #file,
+        line: UInt = #line,
+        deinitBehavior: DeinitBehavior = .assert,
         channel: Channel<Action>,
         initialState: @escaping (Channel<Action>) async -> State,
         reducer: Reducer<State, Action>
     ) async -> Self {
         var stateTask: Self!
-        try! await withResumption { stateTaskContinuation in
+        try! await withResumption(file: file, line: line, deinitBehavior: deinitBehavior) { stateTaskContinuation in
             stateTask = Self.init(
                 channel: channel,
                 initialState: initialState,

@@ -43,6 +43,9 @@ public struct MulticasterState<Output: Sendable> {
     var distributor: DistributorState<Output>
 
     public init(
+        file: StaticString = #file,
+        line: UInt = #line,
+        deinitBehavior: DeinitBehavior = .assert,
         upstream: Publisher<Output>,
         channel: Channel<MulticasterState<Output>.Action>
     ) {
@@ -50,7 +53,7 @@ public struct MulticasterState<Output: Sendable> {
         self.distributor = .init(currentValue: .none, nextKey: 0, downstreams: [:])
         self.downstream = { r in
             var queueStatus: AsyncStream<MulticasterState<Output>.Action>.Continuation.YieldResult!
-            let _: Void = try await withResumption { resumption in
+            let _: Void = try await withResumption(file: file, line: line, deinitBehavior: deinitBehavior) { resumption in
                 queueStatus = channel.yield(.distribute(.receive(r, resumption)))
                 switch queueStatus {
                     case .enqueued:

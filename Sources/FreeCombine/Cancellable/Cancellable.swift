@@ -95,10 +95,11 @@ public extension Cancellable {
     static func join(
         file: StaticString = #file,
         line: UInt = #line,
+        deinitBehavior: DeinitBehavior = .assert,
         _ generator: @escaping () async throws -> Cancellable<Output>
     ) async throws -> Cancellable<Output> {
         var returnValue: Cancellable<Output>!
-        let _: Void = try await withResumption { resumption in
+        let _: Void = try await withResumption(file: file, line: line, deinitBehavior: deinitBehavior) { resumption in
             returnValue = .init(file: file, line: line, operation: {
                 let outer = try await generator()
                 return try await withTaskCancellationHandler(handler: {
