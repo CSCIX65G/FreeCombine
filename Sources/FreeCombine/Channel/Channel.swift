@@ -112,7 +112,7 @@ public extension Channel {
         line: UInt = #line,
         deinitBehavior: DeinitBehavior = .assert,
         initialState: @escaping (Self) async -> State,
-        onStartup: Resumption<Void>?,
+        onStartup: Resumption<Void>,
         reducer: Reducer<State, Self.Element>
     ) -> StateTask<State, Self.Element> {
         .init(

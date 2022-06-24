@@ -62,7 +62,7 @@ public extension Publisher {
                          multiple connects
                          */
                     }
-                    continuation?.resume()
+                    continuation.resume()
                     return cancellable
                 } catch {
                     throw error

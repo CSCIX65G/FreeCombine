@@ -36,7 +36,7 @@ public extension Publisher {
                         return
                     }
                 }
-                continuation?.resume()
+                continuation.resume()
                 guard case .enqueued = enqueueStatus else {
                     return .init { try await downstream(.completion(.finished)) }
                 }
@@ -67,20 +67,20 @@ public extension Publisher {
                         return demandResumption.resume(throwing: EnqueueError.enqueueError)
                     }
                 }
-                continuation?.resume()
+                continuation.resume()
                 return c
             } catch {
                 let c1 = Cancellable<Demand>.init {
                     switch error {
                         case EnqueueError.enqueueError:
                             let returnValue = try await downstream(.completion(.finished))
-                            continuation?.resume()
+                            continuation.resume()
                             return returnValue
                         case PublisherError.completed:
-                            continuation?.resume()
+                            continuation.resume()
                             return .done
                         default:
-                            continuation?.resume()
+                            continuation.resume()
                             throw error
                     }
                 }

@@ -12,7 +12,7 @@ public extension Publisher {
     init(_ a: Output) {
         self = .init { continuation, downstream in
             .init {
-                continuation?.resume()
+                continuation.resume()
                 return try await downstream(.value(a)) == .more ? try await downstream(.completion(.finished)) : .done
             }
         }
@@ -27,7 +27,7 @@ public extension Publisher {
     init(_ generator: @escaping () async -> Output) {
         self = .init { continuation, downstream in
             .init {
-                continuation?.resume()
+                continuation.resume()
                 return try await downstream(.value(generator())) == .more ? try await downstream(.completion(.finished)) : .done
             }
         }
@@ -42,7 +42,7 @@ public extension Publisher {
     init(_ result: AsyncStream<Output>.Result) {
         self = .init { continuation, downstream in
             .init {
-                continuation?.resume()
+                continuation.resume()
                 return try await downstream(result) == .more ? try await downstream(.completion(.finished)) : .done
             }
         }
@@ -57,7 +57,7 @@ public extension Publisher {
     init(_ f: @escaping () async -> AsyncStream<Output>.Result) {
         self = .init { continuation, downstream in
             .init {
-                continuation?.resume()
+                continuation.resume()
                 return try await downstream(f()) == .more ? try await downstream(.completion(.finished)) : .done
             }
         }

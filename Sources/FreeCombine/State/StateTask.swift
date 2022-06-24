@@ -123,7 +123,7 @@ extension StateTask {
         deinitBehavior: DeinitBehavior = .assert,
         channel: Channel<Action>,
         initialState: @escaping (Channel<Action>) async -> State,
-        onStartup: Resumption<Void>? = .none,
+        onStartup: Resumption<Void>,
         reducer: Reducer<State, Action>
     ) {
         self.init (
@@ -133,7 +133,7 @@ extension StateTask {
             channel: channel,
             cancellable: .init(file: file, line: line, deinitBehavior: deinitBehavior) {
                 var state = await initialState(channel)
-                onStartup?.resume()
+                onStartup.resume()
                 do { try await withTaskCancellationHandler(handler: channel.finish) {
                     for await action in channel {
                         let effect = try await reducer(&state, action)

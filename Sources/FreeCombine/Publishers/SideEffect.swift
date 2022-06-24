@@ -22,7 +22,7 @@ public extension Publisher {
     ) {
         self = .init { continuation, downstream in
             .init {
-                continuation?.resume()
+                continuation.resume()
                 do {
                     try await operation()
                     guard !Task.isCancelled else {

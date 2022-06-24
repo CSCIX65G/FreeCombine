@@ -167,7 +167,7 @@ public struct DistributorState<Output: Sendable> {
 
     mutating func process(
         subscription downstream: @escaping @Sendable (AsyncStream<Output>.Result) async throws -> Demand,
-        resumption: Resumption<Void>?
+        resumption: Resumption<Void>
     ) -> Cancellable<Demand> {
         nextKey += 1
         let repeaterState = RepeaterState(id: nextKey, downstream: downstream)

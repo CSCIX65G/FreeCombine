@@ -12,7 +12,7 @@ extension Publisher {
     init(from flattable: Publisher<Output>) {
         self = .init { continuation, downstream in
             .init {
-                continuation?.resume()
+                continuation.resume()
                 return try await flattable(downstream).value
             }
         }
@@ -29,7 +29,7 @@ extension Publisher {
     init(from flattener: @escaping () async throws -> Publisher<Output>) {
         self = .init { continuation, downstream in
             .init {
-                continuation?.resume()
+                continuation.resume()
                 let p = try await flattener()
                 let c = await p(downstream)
                 return try await c.value

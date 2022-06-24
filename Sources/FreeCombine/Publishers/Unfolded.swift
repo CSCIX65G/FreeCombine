@@ -18,7 +18,7 @@ public extension Publisher {
     init<S: Sequence>(_ sequence: S) where S.Element == Output {
         self = .init { continuation, downstream in
             Cancellable<Demand> {
-                continuation?.resume()
+                continuation.resume()
                 for a in sequence {
                     guard !Task.isCancelled else {
                         return try await handleCancellation(of: downstream)
@@ -45,7 +45,7 @@ public extension Publisher {
     init(_ generator: @escaping () async throws -> Output?) {
         self = .init { continuation, downstream in
                 .init {
-                    continuation?.resume()
+                    continuation.resume()
                     while let a = try await generator() {
                         guard !Task.isCancelled else {
                             return try await handleCancellation(of: downstream)
