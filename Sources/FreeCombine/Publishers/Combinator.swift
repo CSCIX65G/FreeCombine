@@ -33,7 +33,7 @@ public extension Publisher {
                 )
 
                 return try await withTaskCancellationHandler(handler: stateTask.cancel) {
-                    continuation?.resume()
+                    continuation.resume()
                     guard !Task.isCancelled else { throw PublisherError.cancelled }
                     let finalState = try await stateTask.value
                     return extractor(finalState)

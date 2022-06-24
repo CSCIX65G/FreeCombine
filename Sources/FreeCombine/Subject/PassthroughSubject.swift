@@ -7,7 +7,7 @@
 public func PassthroughSubject<Output>(
     _ type: Output.Type = Output.self,
     buffering: AsyncStream<DistributorState<Output>.Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
-    onStartup: Resumption<Void>? = .none
+    onStartup: Resumption<Void>
 ) -> StateTask<DistributorState<Output>, DistributorState<Output>.Action> {
     Channel.init(buffering: buffering)
     .stateTask(

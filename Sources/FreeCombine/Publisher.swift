@@ -32,13 +32,13 @@ public enum PublisherError: Swift.Error, Sendable, CaseIterable {
 
 public struct Publisher<Output: Sendable>: Sendable {
     private let call: @Sendable (
-        Resumption<Void>?,
+        Resumption<Void>,
         @Sendable @escaping (AsyncStream<Output>.Result) async throws -> Demand
     ) -> Cancellable<Demand>
 
     internal init(
         _ call: @Sendable @escaping (
-            Resumption<Void>?,
+            Resumption<Void>,
             @Sendable @escaping (AsyncStream<Output>.Result) async throws -> Demand
         ) -> Cancellable<Demand>
     ) {
@@ -49,7 +49,7 @@ public struct Publisher<Output: Sendable>: Sendable {
 public extension Publisher {
     @discardableResult
     func sink(
-        onStartup: Resumption<Void>?,
+        onStartup: Resumption<Void>,
         _ f: @Sendable @escaping (AsyncStream<Output>.Result) async throws -> Demand
     ) -> Cancellable<Demand> {
         self(onStartup: onStartup, f)
@@ -57,7 +57,7 @@ public extension Publisher {
 
     @discardableResult
     func callAsFunction(
-        onStartup: Resumption<Void>?,
+        onStartup: Resumption<Void>,
         _ downstream: @Sendable @escaping (AsyncStream<Output>.Result) async throws -> Demand
     ) -> Cancellable<Demand> {
         call(onStartup, { result in
@@ -77,9 +77,12 @@ public extension Publisher {
 
     @discardableResult
     func sink(
+        file: StaticString = #file,
+        line: UInt = #line,
+        deinitBehavior: DeinitBehavior = .assert,
         _ f: @Sendable @escaping (AsyncStream<Output>.Result) async throws -> Demand
     ) async -> Cancellable<Demand> {
-        await self(f)
+        await self(file: file, line: line, deinitBehavior: deinitBehavior, f)
     }
 
     @discardableResult
@@ -119,7 +122,7 @@ extension Publisher {
     }
 
     func sink(
-        onStartup: Resumption<Void>?,
+        onStartup: Resumption<Void>,
         receiveValue: @Sendable @escaping (Output) async -> Void
     ) -> Cancellable<Demand> {
         sink(onStartup: onStartup, receiveCompletion: void, receiveValue: receiveValue)
@@ -132,7 +135,7 @@ extension Publisher {
     }
 
     func sink(
-        onStartup: Resumption<Void>?,
+        onStartup: Resumption<Void>,
         receiveCompletion: @Sendable @escaping (Completion) async -> Void,
         receiveValue: @Sendable @escaping (Output) async -> Void
     ) -> Cancellable<Demand> {

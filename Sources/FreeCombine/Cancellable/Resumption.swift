@@ -7,7 +7,7 @@
 @preconcurrency import Atomics
 
 public final class Resumption<Output: Sendable>: Sendable {
-    enum Error: Swift.Error {
+    public enum Error: Swift.Error {
         case leaked
         case alreadyResumed
     }

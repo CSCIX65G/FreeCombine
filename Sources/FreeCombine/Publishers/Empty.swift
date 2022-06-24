@@ -18,7 +18,7 @@ public extension Publisher {
     init( _: Output.Type = Output.self) {
         self = .init { continuation, downstream in
             .init {
-                continuation?.resume()
+                continuation.resume()
                 return try await downstream(.completion(.finished))
             }
         }

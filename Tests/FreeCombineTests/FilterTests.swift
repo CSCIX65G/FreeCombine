@@ -45,7 +45,7 @@ class FilterTests: XCTestCase {
             }
         }
         do {
-            try await FreeCombine.wait(for: expectation1, timeout: 100_000_000)
+            try await FreeCombine.wait(for: expectation1, timeout: 10_000_000)
         } catch {
             XCTFail("Timed out")
         }

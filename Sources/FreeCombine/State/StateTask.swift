@@ -8,7 +8,7 @@
 
  1. no oneway funcs (can't call from synchronous code)
  2. can't selectively block callers (to pass a continuation to an actor requires spawning a task which can introduce a race condition and is really heavy-weight)
- 3. can't block on internal state (can only block with async call to another task)
+ 3. can't block calling tasks on internal state (can only block with async call to another task)
  4. no concept of cancellation
  5. execute on global actor queues (generally not needed or desirable)
 
@@ -63,6 +63,16 @@ public final class StateTask<State, Action: Sendable> {
         cancellable.cancel()
     }
 
+    @Sendable func cancelAndAwaitResult() async -> Result<State, Swift.Error> {
+        cancellable.cancel()
+        return await cancellable.result
+    }
+
+    @Sendable func cancelAndAwaitValue() async throws -> State {
+        cancellable.cancel()
+        return try await cancellable.value
+    }
+
     public var isCancelled: Bool {
         @Sendable get {
             cancellable.isCancelled
@@ -71,6 +81,16 @@ public final class StateTask<State, Action: Sendable> {
 
     @Sendable func finish() -> Void {
         channel.finish()
+    }
+
+    @Sendable func finishAndAwaitResult() async -> Result<State, Swift.Error> {
+        channel.finish()
+        return await cancellable.result
+    }
+
+    @Sendable func finishAndAwaitValue() async throws -> State {
+        channel.finish()
+        return try await cancellable.value
     }
 
     @Sendable func send(_ element: Action) -> AsyncStream<Action>.Continuation.YieldResult {
@@ -103,7 +123,7 @@ extension StateTask {
         deinitBehavior: DeinitBehavior = .assert,
         channel: Channel<Action>,
         initialState: @escaping (Channel<Action>) async -> State,
-        onStartup: Resumption<Void>? = .none,
+        onStartup: Resumption<Void>,
         reducer: Reducer<State, Action>
     ) {
         self.init (
@@ -113,7 +133,7 @@ extension StateTask {
             channel: channel,
             cancellable: .init(file: file, line: line, deinitBehavior: deinitBehavior) {
                 var state = await initialState(channel)
-                onStartup?.resume()
+                onStartup.resume()
                 do { try await withTaskCancellationHandler(handler: channel.finish) {
                     for await action in channel {
                         let effect = try await reducer(&state, action)

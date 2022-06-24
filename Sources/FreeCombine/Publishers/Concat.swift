@@ -23,7 +23,7 @@ public extension Publisher {
         self = .init { continuation, downstream  in
             let flattenedDownstream = flattener(downstream)
             return .init {
-                continuation?.resume()
+                continuation.resume()
                 for p in publishers {
                     let t = await p(flattenedDownstream)
                     guard try await t.value == .more else { return .done }
@@ -61,7 +61,7 @@ public extension Publisher {
         self = .init { continuation, downstream  in
             let flattenedDownstream = flattener(downstream)
             return .init {
-                continuation?.resume()
+                continuation.resume()
                 while let p = await flattening() {
                     let t = await p(flattenedDownstream)
                     guard try await t.value == .more else { return .done }

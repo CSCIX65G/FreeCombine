@@ -79,8 +79,8 @@ class MulticastTests: XCTestCase {
         XCTAssert(d2 == .done, "Second chain has wrong value")
 
         do {
-            try await FreeCombine.wait(for: expectation1, timeout: 100_000_000)
-            try await FreeCombine.wait(for: expectation2, timeout: 100_000_000)
+            try await FreeCombine.wait(for: expectation1, timeout: 10_000_000)
+            try await FreeCombine.wait(for: expectation2, timeout: 10_000_000)
         } catch {
             XCTFail("Timed out")
         }

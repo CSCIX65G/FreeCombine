@@ -26,8 +26,12 @@ public final class Multicaster<Output: Sendable> {
 }
 
 public extension Multicaster {
-    func publisher() -> Publisher<Output> {
-        .init(stateTask: stateTask)
+    func publisher(
+        file: StaticString = #file,
+        line: UInt = #line,
+        deinitBehavior: DeinitBehavior = .assert
+    ) -> Publisher<Output> {
+        .init(file: file, line: line, deinitBehavior: .logAndCancel, stateTask: stateTask)
     }
 
     func connect() async throws -> Void {

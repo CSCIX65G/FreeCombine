@@ -50,14 +50,7 @@ struct CombineLatestState<Left: Sendable, Right: Sendable> {
     }
 
     static func dispose(action: Self.Action, completion: Reducer<Self, Self.Action>.Completion) async -> Void {
-        switch action {
-            case let .setLeft(_, resumption) where !resumption.hasResumed:
-                resumption.resume(throwing: PublisherError.cancelled)
-            case let .setRight(_, resumption) where !resumption.hasResumed:
-                resumption.resume(throwing: PublisherError.cancelled)
-            default:
-                ()
-        }
+        action.resumption.resume(throwing: PublisherError.cancelled)
     }
 
     static func complete(state: inout Self, completion: Reducer<Self, Self.Action>.Completion) async -> Void {

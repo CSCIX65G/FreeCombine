@@ -131,51 +131,78 @@ public func LazyValueRef<Value>(
 }
 
 public extension StateTask {
-    func value<Value>() async throws -> Value? where State == LazyValueRefState<Value>, Action == LazyValueRefState<Value>.Action {
-        let value: Value = try await withResumption({ resumption in
-            let queueStatus = self.channel.yield(.value(resumption))
-            switch queueStatus {
-                case .enqueued:
-                    ()
-                case .terminated:
-                    resumption.resume(throwing: LazyValueRefState<Value>.Error.finished)
-                case .dropped:
-                    resumption.resume(throwing: LazyValueRefState<Value>.Error.dropped)
-                @unknown default:
-                    fatalError("Handle new case")
+    func value<Value>(
+        file: StaticString = #file,
+        line: UInt = #line,
+        deinitBehavior: DeinitBehavior = .assert
+    ) async throws -> Value? where State == LazyValueRefState<Value>, Action == LazyValueRefState<Value>.Action {
+        let value: Value = try await withResumption(
+            file: file,
+            line: line,
+            deinitBehavior: deinitBehavior,
+            { resumption in
+                let queueStatus = self.channel.yield(.value(resumption))
+                switch queueStatus {
+                    case .enqueued:
+                        ()
+                    case .terminated:
+                        resumption.resume(throwing: LazyValueRefState<Value>.Error.finished)
+                    case .dropped:
+                        resumption.resume(throwing: LazyValueRefState<Value>.Error.dropped)
+                    @unknown default:
+                        fatalError("Handle new case")
+                }
             }
-        })
+        )
         return value
     }
-    func retain<Value>() async throws -> Void where State == LazyValueRefState<Value>, Action == LazyValueRefState<Value>.Action {
-        let _: Void = try await withResumption({ continuation in
-            let queueStatus = self.channel.yield(.retain(continuation))
-            switch queueStatus {
-                case .enqueued:
-                    ()
-                case .terminated:
-                    continuation.resume(throwing: LazyValueRefState<Value>.Error.finished)
-                case .dropped:
-                    continuation.resume(throwing: LazyValueRefState<Value>.Error.dropped)
-                @unknown default:
-                    fatalError("Handle new case")
+    func retain<Value>(
+        file: StaticString = #file,
+        line: UInt = #line,
+        deinitBehavior: DeinitBehavior = .assert
+    ) async throws -> Void where State == LazyValueRefState<Value>, Action == LazyValueRefState<Value>.Action {
+        let _: Void = try await withResumption(
+            file: file,
+            line: line,
+            deinitBehavior: deinitBehavior,
+            { continuation in
+                let queueStatus = self.channel.yield(.retain(continuation))
+                switch queueStatus {
+                    case .enqueued:
+                        ()
+                    case .terminated:
+                        continuation.resume(throwing: LazyValueRefState<Value>.Error.finished)
+                    case .dropped:
+                        continuation.resume(throwing: LazyValueRefState<Value>.Error.dropped)
+                    @unknown default:
+                        fatalError("Handle new case")
+                }
             }
-        })
+        )
     }
-    func release<Value>() async throws -> Void where State == LazyValueRefState<Value>, Action == LazyValueRefState<Value>.Action {
-        let _: Void = try await withResumption({ resumption in
-            let queueStatus = self.channel.yield(.release(resumption))
-            switch queueStatus {
-                case .enqueued:
-                    ()
-                case .terminated:
-                    resumption.resume(throwing: LazyValueRefState<Value>.Error.finished)
-                case .dropped:
-                    resumption.resume(throwing: LazyValueRefState<Value>.Error.dropped)
-                @unknown default:
-                    fatalError("Handle new case")
+    func release<Value>(
+        file: StaticString = #file,
+        line: UInt = #line,
+        deinitBehavior: DeinitBehavior = .assert
+    ) async throws -> Void where State == LazyValueRefState<Value>, Action == LazyValueRefState<Value>.Action {
+        let _: Void = try await withResumption(
+            file: file,
+            line: line,
+            deinitBehavior: deinitBehavior,
+            { resumption in
+                let queueStatus = self.channel.yield(.release(resumption))
+                switch queueStatus {
+                    case .enqueued:
+                        ()
+                    case .terminated:
+                        resumption.resume(throwing: LazyValueRefState<Value>.Error.finished)
+                    case .dropped:
+                        resumption.resume(throwing: LazyValueRefState<Value>.Error.dropped)
+                    @unknown default:
+                        fatalError("Handle new case")
+                }
             }
-        })
+        )
         return
     }
 }

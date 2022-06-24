@@ -41,7 +41,7 @@ class CombineLatestTests: XCTestCase {
                 return .more
             }
 
-        do { try await FreeCombine.wait(for: expectation, timeout: 100_000_000) }
+        do { try await FreeCombine.wait(for: expectation, timeout: 10_000_000) }
         catch {
             let count = await counter.count
             XCTFail("Timed out, count = \(count)")
@@ -77,7 +77,7 @@ class CombineLatestTests: XCTestCase {
                 return .more
             }
 
-        do { try await FreeCombine.wait(for: expectation, timeout: 100_000_000) }
+        do { try await FreeCombine.wait(for: expectation, timeout: 10_000_000) }
         catch {
             let count = await counter.count
             XCTFail("Timed out, count = \(count)")
@@ -113,7 +113,7 @@ class CombineLatestTests: XCTestCase {
                 }
             }
 
-        do { try await FreeCombine.wait(for: expectation, timeout: 100_000_000) }
+        do { try await FreeCombine.wait(for: expectation, timeout: 10_000_000) }
         catch {
             let count = await counter.count
             XCTFail("Timed out, count = \(count)")
@@ -151,7 +151,7 @@ class CombineLatestTests: XCTestCase {
                 }
             })
 
-        do { try await FreeCombine.wait(for: expectation, timeout: 100_000_000) }
+        do { try await FreeCombine.wait(for: expectation, timeout: 10_000_000) }
         catch {
             let count = await counter.count
             XCTFail("Timed out, count = \(count)")
@@ -192,7 +192,7 @@ class CombineLatestTests: XCTestCase {
                 }
             })
 
-        do { try await FreeCombine.wait(for: expectation, timeout: 100_000_000) }
+        do { try await FreeCombine.wait(for: expectation, timeout: 10_000_000) }
         catch {
             let count = await counter.count
             XCTFail("Timed out, count = \(count)")
@@ -260,8 +260,8 @@ class CombineLatestTests: XCTestCase {
             })
 
         do {
-            try await FreeCombine.wait(for: expectation1, timeout: 100_000_000)
-            try await FreeCombine.wait(for: expectation2, timeout: 100_000_000)
+            try await FreeCombine.wait(for: expectation1, timeout: 10_000_000)
+            try await FreeCombine.wait(for: expectation2, timeout: 10_000_000)
         } catch {
             XCTFail("Timed out")
         }

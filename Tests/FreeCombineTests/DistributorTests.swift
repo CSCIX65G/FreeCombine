@@ -164,7 +164,7 @@ class DistributorTests: XCTestCase {
         do {
             try await FreeCombine.wait(
                 for: [expectation1, expectation2],
-                timeout: 100_000_000,
+                timeout: 10_000_000,
                 reducing: (),
                 with: { _, _ in }
             )
