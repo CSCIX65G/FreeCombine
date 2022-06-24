@@ -93,7 +93,7 @@ public extension Channel {
         reducer: Reducer<State, Self.Element>
     ) async throws -> StateTask<State, Self.Element> {
         var stateTask: StateTask<State, Self.Element>!
-        let _: Void = try await withResumption { resumption in
+        let _: Void = try await withResumption(file: file, line: line, deinitBehavior: deinitBehavior) { resumption in
             stateTask = .init(
                 file: file,
                 line: line,

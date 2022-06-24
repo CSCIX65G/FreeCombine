@@ -39,9 +39,9 @@ public class Expectation<Arg> {
         self.file = file
         self.line = line
         self.deinitBehavior = deinitBehavior
-        self.resumption = try! await withResumption { outer in
+        self.resumption = try! await withResumption(file: file, line: line, deinitBehavior: deinitBehavior) { outer in
             localCancellable = .init {
-                do { return try await withResumption(outer.resume) }
+                do { return try await withResumption(file: file, line: line, deinitBehavior: deinitBehavior, outer.resume) }
                 catch { throw error }
             }
         }
