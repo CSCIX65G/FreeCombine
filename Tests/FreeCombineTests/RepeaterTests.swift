@@ -87,7 +87,7 @@ class RepeaterTests: XCTestCase {
             }
         }
         do {
-            try await FreeCombine.wait(for: expectation, timeout: 100_000_000)
+            try await FreeCombine.wait(for: expectation, timeout: 10_000_000)
         } catch {
             XCTFail("Timed out")
         }

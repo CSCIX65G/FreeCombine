@@ -63,7 +63,7 @@ class ShareTests: XCTestCase {
                     catch { XCTFail("u2 Failed to complete with error: \(error)") }
                     return .done
                 case .completion(.finished):
-                    // Note number received here is unpredictable
+                    // NB: the number of values received here is unpredictable
                     do { try await expectation2.complete() }
                     catch { XCTFail("u2 Failed to complete with error: \(error)") }
                     return .done
@@ -76,7 +76,7 @@ class ShareTests: XCTestCase {
         }
 
         do {
-            try await FreeCombine.wait(for: expectation1, timeout: 200_000_000)
+            try await FreeCombine.wait(for: expectation1, timeout: 10_000_000)
         } catch {
             let count = await counter2.count
             let last = await value2.value
@@ -84,7 +84,7 @@ class ShareTests: XCTestCase {
         }
 
         do {
-            try await FreeCombine.wait(for: expectation2, timeout: 200_000_000)
+            try await FreeCombine.wait(for: expectation2, timeout: 10_000_000)
         } catch {
             let count = await counter2.count
             let last = await value2.value
@@ -94,8 +94,11 @@ class ShareTests: XCTestCase {
         let d1 = try await u1.value
         XCTAssert(d1 == .done, "First chain has wrong value")
 
-        let d2 = try await u2.value
-        XCTAssert(d2 == .done, "Second chain has wrong value")
+        let d2 = await u2.cancelAndAwaitResult()
+        guard case .success = d2 else {
+            XCTFail("Did not get successful result, got: \(d2)")
+            return
+        }
     }
 
     func testSubjectShare() async throws {

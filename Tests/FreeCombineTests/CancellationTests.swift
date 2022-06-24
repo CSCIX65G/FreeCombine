@@ -58,7 +58,7 @@ class CancellationTests: XCTestCase {
         z1.cancel()
         try await waiter.complete()
 
-        do { try await FreeCombine.wait(for: expectation, timeout: 100_000_000) }
+        do { try await FreeCombine.wait(for: expectation, timeout: 10_000_000) }
         catch {
             XCTFail("Timed out with count: \(await counter.count)")
         }
@@ -137,8 +137,8 @@ class CancellationTests: XCTestCase {
         try await waiter.complete()
 
         do {
-            try await FreeCombine.wait(for: expectation, timeout: 100_000_000)
-            try await FreeCombine.wait(for: expectation2, timeout: 100_000_000)
+            try await FreeCombine.wait(for: expectation, timeout: 10_000_000)
+            try await FreeCombine.wait(for: expectation2, timeout: 10_000_000)
             let count1 = await counter1.count
             XCTAssert(count1 == 10, "Wrong number in z2: \(count1)")
         } catch {
@@ -192,7 +192,7 @@ class CancellationTests: XCTestCase {
         z1.cancel()
         try await waiter.complete()
 
-        do { try await FreeCombine.wait(for: expectation, timeout: 100_000_000) }
+        do { try await FreeCombine.wait(for: expectation, timeout: 10_000_000) }
         catch { XCTFail("Timed out with count: \(await counter.count)") }
     }
 }

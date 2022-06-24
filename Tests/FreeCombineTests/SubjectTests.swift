@@ -65,7 +65,7 @@ class SubjectTests: XCTestCase {
         }
         catch { XCTFail("Should not have thrown") }
         do {
-            try await FreeCombine.wait(for: expectation, timeout: 100_000_000)
+            try await FreeCombine.wait(for: expectation, timeout: 10_000_000)
         }
         catch {
             let count = await counter.count
@@ -144,8 +144,8 @@ class SubjectTests: XCTestCase {
         }
         catch { XCTFail("Should not have thrown") }
         do {
-            try await FreeCombine.wait(for: expectation1, timeout: 100_000_000)
-            try await FreeCombine.wait(for: expectation2, timeout: 100_000_000)
+            try await FreeCombine.wait(for: expectation1, timeout: 10_000_000)
+            try await FreeCombine.wait(for: expectation2, timeout: 10_000_000)
         }
         catch {
             let count1 = await counter1.count
@@ -213,14 +213,14 @@ class SubjectTests: XCTestCase {
         do { try subject.nonBlockingSend(8) }
         catch { XCTFail("Failed to enqueue") }
 
-        do { try await FreeCombine.wait(for: expectation, timeout: 100_000_000) }
+        do { try await FreeCombine.wait(for: expectation, timeout: 10_000_000) }
         catch { XCTFail("Failed waiting for expectation") }
 
         let _ = can.cancel()
 
         try await release.complete()
         do {
-            try await FreeCombine.wait(for: expectation3, timeout: 100_000_000)
+            try await FreeCombine.wait(for: expectation3, timeout: 10_000_000)
         } catch {
             XCTFail("Failed waiting for expectation3")
         }

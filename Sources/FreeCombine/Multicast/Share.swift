@@ -6,14 +6,16 @@
 //
 
 public extension Publisher {
+    typealias MulticasterTask = StateTask<LazyValueRefState<Multicaster<Output>>, LazyValueRefState<Multicaster<Output>>.Action>
     /// Share inescapably violates the no leak policy of this library.  To be avoided.
     func share() async -> Self {
+        let mActor: ValueRef<MulticasterTask?>? = .init(value: .none)
         let multicaster = await LazyValueRef(
-            deinitBehavior: .silentCancel,
+            deinitBehavior: .logAndCancel,
             creator: {  await Multicaster<Output>.init(
                 stateTask: try Channel.init(buffering: .unbounded)
                     .stateTask(
-                        deinitBehavior: .silentCancel,
+                        deinitBehavior: .logAndCancel,
                         initialState: MulticasterState<Output>.create(upstream: self),
                         reducer: Reducer(
                             onCompletion: MulticasterState<Output>.complete,
@@ -23,9 +25,11 @@ public extension Publisher {
                     )
             ) },
             disposer: { value in
+                _ = await mActor?.value?.finishAndAwaitResult()
                 await value.finish()
             }
         )
+        await mActor?.set(value: multicaster)
         @Sendable func lift(
             _ downstream: @Sendable @escaping (AsyncStream<Output>.Result) async throws -> Demand
         ) -> @Sendable (AsyncStream<Output>.Result) async throws -> Demand {
@@ -46,6 +50,7 @@ public extension Publisher {
                     guard let m = try await multicaster.value() else {
                         _ = try? await downstream(.completion(.finished))
                         multicaster.cancel()
+                        continuation.resume()
                         return Cancellable<Demand> { .done }
                     }
                     let cancellable = await m.publisher().sink(lift(downstream))
@@ -65,7 +70,8 @@ public extension Publisher {
                     continuation.resume()
                     return cancellable
                 } catch {
-                    throw error
+                    continuation.resume()
+                    return .init { try await downstream(.completion(.finished)) }
                 }
             } )
         }

@@ -24,12 +24,19 @@ public func Decombinator<Output>(
 
 public extension Publisher {
     init(
+        file: StaticString = #file,
+        line: UInt = #line,
+        deinitBehavior: DeinitBehavior = .assert,
         stateTask: StateTask<DistributorState<Output>, DistributorState<Output>.Action>
     ) {
         self = .init { continuation, downstream in
             Cancellable<Cancellable<Demand>>.join(.init {
                 var enqueueStatus: AsyncStream<DistributorState<Output>.Action>.Continuation.YieldResult!
-                let c: Cancellable<Demand> = try await withResumption { demandResumption in
+                let c: Cancellable<Demand> = try await withResumption(
+                    file: file,
+                    line: line,
+                    deinitBehavior: deinitBehavior
+                ) { demandResumption in
                     enqueueStatus = stateTask.send(.subscribe(downstream, demandResumption))
                     guard case .enqueued = enqueueStatus else {
                         demandResumption.resume(throwing: PublisherError.enqueueError)
@@ -57,11 +64,18 @@ public extension Publisher {
         case enqueueError
     }
     init(
+        file: StaticString = #file,
+        line: UInt = #line,
+        deinitBehavior: DeinitBehavior = .assert,
         stateTask: StateTask<MulticasterState<Output>, MulticasterState<Output>.Action>
     ) {
         self = .init { continuation, downstream in Cancellable<Cancellable<Demand>>.join(.init {
             do {
-                let c: Cancellable<Demand> = try await withResumption { demandResumption in
+                let c: Cancellable<Demand> = try await withResumption(
+                    file: file,
+                    line: line,
+                    deinitBehavior: deinitBehavior
+                ) { demandResumption in
                     let enqueueStatus = stateTask.send(.distribute(.subscribe(downstream, demandResumption)))
                     guard case .enqueued = enqueueStatus else {
                         return demandResumption.resume(throwing: EnqueueError.enqueueError)

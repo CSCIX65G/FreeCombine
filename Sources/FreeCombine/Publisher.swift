@@ -77,9 +77,12 @@ public extension Publisher {
 
     @discardableResult
     func sink(
+        file: StaticString = #file,
+        line: UInt = #line,
+        deinitBehavior: DeinitBehavior = .assert,
         _ f: @Sendable @escaping (AsyncStream<Output>.Result) async throws -> Demand
     ) async -> Cancellable<Demand> {
-        await self(f)
+        await self(file: file, line: line, deinitBehavior: deinitBehavior, f)
     }
 
     @discardableResult
