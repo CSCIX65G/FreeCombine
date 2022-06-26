@@ -13,12 +13,24 @@
   * Sleep-free.
 * Leak-free.
   * Memory-bound Task cancellation
-  * Memory-bound UnsafeContinuation resolution
+  * Memory-bound Continuation resolution
   * Unbounded queue-free.
 * Lock-free.
   * Queueing channel instead of locking channel
-* Dependency-free.
-  * depends only on Swift std lib
+* Foundation-free.
+  * depends only on Swift std lib (and swift-atomics)
+
+Implies the following Do's and Dont's
+
+* No use of `protocol`
+* No use of `TaskGroup` or `async let`
+* No use of `AsyncSequence`
+* No use of `swift-async-algorithms`
+
+* Use of `for await` only in StateTask
+* Use of `Task.init` only in Cancellable
+* Use of `[Checked|Unsafe]Continuation` only in Resumption
+* Use of `AsyncStream.init` only Channel
 
 ## Salient features
 
@@ -82,7 +94,7 @@
 
 The answer to question 1 on why every function returns a different type essentially comes down to the use of having Publisher be an existential type (aka a protocol) rather than a plan generic type. Here's an example of what I'm talking about:
 
-![Combine Return Types](Playgrounds/01\ -\ Protocol\ Free Design.playground/Resources/CombineReturnTypes.png)
+![Combine Return Types](Playgrounds/01\ -\ Protocol\ Free\ Design.playground/Resources/CombineReturnTypes.png)
 
 Here's a challenge I give my students. Map on Array is a function that looks like this:
 
