@@ -94,7 +94,7 @@ Implies the following Do's and Dont's
 
 The answer to question 1 on why every function returns a different type essentially comes down to the use of having Publisher be an existential type (aka a protocol) rather than a plan generic type. Here's an example of what I'm talking about:
 
-![Combine Return Types](Playgrounds/01\ -\ Protocol\ Free\ Design.playground/Resources/CombineReturnTypes.png)
+![Combine Return Types](Images/CombineReturnTypes.png)
 
 Here's a challenge I give my students. Map on Array is a function that looks like this:
 
