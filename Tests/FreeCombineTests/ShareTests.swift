@@ -14,7 +14,7 @@ final class ShareTests: XCTestCase {
 
     override func tearDownWithError() throws { }
 
-    func testSimpleShare() async throws {
+    func xtestSimpleShare() async throws {
         /*
          p1 and p2 below are NOT guaranteed to see the same number of values bc
          the share publisher begins publishing as soon as the first subscription
