@@ -11,7 +11,7 @@ public extension StateTask {
     }
 
     func publisher<Output: Sendable>(
-    ) -> Publisher<Output> where State == MulticasterState<Output>, Action == MulticasterState<Output>.Action {
+    ) -> Publisher<Output> where State == ConnectableState<Output>, Action == ConnectableState<Output>.Action {
         .init(stateTask: self)
     }
 }
@@ -54,7 +54,7 @@ public extension Publisher {
 }
 
 public func Decombinator<Output>(
-    stateTask: StateTask<MulticasterState<Output>, MulticasterState<Output>.Action>
+    stateTask: StateTask<ConnectableState<Output>, ConnectableState<Output>.Action>
 ) -> Publisher<Output> {
     .init(stateTask: stateTask)
 }
@@ -63,11 +63,12 @@ public extension Publisher {
     private enum EnqueueError: Error {
         case enqueueError
     }
+
     init(
         file: StaticString = #file,
         line: UInt = #line,
         deinitBehavior: DeinitBehavior = .assert,
-        stateTask: StateTask<MulticasterState<Output>, MulticasterState<Output>.Action>
+        stateTask: StateTask<ConnectableState<Output>, ConnectableState<Output>.Action>
     ) {
         self = .init { continuation, downstream in Cancellable<Cancellable<Demand>>.join(.init {
             do {
@@ -103,3 +104,4 @@ public extension Publisher {
         } ) }
     }
 }
+

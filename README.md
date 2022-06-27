@@ -87,7 +87,7 @@ Implies the following Do's and Dont's
   Additionally, there are similar questions with EventLoopFuture and EventLoopPromise in NIO.
 
   1. Why is Future a class and Promise a struct?
-  2. Why can't NIO just use Concurrency like other Swift apps?
+  2. Why can't NIO just use Concurrency like other Swift libraries?
   3. Are there other use cases that I should be worrying about where I can't use Concurrency?
 
   ### On Deprotocolization
@@ -96,15 +96,10 @@ The answer to question 1 on why every function returns a different type essentia
 
 ![Combine Return Types](Images/CombineReturnTypes.png)
 
-Here's a challenge I give my students. Map on Array is a function that looks like this:
+Here's a challenge I give my students. The map functions on Array and Optional look like this:
 
 ```
  (Array<A>) ->    (_ f: (A) -> B) -> Array<B>
-```
-
-Map on Optional looks like this:
-
-```
  (Optional<A>) -> (_ f: (A) -> B) -> Optional<B>
 ```
 

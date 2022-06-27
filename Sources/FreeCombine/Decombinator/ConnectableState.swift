@@ -5,7 +5,7 @@
 //  Created by Van Simmons on 6/5/22.
 //
 
-public struct MulticasterState<Output: Sendable> {
+public struct ConnectableState<Output: Sendable> {
     public enum Action: Sendable, CustomStringConvertible {
         case connect(Resumption<Void>)
         case pause(Resumption<Void>)
@@ -47,12 +47,12 @@ public struct MulticasterState<Output: Sendable> {
         line: UInt = #line,
         deinitBehavior: DeinitBehavior = .assert,
         upstream: Publisher<Output>,
-        channel: Channel<MulticasterState<Output>.Action>
+        channel: Channel<ConnectableState<Output>.Action>
     ) {
         self.upstream = upstream
         self.distributor = .init(currentValue: .none, nextKey: 0, downstreams: [:])
         self.downstream = { r in
-            var queueStatus: AsyncStream<MulticasterState<Output>.Action>.Continuation.YieldResult!
+            var queueStatus: AsyncStream<ConnectableState<Output>.Action>.Continuation.YieldResult!
             let _: Void = try await withResumption(file: file, line: line, deinitBehavior: deinitBehavior) { resumption in
                 queueStatus = channel.yield(.distribute(.receive(r, resumption)))
                 switch queueStatus {
@@ -75,7 +75,7 @@ public struct MulticasterState<Output: Sendable> {
 
     static func create(
         upstream: Publisher<Output>
-    ) -> (Channel<MulticasterState<Output>.Action>) -> Self {
+    ) -> (Channel<ConnectableState<Output>.Action>) -> Self {
         { channel in return .init(upstream: upstream, channel: channel) }
     }
 
