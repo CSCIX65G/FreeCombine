@@ -96,10 +96,11 @@ public extension StateTask {
         file: StaticString = #file,
         line: UInt = #line,
         deinitBehavior: DeinitBehavior = .assert,
+        buffering: AsyncStream<LazyValueRefState<Value>.Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
         creator: @escaping () async throws -> Value,
         disposer: @escaping (Value) async -> Void
     ) async -> StateTask where State == LazyValueRefState<Value>, Action == LazyValueRefState<Value>.Action  {
-        try! await Channel<LazyValueRefState<Value>.Action>.init(buffering: .unbounded)
+        try! await Channel<LazyValueRefState<Value>.Action>.init(buffering: buffering)
             .stateTask(
                 file: file,
                 line: line,

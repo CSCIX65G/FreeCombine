@@ -146,7 +146,7 @@ public struct DistributorState<Output: Sendable> {
                 count: currentRepeaters.count
             )
 
-            for (key, downstreamTask) in currentRepeaters {
+            currentRepeaters.forEach { key, downstreamTask in
                 let queueStatus = downstreamTask.send(.repeat(result, semaphore))
                 switch queueStatus {
                     case .enqueued:

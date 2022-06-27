@@ -1,21 +1,25 @@
 //
-//  Multicast.swift
+//  MakeConnectable.swift
 //  
 //
 //  Created by Van Simmons on 6/4/22.
 //
-public final class Multicaster<Output: Sendable> {
-    private let stateTask: StateTask<MulticasterState<Output>, MulticasterState<Output>.Action>
-    init(stateTask: StateTask<MulticasterState<Output>, MulticasterState<Output>.Action>) async {
+public extension Publisher {
+    typealias ConnectableTask = StateTask<LazyValueRefState<Connectable<Output>>, LazyValueRefState<Connectable<Output>>.Action>
+}
+
+public final class Connectable<Output: Sendable> {
+    private let stateTask: StateTask<ConnectableState<Output>, ConnectableState<Output>.Action>
+    init(stateTask: StateTask<ConnectableState<Output>, ConnectableState<Output>.Action>) async {
         self.stateTask = stateTask
     }
-    public var value: MulticasterState<Output> {
+    public var value: ConnectableState<Output> {
         get async throws { try await stateTask.value }
     }
-    public var result: Result<MulticasterState<Output>, Swift.Error> {
+    public var result: Result<ConnectableState<Output>, Swift.Error> {
         get async { await stateTask.result }
     }
-    public func cancelAndAwaitResult() async throws -> Result<MulticasterState<Output>, Swift.Error> {
+    public func cancelAndAwaitResult() async throws -> Result<ConnectableState<Output>, Swift.Error> {
         stateTask.cancel()
         return await stateTask.result
     }
@@ -25,13 +29,13 @@ public final class Multicaster<Output: Sendable> {
     }
 }
 
-public extension Multicaster {
+public extension Connectable {
     func publisher(
         file: StaticString = #file,
         line: UInt = #line,
         deinitBehavior: DeinitBehavior = .assert
     ) -> Publisher<Output> {
-        .init(file: file, line: line, deinitBehavior: .logAndCancel, stateTask: stateTask)
+        .init(file: file, line: line, deinitBehavior: deinitBehavior, stateTask: stateTask)
     }
 
     func connect() async throws -> Void {
@@ -82,14 +86,14 @@ public extension Multicaster {
 }
 
 public extension Publisher {
-    func multicast() async -> Multicaster<Output> {
+    func makeConnectable() async -> Connectable<Output> {
         try! await .init(
             stateTask: Channel().stateTask(
-                initialState: MulticasterState<Output>.create(upstream: self),
+                initialState: ConnectableState<Output>.create(upstream: self),
                 reducer: Reducer(
-                    onCompletion: MulticasterState<Output>.complete,
-                    disposer: MulticasterState<Output>.dispose,
-                    reducer: MulticasterState<Output>.reduce
+                    onCompletion: ConnectableState<Output>.complete,
+                    disposer: ConnectableState<Output>.dispose,
+                    reducer: ConnectableState<Output>.reduce
                 )
             )
         )
