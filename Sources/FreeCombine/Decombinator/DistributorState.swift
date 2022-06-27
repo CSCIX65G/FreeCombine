@@ -4,6 +4,10 @@
 //
 //  Created by Van Simmons on 5/10/22.
 //
+public extension Publisher {
+    typealias DistributableTask = StateTask<LazyValueRefState<Connectable<Output>>, LazyValueRefState<Connectable<Output>>.Action>
+}
+
 public struct DistributorState<Output: Sendable> {
     public private(set) var currentValue: Output?
     var nextKey: Int
