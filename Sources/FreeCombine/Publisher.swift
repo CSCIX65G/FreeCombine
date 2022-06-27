@@ -123,28 +123,28 @@ extension Publisher {
 
     func sink(
         onStartup: Resumption<Void>,
-        receiveValue: @Sendable @escaping (Output) async -> Void
+        receiveValue: @Sendable @escaping (Output) async throws -> Void
     ) -> Cancellable<Demand> {
         sink(onStartup: onStartup, receiveCompletion: void, receiveValue: receiveValue)
     }
 
     func sink(
-        receiveValue: @Sendable @escaping (Output) async -> Void
+        receiveValue: @Sendable @escaping (Output) async throws -> Void
     ) async -> Cancellable<Demand> {
         await sink(receiveCompletion: void, receiveValue: receiveValue)
     }
 
     func sink(
         onStartup: Resumption<Void>,
-        receiveCompletion: @Sendable @escaping (Completion) async -> Void,
-        receiveValue: @Sendable @escaping (Output) async -> Void
+        receiveCompletion: @Sendable @escaping (Completion) async throws -> Void,
+        receiveValue: @Sendable @escaping (Output) async throws -> Void
     ) -> Cancellable<Demand> {
         sink(onStartup: onStartup, lift(receiveCompletion, receiveValue))
     }
 
     func sink(
-        receiveCompletion: @Sendable @escaping (Completion) async -> Void,
-        receiveValue: @Sendable @escaping (Output) async -> Void
+        receiveCompletion: @Sendable @escaping (Completion) async throws -> Void,
+        receiveValue: @Sendable @escaping (Output) async throws -> Void
     ) async -> Cancellable<Demand> {
         await sink(lift(receiveCompletion, receiveValue))
     }

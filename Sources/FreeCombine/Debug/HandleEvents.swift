@@ -6,28 +6,44 @@
 //
 public extension Publisher {
     func handleEvents(
-        receiveSubscriber: @escaping (@escaping (AsyncStream<Output>.Result) async throws -> Demand) -> Void = {_ in },
-        receiveOutput: @escaping (Output) -> Void = { _ in },
-        receiveFinished: @escaping () -> Void = { },
-        receiveFailure: @escaping (Swift.Error) -> Void = {_ in },
-        receiveCancel: @escaping () -> Void = { },
-        receiveDemand: @escaping (Demand) -> Void = { _ in }
+        receiveDownstream: @escaping (@escaping (AsyncStream<Output>.Result) async throws -> Demand) -> Void = {_ in },
+        receiveResult: @escaping (AsyncStream<Output>.Result) async -> Void = { _ in },
+        receiveDemand: @escaping (Demand) async -> Void = { _ in }
     ) -> Self {
         .init { continuation, downstream in
-            receiveSubscriber(downstream)
+            receiveDownstream(downstream)
+            return self(onStartup: continuation) { r in
+                await receiveResult(r)
+                let demand = try await downstream(r)
+                await receiveDemand(demand)
+                return demand
+            }
+        }
+    }
+
+    func handleEvents(
+        receiveDownstream: @escaping (@escaping (AsyncStream<Output>.Result) async throws -> Demand) -> Void = {_ in },
+        receiveOutput: @escaping (Output) async -> Void = { _ in },
+        receiveFinished: @escaping () async -> Void = { },
+        receiveFailure: @escaping (Swift.Error) async -> Void = {_ in },
+        receiveCancel: @escaping () async -> Void = { },
+        receiveDemand: @escaping (Demand) async -> Void = { _ in }
+    ) -> Self {
+        .init { continuation, downstream in
+            receiveDownstream(downstream)
             return self(onStartup: continuation) { r in
                 switch r {
                     case .value(let a):
-                        receiveOutput(a)
+                        await receiveOutput(a)
                     case .completion(.finished):
-                        receiveFinished()
+                        await receiveFinished()
                     case .completion(.cancelled):
-                        receiveCancel()
+                        await receiveCancel()
                     case let .completion(.failure(error)):
-                        receiveFailure(error)
+                        await receiveFailure(error)
                 }
                 let demand = try await downstream(r)
-                receiveDemand(demand)
+                await receiveDemand(demand)
                 return demand
             }
         }
