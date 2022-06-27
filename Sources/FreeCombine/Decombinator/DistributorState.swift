@@ -37,6 +37,11 @@ public struct DistributorState<Output: Sendable> {
         self.repeaters = downstreams
     }
 
+    static func create(
+    ) -> (Channel<DistributorState<Output>.Action>) -> Self {
+        { channel in .init(currentValue: .none, nextKey: 0, downstreams: [:]) }
+    }
+
     static func complete(state: inout Self, completion: Reducer<Self, Self.Action>.Completion) async -> Void {
         switch completion {
             case .finished, .exit:
