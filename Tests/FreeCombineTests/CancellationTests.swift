@@ -158,7 +158,7 @@ class CancellationTests: XCTestCase {
         let counter = Counter()
         let z1 = await merge(publishers: publisher1, publisher2)
             .map { $0.uppercased() }
-            .sink { result in
+            .sink({ result in
                 switch result {
                     case .value:
                         let count = await counter.increment()
@@ -186,7 +186,7 @@ class CancellationTests: XCTestCase {
                         try await expectation.complete()
                         return .done
                 }
-            }
+            })
 
         try await startup.value
         z1.cancel()

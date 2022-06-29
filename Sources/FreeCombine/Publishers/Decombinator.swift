@@ -43,10 +43,11 @@ public extension Publisher {
                         return
                     }
                 }
-                continuation.resume()
                 guard case .enqueued = enqueueStatus else {
+                    continuation.resume(throwing: PublisherError.enqueueError)
                     return .init { try await downstream(.completion(.finished)) }
                 }
+                continuation.resume()
                 return c
             } )
         }

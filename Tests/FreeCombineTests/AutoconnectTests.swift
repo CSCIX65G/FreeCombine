@@ -31,7 +31,7 @@ class AutoconnectTests: XCTestCase {
 
         let counter1 = Counter()
         let value1 = ValueRef<Int>(value: -1)
-        let u1 = await unfolded.sink { result in
+        let u1 = await unfolded.sink({ result in
             switch result {
                 case let .value(value):
                     await counter1.increment()
@@ -53,11 +53,11 @@ class AutoconnectTests: XCTestCase {
                     XCTFail("u1 should not have cancelled")
                     return .done
             }
-        }
+        })
 
         let counter2 = Counter()
         let value2 = ValueRef<Int>(value: -1)
-        let u2 = await unfolded.sink { result in
+        let u2 = await unfolded.sink({ result in
             switch result {
                 case let .value(value):
                     await counter2.increment()
@@ -82,7 +82,7 @@ class AutoconnectTests: XCTestCase {
                     XCTFail("u2 should not have cancelled, count = \(count), last = \(last)")
                     return .done
             }
-        }
+        })
 
         do {
             try await FreeCombine.wait(for: expectation1, timeout: 10_000_000)
@@ -128,7 +128,7 @@ class AutoconnectTests: XCTestCase {
 
         let counter1 = Counter()
         let value1 = ValueRef<Int>(value: -1)
-        let u1 = await unfolded.sink { result in
+        let u1 = await unfolded.sink({ result in
             switch result {
                 case let .value(value):
                     await counter1.increment()
@@ -150,11 +150,11 @@ class AutoconnectTests: XCTestCase {
                     XCTFail("u1 should not have cancelled")
                     return .done
             }
-        }
+        })
 
         let counter2 = Counter()
         let value2 = ValueRef<Int>(value: -1)
-        let u2 = await unfolded.sink { result in
+        let u2 = await unfolded.sink({ result in
             switch result {
                 case let .value(value):
                     await counter2.increment()
@@ -176,7 +176,7 @@ class AutoconnectTests: XCTestCase {
                     XCTFail("u2 should not have cancelled, count = \(count), last = \(last)")
                     return .done
             }
-        }
+        })
 
         do {
             try await FreeCombine.wait(for: expectation1, timeout: 10_000_000)
@@ -222,7 +222,7 @@ class AutoconnectTests: XCTestCase {
 
         let counter1 = Counter()
         let value1 = ValueRef<Int>(value: -1)
-        let u1 = await unfolded.sink { result in
+        let u1 = await unfolded.sink({ result in
             switch result {
                 case let .value(value):
                     await counter1.increment()
@@ -244,11 +244,11 @@ class AutoconnectTests: XCTestCase {
                     XCTFail("u1 should not have cancelled")
                     return .done
             }
-        }
+        })
 
         let counter2 = Counter()
         let value2 = ValueRef<Int>(value: -1)
-        let u2 = await unfolded.sink { result in
+        let u2 = await unfolded.sink({ result in
             switch result {
                 case let .value(value):
                     await counter2.increment()
@@ -270,7 +270,7 @@ class AutoconnectTests: XCTestCase {
                     XCTFail("u2 should not have cancelled, count = \(count), last = \(last)")
                     return .done
             }
-        }
+        })
 
         do {
             try await FreeCombine.wait(for: expectation1, timeout: 10_000_000)

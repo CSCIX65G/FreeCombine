@@ -16,6 +16,10 @@ public actor ValueRef<Value> {
         self.value = value
         return tmp
     }
+
+    public func get() -> Value {
+        return self.value
+    }
 }
 
 extension ValueRef {
@@ -25,5 +29,15 @@ extension ValueRef {
 
     public func next<T>() -> T? where Value: IteratorProtocol, Value.Element == T {
         value.next()
+    }
+
+    @discardableResult
+    public func setIfNone<T>(using f: @escaping () -> T) -> Value where Value == T? {
+        guard let t = value else {
+            let newValue = f()
+            value = newValue
+            return newValue
+        }
+        return t
     }
 }

@@ -9,7 +9,7 @@ public extension Publisher {
         _ subject: StateTask<DistributorState<Output>, DistributorState<Output>.Action>
     ) -> Self {
         .init { resumption, downstream in
-            self.sink(onStartup: resumption) { result in
+            self.sink(onStartup: resumption, { result in
                 switch result {
                     case .completion(.failure(let error)):
                         try await subject.fail(error)
@@ -21,7 +21,7 @@ public extension Publisher {
                         try await subject.send(value)
                 }
                 return try await downstream(result)
-            }
+            })
         }
     }
 
@@ -30,7 +30,7 @@ public extension Publisher {
     ) async -> Self {
         let subject = generator()
         return .init { resumption, downstream in
-            self.sink(onStartup: resumption) { result in
+            self.sink(onStartup: resumption, { result in
                 switch result {
                     case .completion(.failure(let error)):
                         try await subject.fail(error)
@@ -42,7 +42,7 @@ public extension Publisher {
                         try await subject.send(value)
                 }
                 return try await downstream(result)
-            }
+            })
         }
     }
 }

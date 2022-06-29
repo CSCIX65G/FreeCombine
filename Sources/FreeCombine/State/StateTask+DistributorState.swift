@@ -59,6 +59,7 @@ public extension StateTask {
         try send(.completion(.failure(error)))
     }
 
+    // FIXME: This should only drop if send is called from multiple tasks
     func send<Output: Sendable>(
         file: StaticString = #file,
         line: UInt = #line,

@@ -14,7 +14,7 @@ final class ShareTests: XCTestCase {
 
     override func tearDownWithError() throws { }
 
-    func xtestSimpleShare() async throws {
+    func testSimpleShare() async throws {
         /*
          p1 and p2 below are NOT guaranteed to see the same number of values bc
          the share publisher begins publishing as soon as the first subscription
@@ -47,9 +47,7 @@ final class ShareTests: XCTestCase {
                 },
                 receiveFinished: {
                     let count = await upstreamCounter.count
-                    XCTAssert(count == n, "Wrong number sent")
-                    let value = await upstreamValue.value
-                    XCTAssert(value == count * 2, "Wrong value sent")
+                    XCTAssert(count == n, "Wrong number sent, expected: \(n), got: \(count)")
                 },
                 receiveFailure: { error in
                     XCTFail("Inappropriately failed with: \(error)")
@@ -58,11 +56,11 @@ final class ShareTests: XCTestCase {
                     XCTFail("Inappropriately cancelled")
                 }
             )
-            .share()
+            .share(buffering: .bufferingOldest(2))
 
         let counter1 = Counter()
         let value1 = ValueRef<Int>(value: -1)
-        let u1 = await shared.sink { result in
+        let u1 = await shared.sink( { result in
             switch result {
                 case let .value(value):
                     await counter1.increment()
@@ -84,11 +82,13 @@ final class ShareTests: XCTestCase {
                     XCTFail("u1 should not have cancelled")
                     return .done
             }
-        }
+        })
+
+        await Task.yield()
 
         let counter2 = Counter()
         let value2 = ValueRef<Int>(value: -1)
-        let u2 = await shared.sink { result in
+        let u2 = await shared.sink( { result in
             switch result {
                 case let .value(value):
                     await counter2.increment()
@@ -108,18 +108,16 @@ final class ShareTests: XCTestCase {
                     catch { XCTFail("u2 Failed to complete with error: \(error)") }
                     return .done
                 case .completion(.cancelled):
-                    let count = await counter2.count
-                    let last = await value2.value
-                    XCTFail("u2 should not have cancelled, count = \(count), last = \(last)")
                     return .done
             }
-        }
+        })
 
         do {
-            try await FreeCombine.wait(for: expectation1, timeout: 10_000_000)
+            try await FreeCombine.wait(for: expectation1, timeout: 100_000_000)
         } catch {
-            let count = await counter2.count
-            let last = await value2.value
+            let count = await counter1.count
+            let last = await value1.value
+            Swift.print("u1 Timed out count = \(count), last = \(last)")
             XCTFail("u1 Timed out count = \(count), last = \(last)")
         }
 
