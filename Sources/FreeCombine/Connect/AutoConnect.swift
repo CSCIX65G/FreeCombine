@@ -4,86 +4,31 @@
 //
 //  Created by Van Simmons on 6/7/22.
 //
-public func convertBuffering<In, Out>(
-    _ input: AsyncStream<In>.Continuation.BufferingPolicy
-) -> AsyncStream<Out>.Continuation.BufferingPolicy {
-    switch input {
-        case .unbounded:
-            return .unbounded
-        case .bufferingOldest(let value):
-            return .bufferingOldest(value)
-        case .bufferingNewest(let value):
-            return .bufferingNewest(value)
-        @unknown default:
-            fatalError("Unhandled buffering policy case")
-    }
-}
-
 public extension Publisher {
     func autoconnect(
         buffering: AsyncStream<ConnectableState<Output>.Action>.Continuation.BufferingPolicy = .bufferingOldest(1)
     ) async -> Self {
-        let connectableActor: ValueRef<ConnectableTask?>? = .init(value: .none)
-        let connectable = await LazyValueRef(
-            creator: {  await Connectable<Output>.init(
-                stateTask: try Channel.init(buffering: buffering)
-                    .stateTask(
-                        initialState: ConnectableState<Output>.create(upstream: self),
-                        reducer: Reducer(
-                            onCompletion: ConnectableState<Output>.complete,
-                            disposer: ConnectableState<Output>.dispose,
-                            reducer: ConnectableState<Output>.reduce
-                        )
-                    )
-            ) },
-            disposer: { value in
-                _ = await connectableActor?.value?.finishAndAwaitResult()
-            }
-        )
-        await connectableActor?.set(value: connectable)
+        let connectable: Connectable<Output> = await self.makeConnectable(buffering: buffering)
+        let cancellableRef: ValueRef<Cancellable<Demand>?> = .init(value: .none)
         return .init { continuation, downstream in
             Cancellable<Cancellable<Demand>>.join(.init {
-                @Sendable func lift(
-                    _ downstream: @Sendable @escaping (AsyncStream<Output>.Result) async throws -> Demand
-                ) -> @Sendable (AsyncStream<Output>.Result) async throws -> Demand {
-                    { r in
-                        switch r {
-                            case .value:
-                                return try await downstream(r)
-                            case .completion:
-                                let finalValue = try await downstream(r)
-                                try await connectable.release()
-                                return finalValue
-                        }
-                    }
-                }
-                do {
-                    guard let m = try await connectable.value() else {
-                        _ = try? await downstream(.completion(.finished))
-                        connectable.cancel()
-                        continuation.resume()
-                        return Cancellable<Demand> { .done }
-                    }
-                    let cancellable = await m.publisher().sink(lift(downstream))
-                    if cancellable.isCancelled {
-                        fatalError("Should not be cancelled")
-                    }
+                let cancellable = await connectable.publisher().sink(downstream)
+                let refValue: Cancellable<Demand>! = await cancellableRef.value
+                if refValue == nil {
                     do {
-                        try await m.connect()
+                        try await connectable.connect()
+                        await cancellableRef.set(value: cancellable)
+                        Task {
+                            _ = await connectable.result;
+                            _ = await cancellable.result;
+                            await cancellableRef.set(value: .none)
+                        }
+                    } catch {
+                        _ = try await connectable.cancelAndAwaitResult()
                     }
-                    catch {
-                        /*
-                         ignore failed connects after the first one bc
-                         we have no way to prevent a race condition between
-                         multiple connects
-                         */
-                    }
-                    continuation.resume()
-                    return cancellable
-                } catch {
-                    continuation.resume()
-                    return .init { try await downstream(.completion(.finished)) }
                 }
+                continuation.resume()
+                return cancellable
             } )
         }
     }
