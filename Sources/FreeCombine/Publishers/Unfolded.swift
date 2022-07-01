@@ -28,8 +28,8 @@ public extension Publisher {
                     }
                 }
                 return Task.isCancelled
-                ? try await downstream(.completion(.cancelled))
-                : try await downstream(.completion(.finished))
+                    ? try await downstream(.completion(.cancelled))
+                    : try await downstream(.completion(.finished))
             }
         }
     }

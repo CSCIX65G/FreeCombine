@@ -16,7 +16,7 @@ class AutoconnectTests: XCTestCase {
     func testSimpleAutoconnect() async throws {
         /*
          p1 and p2 below are NOT guaranteed to see the same number of values bc
-         the autoconnectd publisher begins publishing as soon as the first subscription
+         the autoconnected publisher begins publishing as soon as the first subscription
          is connected.  The second subscriber will see only those published
          values that occur after it subscribes.  In some cases it will see zero
          */
@@ -24,14 +24,14 @@ class AutoconnectTests: XCTestCase {
         let expectation2 = await Expectation<Void>()
 
         let n = 100
-        let unfolded = await (0 ..< n)
+        let autoconnected = await (0 ..< n)
             .asyncPublisher
             .map { $0 * 2 }
             .autoconnect(buffering: .bufferingOldest(2))
 
         let counter1 = Counter()
         let value1 = ValueRef<Int>(value: -1)
-        let u1 = await unfolded.sink({ result in
+        let u1 = await autoconnected.sink({ result in
             switch result {
                 case let .value(value):
                     await counter1.increment()
@@ -57,7 +57,7 @@ class AutoconnectTests: XCTestCase {
 
         let counter2 = Counter()
         let value2 = ValueRef<Int>(value: -1)
-        let u2 = await unfolded.sink({ result in
+        let u2 = await autoconnected.sink({ result in
             switch result {
                 case let .value(value):
                     await counter2.increment()
@@ -121,14 +121,14 @@ class AutoconnectTests: XCTestCase {
         let expectation2 = await Expectation<Void>()
 
         let n = 1
-        let unfolded = await (0 ..< n)
+        let autoconnected = await (0 ..< n)
             .asyncPublisher
             .map { $0 * 2 }
             .autoconnect(buffering: .bufferingOldest(2))
 
         let counter1 = Counter()
         let value1 = ValueRef<Int>(value: -1)
-        let u1 = await unfolded.sink({ result in
+        let u1 = await autoconnected.sink({ result in
             switch result {
                 case let .value(value):
                     await counter1.increment()
@@ -154,7 +154,7 @@ class AutoconnectTests: XCTestCase {
 
         let counter2 = Counter()
         let value2 = ValueRef<Int>(value: -1)
-        let u2 = await unfolded.sink({ result in
+        let u2 = await autoconnected.sink({ result in
             switch result {
                 case let .value(value):
                     await counter2.increment()
@@ -215,14 +215,14 @@ class AutoconnectTests: XCTestCase {
         let expectation2 = await Expectation<Void>()
 
         let n = 0
-        let unfolded = await (0 ..< n)
+        let autoconnected = await (0 ..< n)
             .asyncPublisher
             .map { $0 * 2 }
             .autoconnect(buffering: .bufferingOldest(2))
 
         let counter1 = Counter()
         let value1 = ValueRef<Int>(value: -1)
-        let u1 = await unfolded.sink({ result in
+        let u1 = await autoconnected.sink({ result in
             switch result {
                 case let .value(value):
                     await counter1.increment()
@@ -248,7 +248,7 @@ class AutoconnectTests: XCTestCase {
 
         let counter2 = Counter()
         let value2 = ValueRef<Int>(value: -1)
-        let u2 = await unfolded.sink({ result in
+        let u2 = await autoconnected.sink({ result in
             switch result {
                 case let .value(value):
                     await counter2.increment()
@@ -291,7 +291,7 @@ class AutoconnectTests: XCTestCase {
         let d1 = try await u1.value
         XCTAssert(d1 == .done, "First chain has wrong value")
 
-        let d2 = await u2.cancelAndAwaitResult()
+        let d2 = await u2.result
         guard case .success = d2 else {
             XCTFail("Did not get successful result, got: \(d2)")
             return
@@ -302,17 +302,15 @@ class AutoconnectTests: XCTestCase {
          p1 and p2 below should see the same number of values bc
          we set them up before we send to the subject
          */
-        let subj = await PassthroughSubject(Int.self)
+        let subject = await PassthroughSubject(Int.self)
 
         /*
-         Note that we use `.bufferingOldest(2)` here.  In general
-         the buffering should match the number of downstream subscribers.
-         When that number is unknown, `.unbounded` buffering is always
-         available.
+         Note that we don't need the `.bufferingOldest(2)` here.  Bc
+         we are not trying to simultaneously subscribe and send.
          */
-        let publisher = await subj.publisher()
+        let publisher = await subject.publisher()
             .map { $0 % 47 }
-            .autoconnect(buffering: .bufferingOldest(2))
+            .autoconnect()
 
         let counter1 = Counter()
         let p1 = await publisher.sink( { result in
@@ -357,15 +355,15 @@ class AutoconnectTests: XCTestCase {
         }
 
         for i in (0 ..< 100) {
-            do { try await subj.send(i) }
+            do { try await subject.send(i) }
             catch { XCTFail("Failed to send on \(i)") }
         }
 
-        try subj.nonBlockingFinish()
-        _ = await subj.result
+        try await subject.finish()
         let d1 = try await p1.value
         XCTAssert(d1 == .done, "First chain has wrong value")
         let d2 = try await p2.value
         XCTAssert(d2 == .done, "Second chain has wrong value")
+        _ = await subject.result
     }
 }

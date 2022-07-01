@@ -60,8 +60,8 @@ public struct ConnectableState<Output: Sendable> {
                         ()
                     case .terminated:
                         resumption.resume(throwing: PublisherError.cancelled)
-                    case .dropped:
-                        fatalError("Should never drop")
+                    case let .dropped(dropped):
+                        fatalError("Should never drop. dropped: \(dropped)")
                     case .none:
                         fatalError("must have a queue status")
                     @unknown default:

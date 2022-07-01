@@ -8,7 +8,9 @@
 public actor Counter {
     public private(set) var count = 0
 
-    public init() { }
+    public init(count: Int = 0) {
+        self.count = count
+    }
 
     @discardableResult
     public func increment() -> Int {
