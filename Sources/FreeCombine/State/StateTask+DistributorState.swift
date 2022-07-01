@@ -9,9 +9,17 @@
 public extension StateTask {
     @inlinable
     func send<Output: Sendable>(
+        file: StaticString = #file,
+        line: UInt = #line,
+        deinitBehavior: DeinitBehavior = .assert,
         _ value: Output
     ) async throws -> Void where State == DistributorState<Output>, Action == DistributorState<Output>.Action {
-        try await send(.value(value))
+        try await send(
+            file: file,
+            line: line,
+            deinitBehavior: deinitBehavior,
+            .value(value)
+        )
     }
 
     @inlinable
@@ -59,7 +67,10 @@ public extension StateTask {
         try send(.completion(.failure(error)))
     }
 
-    // FIXME: This should only drop if send is called from multiple tasks
+    /*:
+     FIXME: This should only drop if send is called from multiple tasks
+     but it currently drops if multiple subscriptions enter the queue
+     */
     func send<Output: Sendable>(
         file: StaticString = #file,
         line: UInt = #line,
@@ -70,7 +81,7 @@ public extension StateTask {
         let _: Void = try await withResumption(file: file, line: line, deinitBehavior: deinitBehavior) { resumption in
             enqueueResult = send(.receive(result, resumption))
             guard case .enqueued = enqueueResult else {
-                resumption.resume(throwing: PublisherError.cancelled)
+                resumption.resume(throwing: PublisherError.enqueueError)
                 return
             }
         }

@@ -4,10 +4,6 @@
 //
 //  Created by Van Simmons on 5/10/22.
 //
-public extension Publisher {
-    typealias DistributableTask = StateTask<LazyValueRefState<Connectable<Output>>, LazyValueRefState<Connectable<Output>>.Action>
-}
-
 public struct DistributorState<Output: Sendable> {
     public private(set) var currentValue: Output?
     var nextKey: Int
@@ -103,6 +99,7 @@ public struct DistributorState<Output: Sendable> {
                 if case .completion = result { isComplete = true }
                 do {
                     try await process(currentRepeaters: repeaters, with: result)
+                    print("resuming")
                     resumption?.resume()
                 } catch {
                     resumption?.resume()
@@ -138,9 +135,8 @@ public struct DistributorState<Output: Sendable> {
         currentRepeaters : [Int: StateTask<RepeaterState<Int, Output>, RepeaterState<Int, Output>.Action>],
         with result: AsyncStream<Output>.Result
     ) async throws -> Void {
-        guard currentRepeaters.count > 0 else {
-            return
-        }
+        guard currentRepeaters.count > 0 else { return }
+        Swift.print("processing \(currentRepeaters.count) repeaters")
         try await withResumption { (completedResumption: Resumption<[Int]>) in
             // Note that the semaphore's reducer constructs a list of repeaters
             // which have responded with .done and that the elements of that list
@@ -172,6 +168,7 @@ public struct DistributorState<Output: Sendable> {
         .forEach { key in
             repeaters.removeValue(forKey: key)
         }
+        Swift.print("processed \(currentRepeaters.count) repeaters")
     }
 
     mutating func process(

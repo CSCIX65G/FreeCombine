@@ -7,17 +7,19 @@
  #actor problems
 
  1. no oneway funcs (can't call from synchronous code)
- 2. can't selectively block callers (to pass a continuation to an actor requires spawning a task which can introduce a race condition and is really heavy-weight)
+ 2. can't selectively block callers (to pass a continuation to an actor requires spawning a task which gives up ordering guarantees)
  3. can't block calling tasks on internal state (can only block with async call to another task)
- 4. no concept of cancellation
+ 4. no concept of cancellation (cannot perform orderly shutdown with outstanding requests in flight)
  5. execute on global actor queues (generally not needed or desirable)
+ 6. No way of possible failure to enqueue on an overburdened actor, all requests enter an unbounded queue
 
  #actor solutions: StateTask - a swift implementation of the Haskell ST monad
 
  1. LOCK FREE CHANNELS
  2. Haskell translation: ∀s in Rank-N types becomes a Task
+ 3. Use explicit queues to process events
 
- # statetask actions:
+ # statetask action requirements:
 
  2. sendable funcs
  3. routable
