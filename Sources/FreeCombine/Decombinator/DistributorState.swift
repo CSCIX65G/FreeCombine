@@ -33,6 +33,11 @@ public struct DistributorState<Output: Sendable> {
         self.repeaters = downstreams
     }
 
+    static func create(
+    ) -> (Channel<DistributorState<Output>.Action>) -> Self {
+        { channel in .init(currentValue: .none, nextKey: 0, downstreams: [:]) }
+    }
+
     static func complete(state: inout Self, completion: Reducer<Self, Self.Action>.Completion) async -> Void {
         switch completion {
             case .finished, .exit:
@@ -129,9 +134,7 @@ public struct DistributorState<Output: Sendable> {
         currentRepeaters : [Int: StateTask<RepeaterState<Int, Output>, RepeaterState<Int, Output>.Action>],
         with result: AsyncStream<Output>.Result
     ) async throws -> Void {
-        guard currentRepeaters.count > 0 else {
-            return
-        }
+        guard currentRepeaters.count > 0 else { return }
         try await withResumption { (completedResumption: Resumption<[Int]>) in
             // Note that the semaphore's reducer constructs a list of repeaters
             // which have responded with .done and that the elements of that list

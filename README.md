@@ -11,35 +11,39 @@
 * Race-free.
   * Yield-free.
   * Sleep-free.
+  * Continuations are only created after upstream continuations are guaranteed to exist
 * Leak-free.
-  * Memory-bound Task cancellation
+  * Memory-bound Task resolution
   * Memory-bound Continuation resolution
   * Unbounded queue-free.
 * Lock-free.
   * Queueing channel instead of locking channel
+  * No use of `os_unfair_lock` or equivalent constructs in other operating system 
 * Foundation-free.
   * depends only on Swift std lib (and swift-atomics)
 
 Implies the following Do's and Dont's
 
+Don'ts:
 * No use of `protocol`
 * No use of `TaskGroup` or `async let`
 * No use of `AsyncSequence`
 * No use of `swift-async-algorithms`
 
+Sort of Don'ts:
 * Use of `for await` only in StateTask
 * Use of `Task.init` only in Cancellable
 * Use of `[Checked|Unsafe]Continuation` only in Resumption
-* Use of `AsyncStream.init` only Channel
+* Use of `AsyncStream.init` only in Channel
 
 ## Salient features
 
 1. "Small things that compose"
 1. Implement all operations supported by Combine, but some require modification
-1. Uses "imprecise" errors throughout in the manner of Swift concurrency.
+1. Uses "imprecise" errors throughout in the manner of Swift NIO.
 1. Tasks and Continuations can _always_ fail due to cancellation
 1. Principled handling of cancellation throughout 
-1. Futures _AND_ Streams
+1. Futures _AND_ Streams, chocolate _AND_ peanut butter
 
 ## Todo
 
@@ -59,17 +63,18 @@ Implies the following Do's and Dont's
 
   Ideally, this material would become the core of an expanded course on Functional Concurrent Programming using Swift, but that course is still fairly far off.  
   
-  Secondarily, this repo is my own feeble attempt to answer the following: 
+  Secondarily, this repo is my own feeble attempt to answer the following questions: 
   
   1. Why does Swift's Structured Concurrency, not have the same set of primitives as Concurrent Haskell?
-  2. Are there differences between what we mean when we refer to Structured Concurrency and what we mean when we refer to Functional Concurrency and precisely what would those differences be?
+  1. Why is that whenever I ask someone: do you use TaskGroup or `async let`, they respond, I don't but I'm sure that there are other people who do?
+  1. Are there differences between what we mean when we refer to Structured Concurrency and what we mean when we refer to Functional Concurrency and precisely what would those differences be?
 
   ### Functional Requirements
 
   In November of 2021 [Phillipe Hausler observed](https://forums.swift.org/t/should-asyncsequence-replace-combine-in-the-future-or-should-they-coexist/53370/10) that there were several things that needed to be done to bring Combine functionality into the new world of Swift Concurrency. The list provided there was added to the requirements and the following are currently in the library:
 
   1. Combinators
-  2. Distributors
+  2. Distributors (which I have termed Decombinators)
   3. Temporal Transformation
   4. Failure Transformation
   5. Getting the first result from N running tasks
@@ -79,20 +84,20 @@ Implies the following Do's and Dont's
   I've taught Combine several times now and invariably 3 questions come up:
 
   1. Why does every function on a Publisher return a different type?
-  2. Why does chaining of Publisher functions produce incomprehensible types?
-  3. Why do the required functions for a Publisher and Subscriber all say `receive`?
+  1. Why does chaining of Publisher functions produce incomprehensible types?
+  1. Why do the required functions for a Publisher and Subscriber all say `receive`?
 
   I believe that these are reasonable questions and this project attempts to deal with all three.
 
   Additionally, there are similar questions with EventLoopFuture and EventLoopPromise in NIO.
 
-  1. Why is Future a class and Promise a struct?
-  2. Why can't NIO just use Concurrency like other Swift libraries?
-  3. Are there other use cases that I should be worrying about where I can't use Concurrency?
+  1. Why is Future a class and not a struct?
+  1. Why can't NIO just use Concurrency like other Swift libraries?
+  1. Are there other use cases that I should be worrying about where I can't use Concurrency?
 
   ### On Deprotocolization
 
-The answer to question 1 on why every function returns a different type essentially comes down to the use of having Publisher be an existential type (aka a protocol) rather than a plan generic type. Here's an example of what I'm talking about:
+The answer to question 1 on why every function returns a different type essentially comes down to the use of having Publisher be an existential type (aka a protocol) rather than a plain generic type. Here's an example of what I'm talking about:
 
 ![Combine Return Types](Images/CombineReturnTypes.png)
 

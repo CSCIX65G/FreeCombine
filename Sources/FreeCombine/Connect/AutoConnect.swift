@@ -23,8 +23,8 @@ public extension Publisher {
     func autoconnect(
         buffering: AsyncStream<ConnectableState<Output>.Action>.Continuation.BufferingPolicy = .bufferingOldest(1)
     ) async -> Self {
-        let mActor: ValueRef<ConnectableTask?>? = .init(value: .none)
-        let multicaster = await LazyValueRef(
+        let connectableActor: ValueRef<ConnectableTask?>? = .init(value: .none)
+        let connectable = await LazyValueRef(
             creator: {  await Connectable<Output>.init(
                 stateTask: try Channel.init(buffering: buffering)
                     .stateTask(
@@ -37,10 +37,10 @@ public extension Publisher {
                     )
             ) },
             disposer: { value in
-                _ = await mActor?.value?.finishAndAwaitResult()
+                _ = await connectableActor?.value?.finishAndAwaitResult()
             }
         )
-        await mActor?.set(value: multicaster)
+        await connectableActor?.set(value: connectable)
         return .init { continuation, downstream in
             Cancellable<Cancellable<Demand>>.join(.init {
                 @Sendable func lift(
@@ -52,15 +52,15 @@ public extension Publisher {
                                 return try await downstream(r)
                             case .completion:
                                 let finalValue = try await downstream(r)
-                                try await multicaster.release()
+                                try await connectable.release()
                                 return finalValue
                         }
                     }
                 }
                 do {
-                    guard let m = try await multicaster.value() else {
+                    guard let m = try await connectable.value() else {
                         _ = try? await downstream(.completion(.finished))
-                        multicaster.cancel()
+                        connectable.cancel()
                         continuation.resume()
                         return Cancellable<Demand> { .done }
                     }
