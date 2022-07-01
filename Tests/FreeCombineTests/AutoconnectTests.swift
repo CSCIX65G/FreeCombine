@@ -24,14 +24,14 @@ class AutoconnectTests: XCTestCase {
         let expectation2 = await Expectation<Void>()
 
         let n = 100
-        let unfolded = await (0 ..< n)
+        let autoconnected = await (0 ..< n)
             .asyncPublisher
             .map { $0 * 2 }
-            .autoconnect(buffering: .bufferingOldest(2))
+            .autoconnect(buffering: .bufferingOldest(3))
 
         let counter1 = Counter()
         let value1 = ValueRef<Int>(value: -1)
-        let u1 = await unfolded.sink({ result in
+        let u1 = await autoconnected.sink({ result in
             switch result {
                 case let .value(value):
                     await counter1.increment()
@@ -57,7 +57,7 @@ class AutoconnectTests: XCTestCase {
 
         let counter2 = Counter()
         let value2 = ValueRef<Int>(value: -1)
-        let u2 = await unfolded.sink({ result in
+        let u2 = await autoconnected.sink({ result in
             switch result {
                 case let .value(value):
                     await counter2.increment()
@@ -215,14 +215,14 @@ class AutoconnectTests: XCTestCase {
         let expectation2 = await Expectation<Void>()
 
         let n = 0
-        let unfolded = await (0 ..< n)
+        let autoconnected = await (0 ..< n)
             .asyncPublisher
             .map { $0 * 2 }
             .autoconnect(buffering: .bufferingOldest(2))
 
         let counter1 = Counter()
         let value1 = ValueRef<Int>(value: -1)
-        let u1 = await unfolded.sink({ result in
+        let u1 = await autoconnected.sink({ result in
             switch result {
                 case let .value(value):
                     await counter1.increment()
@@ -248,7 +248,7 @@ class AutoconnectTests: XCTestCase {
 
         let counter2 = Counter()
         let value2 = ValueRef<Int>(value: -1)
-        let u2 = await unfolded.sink({ result in
+        let u2 = await autoconnected.sink({ result in
             switch result {
                 case let .value(value):
                     await counter2.increment()
@@ -291,7 +291,7 @@ class AutoconnectTests: XCTestCase {
         let d1 = try await u1.value
         XCTAssert(d1 == .done, "First chain has wrong value")
 
-        let d2 = await u2.cancelAndAwaitResult()
+        let d2 = await u2.result
         guard case .success = d2 else {
             XCTFail("Did not get successful result, got: \(d2)")
             return

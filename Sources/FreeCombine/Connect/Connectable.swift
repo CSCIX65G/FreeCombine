@@ -4,10 +4,6 @@
 //
 //  Created by Van Simmons on 6/28/22.
 //
-public extension Publisher {
-    typealias ConnectableTask = StateTask<LazyValueRefState<Connectable<Output>>, LazyValueRefState<Connectable<Output>>.Action>
-}
-
 public final class Connectable<Output: Sendable> {
     private let stateTask: StateTask<ConnectableState<Output>, ConnectableState<Output>.Action>
     init(stateTask: StateTask<ConnectableState<Output>, ConnectableState<Output>.Action>) async {
