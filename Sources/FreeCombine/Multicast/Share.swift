@@ -16,7 +16,6 @@ public extension Publisher {
             return Cancellable<Cancellable<Demand>>.join(.init {
                     let cancellable = await subject.publisher().sink(downstream)
                     var i1: Cancellable<Demand>! = await cancellableRef.value
-                    let isNew = i1 == nil
                     if i1 == nil {
                         i1 = await self.sink({ result in
                             do {
@@ -35,7 +34,6 @@ public extension Publisher {
                                         throw error
                                 }
                             } catch {
-                                Swift.print(error)
                                 throw error
                             }
                         })
@@ -46,9 +44,6 @@ public extension Publisher {
                             await cancellableRef.set(value: .none)
                         }
                         await cancellableRef.set(value: i1)
-                    }
-                    if (i1.isCompleting || i1.isCancelled) && isNew {
-                        Swift.print("cancelled early, isNew = \(isNew)")
                     }
                     continuation.resume()
                     return cancellable

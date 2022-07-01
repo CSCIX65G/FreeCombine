@@ -99,7 +99,6 @@ public struct DistributorState<Output: Sendable> {
                 if case .completion = result { isComplete = true }
                 do {
                     try await process(currentRepeaters: repeaters, with: result)
-                    print("resuming")
                     resumption?.resume()
                 } catch {
                     resumption?.resume()
@@ -136,7 +135,6 @@ public struct DistributorState<Output: Sendable> {
         with result: AsyncStream<Output>.Result
     ) async throws -> Void {
         guard currentRepeaters.count > 0 else { return }
-        Swift.print("processing \(currentRepeaters.count) repeaters")
         try await withResumption { (completedResumption: Resumption<[Int]>) in
             // Note that the semaphore's reducer constructs a list of repeaters
             // which have responded with .done and that the elements of that list
@@ -168,7 +166,6 @@ public struct DistributorState<Output: Sendable> {
         .forEach { key in
             repeaters.removeValue(forKey: key)
         }
-        Swift.print("processed \(currentRepeaters.count) repeaters")
     }
 
     mutating func process(

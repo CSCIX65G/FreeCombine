@@ -117,7 +117,6 @@ final class ShareTests: XCTestCase {
         } catch {
             let count = await counter1.count
             let last = await value1.value
-            Swift.print("u1 Timed out count = \(count), last = \(last)")
             XCTFail("u1 Timed out count = \(count), last = \(last)")
         }
 
