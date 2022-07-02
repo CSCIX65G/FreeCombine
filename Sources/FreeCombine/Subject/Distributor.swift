@@ -60,6 +60,26 @@ public final class Distributor<Output: Sendable> {
     }
 }
 
+extension Distributor {
+    func subscribe(
+        _ downstream: @Sendable @escaping (AsyncStream<Output>.Result) async throws -> Demand
+    ) async throws -> Cancellable<Demand> {
+        try await withResumption { resumption in
+            let queueStatus = subscribeStateTask.send(.subscribe(downstream, resumption))
+            switch queueStatus {
+                case .enqueued:
+                    ()
+                case .terminated:
+                    resumption.resume(throwing: PublisherError.completed)
+                case .dropped:
+                    resumption.resume(throwing: PublisherError.enqueueError)
+                @unknown default:
+                    resumption.resume(throwing: PublisherError.enqueueError)
+            }
+        }
+    }
+}
+
 public extension Distributor {
     func publisher(
         file: StaticString = #file,
@@ -69,11 +89,11 @@ public extension Distributor {
         .init(file: file, line: line, deinitBehavior: deinitBehavior, stateTask: stateTask)
     }
 
-    func subscribe(
-        _ downstream: @Sendable @escaping (AsyncStream<Output>.Result) async throws -> Demand
-    ) async throws -> Cancellable<Demand> {
-        try await withResumption { resumption in
-            let queueStatus = stateTask.send(.subscribe(downstream, resumption))
+    func receive(
+        _ result: AsyncStream<Output>.Result
+    ) async throws -> Void {
+        let _: Void = try await withResumption { resumption in
+            let queueStatus = receiveStateTask.send(.receive(result, resumption))
             switch queueStatus {
                 case .enqueued:
                     ()
@@ -87,21 +107,10 @@ public extension Distributor {
         }
     }
 
-    func receive(
-        _ result: AsyncStream<Output>.Result
-    ) async throws -> Void {
-        let _: Void = try await withResumption { resumption in
-            let queueStatus = stateTask.send(.receive(result, resumption))
-            switch queueStatus {
-                case .enqueued:
-                    ()
-                case .terminated:
-                    resumption.resume(throwing: PublisherError.completed)
-                case .dropped:
-                    resumption.resume(throwing: PublisherError.enqueueError)
-                @unknown default:
-                    resumption.resume(throwing: PublisherError.enqueueError)
-            }
-        }
+    @Sendable func send(_ result: AsyncStream<Output>.Result) async throws -> Void {
+        try await receive(result)
+    }
+    @Sendable func send(_ value: Output) async throws -> Void {
+        try await receive(.value(value))
     }
 }
