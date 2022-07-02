@@ -15,15 +15,18 @@ class DistributorTests: XCTestCase {
     override func tearDownWithError() throws { }
 
     func testSimpleReceiveValue() async throws {
-        var distributor = DistributorState(
-            currentValue: 13,
-            nextKey: 0,
-            downstreams: [:]
-        )
-
         do {
-            _ = try await distributor.reduce(action: .receive(.value(15), .none))
-            XCTAssert(distributor.currentValue == 15, "Did not set value")
+            let _: Void = try await withResumption { resumption in
+                Task {
+                    var distributor = DistributorState(
+                        currentValue: 13,
+                        nextKey: 0,
+                        downstreams: [:]
+                    )
+                    _ = try await distributor.reduce(action: .receive(.value(15), resumption))
+                    XCTAssert(distributor.currentValue == 15, "Did not set value")
+                }
+            }
         } catch {
             XCTFail("Failed with: \(error)")
         }
@@ -140,7 +143,18 @@ class DistributorTests: XCTestCase {
                             XCTAssert(distributor.repeaters.count == 2, "Incorrect number of repeaters = \(distributor.repeaters.count)")
                             let count1 = await counter.count
                             XCTAssert(count1 == 2, "Incorrect number of sends: \(count1)")
-                            _ = try await distributor.reduce(action: .receive(.value(15), .none))
+                            await distributorValue.set(value: distributor)
+                            distributor = try await withResumption { distResumption in
+                                Task {
+                                    let _: Void = try await withResumption({ resumption in
+                                        Task {
+                                            var distributor = await distributorValue.value
+                                            _ = try await distributor.reduce(action: .receive(.value(15), resumption))
+                                            distResumption.resume(returning: distributor)
+                                        }
+                                    })
+                                }
+                            }
                             let count2 = await counter.count
                             XCTAssert(count2 == 4, "Incorrect number of sends: \(count2)")
                             _ = try await distributor.reduce(action: .receive(.completion(.finished), c))

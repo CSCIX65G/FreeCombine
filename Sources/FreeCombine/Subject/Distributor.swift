@@ -6,11 +6,43 @@
 //
 public final class Distributor<Output: Sendable> {
     private let stateTask: StateTask<DistributorState<Output>, DistributorState<Output>.Action>
-    init(stateTask: StateTask<DistributorState<Output>, DistributorState<Output>.Action>) {
+    private let subscribeStateTask: StateTask<RepeatSubscribeState<Output>, RepeatSubscribeState<Output>.Action>
+    private let receiveStateTask: StateTask<RepeatReceiveState<Output>, RepeatReceiveState<Output>.Action>
+
+    init(
+        file: StaticString = #file,
+        line: UInt = #line,
+        deinitBehavior: DeinitBehavior = .assert,
+        buffering: AsyncStream<RepeatReceiveState<Output>.Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
+        stateTask: StateTask<DistributorState<Output>, DistributorState<Output>.Action>
+    ) async throws {
         self.stateTask = stateTask
+        self.subscribeStateTask = try await Channel<RepeatSubscribeState<Output>.Action>(buffering: .unbounded).stateTask(
+            file: file,
+            line: line,
+            deinitBehavior: deinitBehavior,
+            initialState: RepeatSubscribeState<Output>.create(distributorChannel: stateTask.channel),
+            reducer: .init(
+                onCompletion: RepeatSubscribeState<Output>.complete,
+                disposer: RepeatSubscribeState<Output>.dispose,
+                reducer: RepeatSubscribeState<Output>.reduce
+            )
+        )
+        self.receiveStateTask = try await Channel<RepeatReceiveState<Output>.Action>(buffering: buffering).stateTask(
+            file: file,
+            line: line,
+            deinitBehavior: deinitBehavior,
+            initialState: RepeatReceiveState<Output>.create(distributorChannel: stateTask.channel),
+            reducer: .init(
+                onCompletion: RepeatReceiveState<Output>.complete,
+                disposer: RepeatReceiveState<Output>.dispose,
+                reducer: RepeatReceiveState<Output>.reduce
+            )
+        )
     }
-    init(stateTask: @escaping () async throws -> StateTask<DistributorState<Output>, DistributorState<Output>.Action>) async throws {
-        self.stateTask = try await stateTask()
+    convenience init(_ generator: @escaping () async throws -> StateTask<DistributorState<Output>, DistributorState<Output>.Action>) async throws {
+        let stateTask = try await generator()
+        try await self.init(stateTask: stateTask)
     }
     public var value: DistributorState<Output> {
         get async throws { try await stateTask.value }
@@ -55,21 +87,21 @@ public extension Distributor {
         }
     }
 
-//    func receive(
-//        _ result: AsyncStream<Output>.Result
-//    ) async throws -> Void {
-//        try await withResumption { resumption in
-//            let queueStatus = stateTask.send(.receive(result, resumption))
-//            switch queueStatus {
-//                case .enqueued:
-//                    ()
-//                case .terminated:
-//                    resumption.resume(throwing: PublisherError.completed)
-//                case .dropped:
-//                    resumption.resume(throwing: PublisherError.enqueueError)
-//                @unknown default:
-//                    resumption.resume(throwing: PublisherError.enqueueError)
-//            }
-//        }
-//    }
+    func receive(
+        _ result: AsyncStream<Output>.Result
+    ) async throws -> Void {
+        let _: Void = try await withResumption { resumption in
+            let queueStatus = stateTask.send(.receive(result, resumption))
+            switch queueStatus {
+                case .enqueued:
+                    ()
+                case .terminated:
+                    resumption.resume(throwing: PublisherError.completed)
+                case .dropped:
+                    resumption.resume(throwing: PublisherError.enqueueError)
+                @unknown default:
+                    resumption.resume(throwing: PublisherError.enqueueError)
+            }
+        }
+    }
 }

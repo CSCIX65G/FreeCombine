@@ -210,7 +210,7 @@ class SubjectTests: XCTestCase {
             catch { XCTFail("Failed to enqueue") }
         }
 
-        do { try subject.nonBlockingSend(8) }
+        do { try await subject.send(8) }
         catch { XCTFail("Failed to enqueue") }
 
         do { try await FreeCombine.wait(for: expectation, timeout: 10_000_000) }
