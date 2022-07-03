@@ -302,7 +302,7 @@ class AutoconnectTests: XCTestCase {
          p1 and p2 below should see the same number of values bc
          we set them up before we send to the subject
          */
-        let subject = await PassthroughSubject(Int.self)
+        let subject = try await PassthroughSubject(Int.self)
 
         /*
          Note that we don't need the `.bufferingOldest(2)` here.  Bc

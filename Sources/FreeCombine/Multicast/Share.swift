@@ -7,8 +7,8 @@
 public extension Publisher {
     func share(
         buffering: AsyncStream<DistributorState<Output>.Action>.Continuation.BufferingPolicy = .bufferingOldest(1)
-    ) async -> Self {
-        let subject: Subject<Output> = await PassthroughSubject()
+    ) async throws -> Self {
+        let subject: Subject<Output> = try await PassthroughSubject()
         let cancellableRef: ValueRef<Cancellable<Demand>?> = .init(value: .none)
         return .init { continuation, downstream in
             Cancellable<Cancellable<Demand>>.join(.init {

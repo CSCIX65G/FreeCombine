@@ -28,8 +28,8 @@ public func PassthroughSubject<Output>(
     line: UInt = #line,
     deinitBehavior: DeinitBehavior = .assert,
     _ type: Output.Type = Output.self
-) async -> Subject<Output> {
-    try! await .init(stateTask: try! await Channel(buffering: .unbounded).stateTask(
+) async throws -> Subject<Output> {
+    try await .init(stateTask: try await Channel(buffering: .unbounded).stateTask(
         file: file,
         line: line,
         deinitBehavior: deinitBehavior,

@@ -18,10 +18,7 @@ class MulticastTests: XCTestCase {
         let expectation1 = await Expectation<Void>()
         let expectation2 = await Expectation<Void>()
 
-//        let unfolded = await Unfolded(0 ..< 100)
-//            .makeConnectable()
-
-        let subject = await PassthroughSubject(Int.self)
+        let subject = try await PassthroughSubject(Int.self)
 
         let counter1 = Counter()
         let u1 = await subject.publisher().sink { (result: AsyncStream<Int>.Result) in

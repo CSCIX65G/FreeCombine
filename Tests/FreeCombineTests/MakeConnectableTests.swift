@@ -88,7 +88,7 @@ class MakeConnectableTests: XCTestCase {
     }
 
     func testSubjectMakeConnectable() async throws {
-        let subj = await PassthroughSubject(Int.self)
+        let subj = try await PassthroughSubject(Int.self)
 
         let connectable = await subj
             .publisher()

@@ -16,16 +16,11 @@ class SubjectTests: XCTestCase {
     func testSimpleSubject() async throws {
         let expectation = await Expectation<Void>()
 
-        let subject = await CurrentValueSubject(
-            currentValue: 14,
-            buffering: .unbounded
-        )
-
-        let publisher1 = subject.publisher()
+        let subject = try await CurrentValueSubject(currentValue: 14)
+        let publisher = subject.publisher()
 
         let counter = Counter()
-
-        let c1 = await publisher1.sink { (result: AsyncStream<Int>.Result) in
+        let c1 = await publisher.sink { (result: AsyncStream<Int>.Result) in
             let count = await counter.count
             switch result {
                 case .value:
@@ -80,7 +75,7 @@ class SubjectTests: XCTestCase {
         let expectation1 = await Expectation<Void>()
         let expectation2 = await Expectation<Void>()
 
-        let subject = await CurrentValueSubject(currentValue: 14)
+        let subject = try await CurrentValueSubject(currentValue: 14)
         let publisher = subject.publisher()
 
         let counter1 = Counter()
@@ -163,7 +158,7 @@ class SubjectTests: XCTestCase {
         let expectation3 = await Expectation<Void>()
         let release = await Expectation<Void>()
 
-        let subject = await PassthroughSubject(Int.self)
+        let subject = try await PassthroughSubject(Int.self)
         let p = subject.publisher()
 
         let can = await p.sink({ result in
@@ -239,7 +234,7 @@ class SubjectTests: XCTestCase {
         let counter = Counter()
         let expectation = await Expectation<Void>()
 
-        let subject = await PassthroughSubject(Int.self)
+        let subject = try await PassthroughSubject(Int.self)
         let p = subject.publisher()
 
         let c1 = await p.sink( { result in
@@ -283,7 +278,7 @@ class SubjectTests: XCTestCase {
         let counter = Counter()
         let expectation = await Expectation<Void>()
 
-        let subject = await PassthroughSubject(Int.self)
+        let subject = try await PassthroughSubject(Int.self)
         let p = subject.publisher()
 
         let c1 = await p.sink({ result in
@@ -325,8 +320,8 @@ class SubjectTests: XCTestCase {
 
     func testSyncAsync() async throws {
         let expectation = await Expectation<Void>()
-        let fsubject1 = await FreeCombine.PassthroughSubject(Int.self)
-        let fsubject2 = await FreeCombine.PassthroughSubject(String.self)
+        let fsubject1 = try await FreeCombine.PassthroughSubject(Int.self)
+        let fsubject2 = try await FreeCombine.PassthroughSubject(String.self)
         
         let fseq1 = "abcdefghijklmnopqrstuvwxyz".asyncPublisher
         let fseq2 = (1 ... 100).asyncPublisher
