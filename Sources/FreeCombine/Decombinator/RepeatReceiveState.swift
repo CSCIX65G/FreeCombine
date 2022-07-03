@@ -12,7 +12,7 @@ public struct RepeatReceiveState<Output: Sendable> {
     }
 
     public enum Action: Sendable {
-        case receive(AsyncStream<Output>.Result, Resumption<Void>)
+        case receive(AsyncStream<Output>.Result, Resumption<Int>)
     }
 
     public init(
@@ -57,7 +57,7 @@ public struct RepeatReceiveState<Output: Sendable> {
             fatalError("Unknown action")
         }
         do {
-            let _: Void = try await withResumption { innerResumption in
+            let subscribers: Int = try await withResumption { innerResumption in
                 switch distributorChannel.yield(.receive(result, innerResumption)) {
                     case .enqueued:
                         ()
@@ -69,7 +69,7 @@ public struct RepeatReceiveState<Output: Sendable> {
                         fatalError("Unhandled continuation value")
                 }
             }
-            resumption.resume()
+            resumption.resume(returning: subscribers)
             return .none
         } catch {
             resumption.resume(throwing: error)

@@ -53,7 +53,7 @@ public struct ConnectableState<Output: Sendable> {
         self.distributor = .init(currentValue: .none, nextKey: 0, downstreams: [:])
         self.downstream = { r in
             var queueStatus: AsyncStream<ConnectableState<Output>.Action>.Continuation.YieldResult!
-            let _: Void = try await withResumption(file: file, line: line, deinitBehavior: deinitBehavior) { resumption in
+            let _: Int = try await withResumption(file: file, line: line, deinitBehavior: deinitBehavior) { resumption in
                 queueStatus = channel.yield(.distribute(.receive(r, resumption)))
                 switch queueStatus {
                     case .enqueued:

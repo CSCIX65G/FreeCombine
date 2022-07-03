@@ -132,8 +132,8 @@ public extension Subject {
 
     func receive(
         _ result: AsyncStream<Output>.Result
-    ) async throws -> Void {
-        let _: Void = try await withResumption { resumption in
+    ) async throws -> Int {
+        let count: Int = try await withResumption { resumption in
             let queueStatus = receiveStateTask.send(.receive(result, resumption))
             switch queueStatus {
                 case .enqueued:
@@ -146,12 +146,15 @@ public extension Subject {
                     resumption.resume(throwing: PublisherError.enqueueError)
             }
         }
+        return count
     }
 
-    @Sendable func send(_ result: AsyncStream<Output>.Result) async throws -> Void {
+    @discardableResult
+    @Sendable func send(_ result: AsyncStream<Output>.Result) async throws -> Int {
         try await receive(result)
     }
-    @Sendable func send(_ value: Output) async throws -> Void {
+    @discardableResult
+    @Sendable func send(_ value: Output) async throws -> Int {
         try await receive(.value(value))
     }
 }
