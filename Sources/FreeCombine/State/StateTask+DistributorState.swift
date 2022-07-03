@@ -22,25 +22,6 @@ public extension StateTask {
         )
     }
 
-    func finish<Output: Sendable>(
-    ) async throws -> Void where State == DistributorState<Output>, Action == DistributorState<Output>.Action {
-        try await send(.completion(.finished))
-        channel.finish()
-    }
-
-    func cancel<Output: Sendable>(
-    ) async throws -> Void where State == DistributorState<Output>, Action == DistributorState<Output>.Action {
-        try await send(.completion(.cancelled))
-        channel.finish()
-    }
-
-    @inlinable
-    func fail<Output: Sendable>(
-        _ error: Error
-    ) async throws -> Void where State == DistributorState<Output>, Action == DistributorState<Output>.Action {
-        try await send(.completion(.failure(error)))
-    }
-
     func send<Output: Sendable>(
         file: StaticString = #file,
         line: UInt = #line,
@@ -58,5 +39,22 @@ public extension StateTask {
         guard case .enqueued = enqueueResult else {
             throw PublisherError.enqueueError
         }
+    }
+
+    func finish<Output: Sendable>(
+    ) async throws -> Void where State == DistributorState<Output>, Action == DistributorState<Output>.Action {
+        try await send(.completion(.finished))
+    }
+
+    func cancel<Output: Sendable>(
+    ) async throws -> Void where State == DistributorState<Output>, Action == DistributorState<Output>.Action {
+        try await send(.completion(.cancelled))
+    }
+
+    @inlinable
+    func fail<Output: Sendable>(
+        _ error: Error
+    ) async throws -> Void where State == DistributorState<Output>, Action == DistributorState<Output>.Action {
+        try await send(.completion(.failure(error)))
     }
 }
