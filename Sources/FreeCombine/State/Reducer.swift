@@ -10,10 +10,6 @@ public struct Reducer<State, Action> {
         case none
         case published(Publisher<Action>)
         case completion(Completion)
-
-        static func fireAndForget(_ f: @escaping () async throws -> Void) -> Self {
-            .published(SideEffect(operation: f))
-        }
     }
 
     public enum Completion {

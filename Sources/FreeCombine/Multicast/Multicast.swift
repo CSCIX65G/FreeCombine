@@ -5,9 +5,7 @@
 //  Created by Van Simmons on 6/26/22.
 //
 public extension Publisher {
-    func multicast(
-        _ subject: StateTask<DistributorState<Output>, DistributorState<Output>.Action>
-    ) -> Self {
+    func multicast(_ subject: Distributor<Output>) -> Self {
         .init { resumption, downstream in
             self.sink(onStartup: resumption, { result in
                 switch result {

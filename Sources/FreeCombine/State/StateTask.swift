@@ -81,6 +81,12 @@ public final class StateTask<State, Action: Sendable> {
         }
     }
 
+    public var isCompleting: Bool {
+        @Sendable get {
+            cancellable.isCompleting
+        }
+    }
+
     @Sendable func finish() -> Void {
         channel.finish()
     }

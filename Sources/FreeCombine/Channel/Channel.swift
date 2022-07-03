@@ -4,21 +4,6 @@
 //
 //  Created by Van Simmons on 1/28/22.
 //
-public func convertBuffering<In, Out>(
-    _ input: AsyncStream<In>.Continuation.BufferingPolicy
-) -> AsyncStream<Out>.Continuation.BufferingPolicy {
-    switch input {
-        case .unbounded:
-            return .unbounded
-        case .bufferingOldest(let value):
-            return .bufferingOldest(value)
-        case .bufferingNewest(let value):
-            return .bufferingNewest(value)
-        @unknown default:
-            fatalError("Unhandled buffering policy case")
-    }
-}
-
 public struct Channel<Element: Sendable>: AsyncSequence {
     let stream: AsyncStream<Element>
     let continuation: AsyncStream<Element>.Continuation
@@ -36,8 +21,8 @@ public struct Channel<Element: Sendable>: AsyncSequence {
         buffering: AsyncStream<Element>.Continuation.BufferingPolicy = .bufferingOldest(1)
     ) {
         var localContinuation: AsyncStream<Element>.Continuation!
-        stream = .init(bufferingPolicy: buffering) { continuation in
-            localContinuation = continuation
+        stream = .init(bufferingPolicy: buffering) { streamContinuation in
+            localContinuation = streamContinuation
         }
         continuation = localContinuation
     }

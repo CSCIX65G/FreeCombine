@@ -56,7 +56,7 @@ final class ShareTests: XCTestCase {
                     XCTFail("Inappropriately cancelled")
                 }
             )
-            .share(buffering: .bufferingOldest(2))
+            .share()
 
         let counter1 = Counter()
         let value1 = ValueRef<Int>(value: -1)
@@ -83,8 +83,6 @@ final class ShareTests: XCTestCase {
                     return .done
             }
         })
-
-        await Task.yield()
 
         let counter2 = Counter()
         let value2 = ValueRef<Int>(value: -1)
@@ -113,7 +111,7 @@ final class ShareTests: XCTestCase {
         })
 
         do {
-            try await FreeCombine.wait(for: expectation1, timeout: 100_000_000)
+            try await FreeCombine.wait(for: expectation1, timeout: 200_000_000)
         } catch {
             let count = await counter1.count
             let last = await value1.value

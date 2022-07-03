@@ -163,7 +163,7 @@ class SubjectTests: XCTestCase {
         let expectation3 = await Expectation<Void>()
         let release = await Expectation<Void>()
 
-        let subject = await PassthroughSubject(Int.self, buffering: .unbounded)
+        let subject = await PassthroughSubject(Int.self)
         let p = subject.publisher()
 
         let can = await p.sink({ result in
@@ -210,7 +210,7 @@ class SubjectTests: XCTestCase {
             catch { XCTFail("Failed to enqueue") }
         }
 
-        do { try subject.nonBlockingSend(8) }
+        do { try await subject.send(8) }
         catch { XCTFail("Failed to enqueue") }
 
         do { try await FreeCombine.wait(for: expectation, timeout: 10_000_000) }
