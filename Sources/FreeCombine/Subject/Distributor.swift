@@ -9,6 +9,10 @@ public final class Distributor<Output: Sendable> {
     private let subscribeStateTask: StateTask<RepeatSubscribeState<Output>, RepeatSubscribeState<Output>.Action>
     private let receiveStateTask: StateTask<RepeatReceiveState<Output>, RepeatReceiveState<Output>.Action>
 
+    let file: StaticString
+    let line: UInt
+    let deinitBehavior: DeinitBehavior
+
     init(
         file: StaticString = #file,
         line: UInt = #line,
@@ -16,6 +20,9 @@ public final class Distributor<Output: Sendable> {
         buffering: AsyncStream<RepeatReceiveState<Output>.Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
         stateTask: StateTask<DistributorState<Output>, DistributorState<Output>.Action>
     ) async throws {
+        self.file = file
+        self.line = line
+        self.deinitBehavior = deinitBehavior
         self.stateTask = stateTask
         self.subscribeStateTask = try await Channel<RepeatSubscribeState<Output>.Action>(buffering: .unbounded).stateTask(
             file: file,
@@ -40,23 +47,76 @@ public final class Distributor<Output: Sendable> {
             )
         )
     }
-    convenience init(_ generator: @escaping () async throws -> StateTask<DistributorState<Output>, DistributorState<Output>.Action>) async throws {
-        let stateTask = try await generator()
-        try await self.init(stateTask: stateTask)
+
+    deinit {
+        let shouldCancel = !(isCompleting || isCancelled)
+        switch deinitBehavior {
+            case .assert:
+                assert(!shouldCancel, "ABORTING DUE TO LEAKED \(type(of: Self.self)) CREATED @ \(file): \(line)")
+            case .logAndCancel:
+                if shouldCancel { print("CANCELLING LEAKED \(type(of: Self.self)) CREATED @ \(file): \(line)") }
+            case .silentCancel:
+                ()
+        }
+        if shouldCancel {
+            stateTask.cancel()
+            subscribeStateTask.cancel()
+            receiveStateTask.cancel()
+        }
+    }
+
+    public var isCancelled: Bool {
+        @Sendable get {
+            stateTask.isCancelled && subscribeStateTask.isCancelled && receiveStateTask.isCancelled
+        }
+    }
+    public var isCompleting: Bool {
+        @Sendable get {
+            stateTask.isCompleting && subscribeStateTask.isCompleting && receiveStateTask.isCompleting
+        }
     }
     public var value: DistributorState<Output> {
-        get async throws { try await stateTask.value }
+        get async throws {
+            _ = await subscribeStateTask.result
+            _ = await receiveStateTask.result
+            return try await stateTask.value
+        }
     }
     public var result: Result<DistributorState<Output>, Swift.Error> {
-        get async { await stateTask.result }
+        get async {
+            _ = await subscribeStateTask.result
+            _ = await receiveStateTask.result
+            return await stateTask.result
+        }
+    }
+    public func finish() async throws -> Void {
+        subscribeStateTask.finish()
+        receiveStateTask.finish()
+        try await stateTask.finish()
+    }
+    public func finishAndAwaitResult() async throws -> Void {
+        subscribeStateTask.finish()
+        receiveStateTask.finish()
+        try await stateTask.finish()
+        _ = await stateTask.result
+    }
+    public func cancel() async throws -> Void {
+        subscribeStateTask.cancel()
+        receiveStateTask.cancel()
+        try await stateTask.cancel()
     }
     public func cancelAndAwaitResult() async throws -> Result<DistributorState<Output>, Swift.Error> {
+        subscribeStateTask.cancel()
+        receiveStateTask.cancel()
         try await stateTask.cancel()
         return await stateTask.result
     }
-    public func finish() async throws -> Void {
-        try await stateTask.finish()
-        _ = await stateTask.result
+    public func fail(_ error: Error) async throws -> Void {
+        try await stateTask.fail(error)
+    }
+    public func failAndAwaitResult(_ error: Error) async throws -> Result<DistributorState<Output>, Swift.Error> {
+        try await stateTask.fail(error)
+        return await stateTask.result
     }
 }
 

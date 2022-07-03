@@ -101,7 +101,7 @@ public struct DistributorState<Output: Sendable> {
                     try await process(currentRepeaters: repeaters, with: result)
                     resumption.resume()
                 } catch {
-                    resumption.resume()
+                    resumption.resume(throwing: error)
                     throw error
                 }
                 return isComplete

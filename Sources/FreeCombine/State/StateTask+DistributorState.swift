@@ -41,10 +41,6 @@ public extension StateTask {
         try await send(.completion(.failure(error)))
     }
 
-    /*:
-     FIXME: This should only drop if send is called from multiple tasks
-     but it currently drops if multiple subscriptions enter the queue
-     */
     func send<Output: Sendable>(
         file: StaticString = #file,
         line: UInt = #line,

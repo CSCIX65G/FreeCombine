@@ -163,7 +163,7 @@ class SubjectTests: XCTestCase {
         let expectation3 = await Expectation<Void>()
         let release = await Expectation<Void>()
 
-        let subject = await PassthroughSubject(Int.self, buffering: .unbounded)
+        let subject = await PassthroughSubject(Int.self)
         let p = subject.publisher()
 
         let can = await p.sink({ result in

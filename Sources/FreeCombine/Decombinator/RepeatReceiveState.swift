@@ -53,20 +53,27 @@ public struct RepeatReceiveState<Output: Sendable> {
     }
 
     mutating func reduce(action: Action) async throws -> Reducer<Self, Action>.Effect {
-        switch action {
-            case let .receive(result, resumption):
-                switch distributorChannel.yield(.receive(result, resumption)) {
+        guard case let .receive(result, resumption) = action else {
+            fatalError("Unknown action")
+        }
+        do {
+            let _: Void = try await withResumption { innerResumption in
+                switch distributorChannel.yield(.receive(result, innerResumption)) {
                     case .enqueued:
-                        return .none
+                        ()
                     case .dropped:
-                        resumption.resume(throwing: PublisherError.enqueueError)
-                        return .completion(.failure(PublisherError.enqueueError))
+                        innerResumption.resume(throwing: PublisherError.enqueueError)
                     case .terminated:
-                        resumption.resume(throwing: PublisherError.cancelled)
-                        return .completion(.failure(PublisherError.cancelled))
+                        innerResumption.resume(throwing: PublisherError.cancelled)
                     @unknown default:
                         fatalError("Unhandled continuation value")
                 }
+            }
+            resumption.resume()
+            return .none
+        } catch {
+            resumption.resume(throwing: error)
+            return .completion(.failure(error))
         }
     }
 }
