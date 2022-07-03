@@ -16,15 +16,15 @@ public struct RepeatReceiveState<Output: Sendable> {
     }
 
     public init(
-        distributorChannel: Channel<DistributorState<Output>.Action>
+        channel: Channel<DistributorState<Output>.Action>
     ) {
-        self.distributorChannel = distributorChannel
+        self.distributorChannel = channel
     }
 
     static func create(
         distributorChannel: Channel<DistributorState<Output>.Action>
     ) -> (Channel<RepeatReceiveState<Output>.Action>) -> Self {
-        { channel in .init(distributorChannel: distributorChannel) }
+        { channel in .init(channel: distributorChannel) }
     }
 
     static func complete(state: inout Self, completion: Reducer<Self, Self.Action>.Completion) async -> Void { }

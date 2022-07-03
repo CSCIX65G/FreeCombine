@@ -23,7 +23,7 @@ public final class Subject<Output: Sendable> {
         self.line = line
         self.deinitBehavior = deinitBehavior
         self.stateTask = stateTask
-        self.receiveStateTask = try await Channel<RepeatReceiveState<Output>.Action>(buffering: buffering).stateTask(
+        self.receiveStateTask = try await Channel(buffering: buffering).stateTask(
             file: file,
             line: line,
             deinitBehavior: deinitBehavior,
