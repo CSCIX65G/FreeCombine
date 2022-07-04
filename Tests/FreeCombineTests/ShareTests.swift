@@ -28,7 +28,7 @@ final class ShareTests: XCTestCase {
         let upstreamCounter = Counter()
         let upstreamValue = ValueRef<Int>(value: -1)
         let upstreamShared = ValueRef<Bool>(value: false)
-        let shared = await (0 ..< n)
+        let shared = try await (0 ..< n)
             .asyncPublisher
             .map { $0 * 2 }
             .handleEvents(

@@ -260,8 +260,8 @@ class CombineLatestTests: XCTestCase {
             })
 
         do {
-            try await FreeCombine.wait(for: expectation1, timeout: 10_000_000)
-            try await FreeCombine.wait(for: expectation2, timeout: 10_000_000)
+            try await FreeCombine.wait(for: expectation1, timeout: 50_000_000)
+            try await FreeCombine.wait(for: expectation2, timeout: 50_000_000)
         } catch {
             XCTFail("Timed out")
         }

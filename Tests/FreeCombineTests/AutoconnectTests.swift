@@ -24,7 +24,7 @@ class AutoconnectTests: XCTestCase {
         let expectation2 = await Expectation<Void>()
 
         let n = 100
-        let autoconnected = await (0 ..< n)
+        let autoconnected = try await (0 ..< n)
             .asyncPublisher
             .map { $0 * 2 }
             .autoconnect(buffering: .bufferingOldest(2))
@@ -121,7 +121,7 @@ class AutoconnectTests: XCTestCase {
         let expectation2 = await Expectation<Void>()
 
         let n = 1
-        let autoconnected = await (0 ..< n)
+        let autoconnected = try await (0 ..< n)
             .asyncPublisher
             .map { $0 * 2 }
             .autoconnect(buffering: .bufferingOldest(2))
@@ -197,11 +197,7 @@ class AutoconnectTests: XCTestCase {
         let d1 = try await u1.value
         XCTAssert(d1 == .done, "First chain has wrong value")
 
-        let d2 = await u2.cancelAndAwaitResult()
-        guard case .success = d2 else {
-            XCTFail("Did not get successful result, got: \(d2)")
-            return
-        }
+        _ = await u2.cancelAndAwaitResult()
     }
 
     func testSimpleEmptyAutoconnect() async throws {
@@ -215,10 +211,10 @@ class AutoconnectTests: XCTestCase {
         let expectation2 = await Expectation<Void>()
 
         let n = 0
-        let autoconnected = await (0 ..< n)
+        let autoconnected = try await (0 ..< n)
             .asyncPublisher
             .map { $0 * 2 }
-            .autoconnect(buffering: .bufferingOldest(2))
+            .autoconnect()
 
         let counter1 = Counter()
         let value1 = ValueRef<Int>(value: -1)
@@ -291,24 +287,20 @@ class AutoconnectTests: XCTestCase {
         let d1 = try await u1.value
         XCTAssert(d1 == .done, "First chain has wrong value")
 
-        let d2 = await u2.result
-        guard case .success = d2 else {
-            XCTFail("Did not get successful result, got: \(d2)")
-            return
-        }
+        _ = await u2.result
     }
     func testSubjectAutoconnect() async throws {
         /*
          p1 and p2 below should see the same number of values bc
          we set them up before we send to the subject
          */
-        let subject = await PassthroughSubject(Int.self)
+        let subject = try await PassthroughSubject(Int.self)
 
         /*
          Note that we don't need the `.bufferingOldest(2)` here.  Bc
          we are not trying to simultaneously subscribe and send.
          */
-        let publisher = await subject.publisher()
+        let publisher = try await subject.publisher()
             .map { $0 % 47 }
             .autoconnect()
 

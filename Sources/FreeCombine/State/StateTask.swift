@@ -61,20 +61,6 @@ public final class StateTask<State, Action: Sendable> {
         if shouldCancel { cancellable.cancel() }
     }
 
-    @Sendable func cancel() -> Void {
-        cancellable.cancel()
-    }
-
-    @Sendable func cancelAndAwaitResult() async -> Result<State, Swift.Error> {
-        cancellable.cancel()
-        return await cancellable.result
-    }
-
-    @Sendable func cancelAndAwaitValue() async throws -> State {
-        cancellable.cancel()
-        return try await cancellable.value
-    }
-
     public var isCancelled: Bool {
         @Sendable get {
             cancellable.isCancelled
@@ -85,6 +71,23 @@ public final class StateTask<State, Action: Sendable> {
         @Sendable get {
             cancellable.isCompleting
         }
+    }
+
+    public var value: State {
+        get async throws {
+            try await cancellable.value
+        }
+    }
+
+    var result: Result<State, Swift.Error> {
+        get async {
+            do { return .success(try await value) }
+            catch { return .failure(error) }
+        }
+    }
+
+    @Sendable func send(_ element: Action) -> AsyncStream<Action>.Continuation.YieldResult {
+        channel.yield(element)
     }
 
     @Sendable func finish() -> Void {
@@ -101,21 +104,18 @@ public final class StateTask<State, Action: Sendable> {
         return try await cancellable.value
     }
 
-    @Sendable func send(_ element: Action) -> AsyncStream<Action>.Continuation.YieldResult {
-        channel.yield(element)
+    @Sendable func cancel() -> Void {
+        cancellable.cancel()
     }
 
-    public var value: State {
-        get async throws {
-            try await cancellable.value
-        }
+    @Sendable func cancelAndAwaitResult() async -> Result<State, Swift.Error> {
+        cancellable.cancel()
+        return await cancellable.result
     }
-    
-    var result: Result<State, Swift.Error> {
-        get async {
-            do { return .success(try await value) }
-            catch { return .failure(error) }
-        }
+
+    @Sendable func cancelAndAwaitValue() async throws -> State {
+        cancellable.cancel()
+        return try await cancellable.value
     }
 }
 

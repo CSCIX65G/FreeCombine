@@ -6,12 +6,17 @@
 //
 
 public func CurrentValueSubject<Output>(
+    file: StaticString = #file,
+    line: UInt = #line,
+    deinitBehavior: DeinitBehavior = .assert,
     currentValue: Output,
     buffering: AsyncStream<DistributorState<Output>.Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
     onStartup: Resumption<Void>
-) -> StateTask<DistributorState<Output>, DistributorState<Output>.Action> {
-    .init(
-        channel: .init(buffering: buffering),
+) async throws -> Subject<Output> {
+    try await .init(stateTask: Channel.init(buffering: buffering) .stateTask(
+        file: file,
+        line: line,
+        deinitBehavior: deinitBehavior,
         initialState: { channel in .init(currentValue: currentValue, nextKey: 0, downstreams: [:]) },
         onStartup: onStartup,
         reducer: Reducer(
@@ -19,20 +24,25 @@ public func CurrentValueSubject<Output>(
             disposer: DistributorState<Output>.dispose,
             reducer: DistributorState<Output>.reduce
         )
-    )
+    ) )
 }
 
 public func CurrentValueSubject<Output>(
+    file: StaticString = #file,
+    line: UInt = #line,
+    deinitBehavior: DeinitBehavior = .assert,
     currentValue: Output,
     buffering: AsyncStream<DistributorState<Output>.Action>.Continuation.BufferingPolicy = .bufferingOldest(1)
-) async -> StateTask<DistributorState<Output>, DistributorState<Output>.Action> {
-    await .stateTask(
-        channel: .init(buffering: buffering),
+) async throws -> Subject<Output> {
+    try await .init(stateTask: try await Channel(buffering: .unbounded).stateTask(
+        file: file,
+        line: line,
+        deinitBehavior: deinitBehavior,
         initialState: { channel in .init(currentValue: currentValue, nextKey: 0, downstreams: [:]) },
         reducer: Reducer(
             onCompletion: DistributorState<Output>.complete,
             disposer: DistributorState<Output>.dispose,
             reducer: DistributorState<Output>.reduce
         )
-    )
+    ) )
 }

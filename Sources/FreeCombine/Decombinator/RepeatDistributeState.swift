@@ -1,40 +1,37 @@
 //
-//  SubscriberState.swift
+//  RepeatDistributeState.swift
+//  
 //
+//  Created by Van Simmons on 7/3/22.
 //
-//  Created by Van Simmons on 5/10/22.
-//
-public struct RepeatSubscribeState<Output: Sendable> {
-    var distributorChannel: Channel<DistributorState<Output>.Action>
+public struct RepeatDistributeState<Output: Sendable> {
+    var distributorChannel: Channel<ConnectableState<Output>.Action>
 
     public enum Error: Swift.Error {
         case alreadyCompleted
     }
 
     public enum Action: Sendable {
-        case subscribe(
-            @Sendable (AsyncStream<Output>.Result) async throws -> Demand,
-            Resumption<Cancellable<Demand>>
-        )
+        case receive(AsyncStream<Output>.Result, Resumption<Int>)
     }
 
     public init(
-        distributorChannel: Channel<DistributorState<Output>.Action>
+        channel: Channel<ConnectableState<Output>.Action>
     ) {
-        self.distributorChannel = distributorChannel
+        self.distributorChannel = channel
     }
 
     static func create(
-        distributorChannel: Channel<DistributorState<Output>.Action>
-    ) -> (Channel<RepeatSubscribeState<Output>.Action>) -> Self {
-        { channel in .init(distributorChannel: distributorChannel) }
+        distributorChannel: Channel<ConnectableState<Output>.Action>
+    ) -> (Channel<RepeatDistributeState<Output>.Action>) -> Self {
+        { channel in .init(channel: distributorChannel) }
     }
 
     static func complete(state: inout Self, completion: Reducer<Self, Self.Action>.Completion) async -> Void { }
 
     static func dispose(action: Self.Action, completion: Reducer<Self, Self.Action>.Completion) async -> Void {
         switch action {
-            case let .subscribe(_, continuation):
+            case let .receive(_, continuation):
                 switch completion {
                     case .failure(let error):
                         continuation.resume(throwing: error)
@@ -47,7 +44,7 @@ public struct RepeatSubscribeState<Output: Sendable> {
     static func reduce(`self`: inout Self, action: Self.Action) async throws -> Reducer<Self, Action>.Effect {
         if Task.isCancelled {
             switch action {
-                case let .subscribe(_, resumption):
+                case .receive(_, let resumption):
                     resumption.resume(throwing: PublisherError.cancelled)
             }
             return .completion(.cancel)
@@ -56,20 +53,27 @@ public struct RepeatSubscribeState<Output: Sendable> {
     }
 
     mutating func reduce(action: Action) async throws -> Reducer<Self, Action>.Effect {
-        switch action {
-            case let .subscribe(downstream, resumption):
-                switch distributorChannel.yield(.subscribe(downstream, resumption)) {
+        guard case let .receive(result, resumption) = action else {
+            fatalError("Unknown action")
+        }
+        do {
+            let subscribers: Int = try await withResumption { innerResumption in
+                switch distributorChannel.yield(.distribute(.receive(result, innerResumption))) {
                     case .enqueued:
-                        return .none
+                        ()
                     case .dropped:
-                        resumption.resume(throwing: PublisherError.enqueueError)
-                        return .completion(.failure(PublisherError.enqueueError))
+                        innerResumption.resume(throwing: PublisherError.enqueueError)
                     case .terminated:
-                        resumption.resume(throwing: PublisherError.cancelled)
-                        return .completion(.failure(PublisherError.cancelled))
+                        innerResumption.resume(throwing: PublisherError.cancelled)
                     @unknown default:
                         fatalError("Unhandled continuation value")
                 }
+            }
+            resumption.resume(returning: subscribers)
+            return .none
+        } catch {
+            resumption.resume(throwing: error)
+            return .completion(.failure(error))
         }
     }
 }

@@ -4,9 +4,8 @@
 //
 //  Created by Van Simmons on 6/28/22.
 //
-public final class Distributor<Output: Sendable> {
+public final class Subject<Output: Sendable> {
     private let stateTask: StateTask<DistributorState<Output>, DistributorState<Output>.Action>
-    private let subscribeStateTask: StateTask<RepeatSubscribeState<Output>, RepeatSubscribeState<Output>.Action>
     private let receiveStateTask: StateTask<RepeatReceiveState<Output>, RepeatReceiveState<Output>.Action>
 
     let file: StaticString
@@ -24,18 +23,7 @@ public final class Distributor<Output: Sendable> {
         self.line = line
         self.deinitBehavior = deinitBehavior
         self.stateTask = stateTask
-        self.subscribeStateTask = try await Channel<RepeatSubscribeState<Output>.Action>(buffering: .unbounded).stateTask(
-            file: file,
-            line: line,
-            deinitBehavior: deinitBehavior,
-            initialState: RepeatSubscribeState<Output>.create(distributorChannel: stateTask.channel),
-            reducer: .init(
-                onCompletion: RepeatSubscribeState<Output>.complete,
-                disposer: RepeatSubscribeState<Output>.dispose,
-                reducer: RepeatSubscribeState<Output>.reduce
-            )
-        )
-        self.receiveStateTask = try await Channel<RepeatReceiveState<Output>.Action>(buffering: buffering).stateTask(
+        self.receiveStateTask = try await Channel(buffering: buffering).stateTask(
             file: file,
             line: line,
             deinitBehavior: deinitBehavior,
@@ -59,54 +47,47 @@ public final class Distributor<Output: Sendable> {
                 ()
         }
         if shouldCancel {
-            stateTask.cancel()
-            subscribeStateTask.cancel()
             receiveStateTask.cancel()
+            stateTask.cancel()
         }
     }
 
     public var isCancelled: Bool {
         @Sendable get {
-            stateTask.isCancelled && subscribeStateTask.isCancelled && receiveStateTask.isCancelled
+            stateTask.isCancelled && receiveStateTask.isCancelled
         }
     }
     public var isCompleting: Bool {
         @Sendable get {
-            stateTask.isCompleting && subscribeStateTask.isCompleting && receiveStateTask.isCompleting
+            stateTask.isCompleting && receiveStateTask.isCompleting
         }
     }
     public var value: DistributorState<Output> {
         get async throws {
-            _ = await subscribeStateTask.result
             _ = await receiveStateTask.result
             return try await stateTask.value
         }
     }
     public var result: Result<DistributorState<Output>, Swift.Error> {
         get async {
-            _ = await subscribeStateTask.result
             _ = await receiveStateTask.result
             return await stateTask.result
         }
     }
     public func finish() async throws -> Void {
-        subscribeStateTask.finish()
         receiveStateTask.finish()
         try await stateTask.finish()
     }
     public func finishAndAwaitResult() async throws -> Void {
-        subscribeStateTask.finish()
         receiveStateTask.finish()
         try await stateTask.finish()
         _ = await stateTask.result
     }
     public func cancel() async throws -> Void {
-        subscribeStateTask.cancel()
         receiveStateTask.cancel()
         try await stateTask.cancel()
     }
     public func cancelAndAwaitResult() async throws -> Result<DistributorState<Output>, Swift.Error> {
-        subscribeStateTask.cancel()
         receiveStateTask.cancel()
         try await stateTask.cancel()
         return await stateTask.result
@@ -120,12 +101,12 @@ public final class Distributor<Output: Sendable> {
     }
 }
 
-extension Distributor {
+extension Subject {
     func subscribe(
         _ downstream: @Sendable @escaping (AsyncStream<Output>.Result) async throws -> Demand
     ) async throws -> Cancellable<Demand> {
         try await withResumption { resumption in
-            let queueStatus = subscribeStateTask.send(.subscribe(downstream, resumption))
+            let queueStatus = stateTask.send(.subscribe(downstream, resumption))
             switch queueStatus {
                 case .enqueued:
                     ()
@@ -140,7 +121,7 @@ extension Distributor {
     }
 }
 
-public extension Distributor {
+public extension Subject {
     func publisher(
         file: StaticString = #file,
         line: UInt = #line,
@@ -151,8 +132,8 @@ public extension Distributor {
 
     func receive(
         _ result: AsyncStream<Output>.Result
-    ) async throws -> Void {
-        let _: Void = try await withResumption { resumption in
+    ) async throws -> Int {
+        let count: Int = try await withResumption { resumption in
             let queueStatus = receiveStateTask.send(.receive(result, resumption))
             switch queueStatus {
                 case .enqueued:
@@ -165,12 +146,15 @@ public extension Distributor {
                     resumption.resume(throwing: PublisherError.enqueueError)
             }
         }
+        return count
     }
 
-    @Sendable func send(_ result: AsyncStream<Output>.Result) async throws -> Void {
+    @discardableResult
+    @Sendable func send(_ result: AsyncStream<Output>.Result) async throws -> Int {
         try await receive(result)
     }
-    @Sendable func send(_ value: Output) async throws -> Void {
+    @discardableResult
+    @Sendable func send(_ value: Output) async throws -> Int {
         try await receive(.value(value))
     }
 }

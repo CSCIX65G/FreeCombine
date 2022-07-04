@@ -16,7 +16,7 @@ class DistributorTests: XCTestCase {
 
     func testSimpleReceiveValue() async throws {
         do {
-            let _: Void = try await withResumption { resumption in
+            let _: Int = try await withResumption { resumption in
                 Task {
                     var distributor = DistributorState(
                         currentValue: 13,
@@ -118,7 +118,7 @@ class DistributorTests: XCTestCase {
         let distributorValue = ValueRef(
             value: DistributorState(currentValue: 13, nextKey: 0, downstreams: [:])
         )
-        do { let _: Void = try await withResumption { c in
+        do { let _: Int = try await withResumption { c in
             t = Task {
                 let cancellable1: Cancellable<Demand> = try await withResumption { taskC in
                     Task {
@@ -146,7 +146,7 @@ class DistributorTests: XCTestCase {
                             await distributorValue.set(value: distributor)
                             distributor = try await withResumption { distResumption in
                                 Task {
-                                    let _: Void = try await withResumption({ resumption in
+                                    let _: Int = try await withResumption({ resumption in
                                         Task {
                                             var distributor = await distributorValue.value
                                             _ = try await distributor.reduce(action: .receive(.value(15), resumption))

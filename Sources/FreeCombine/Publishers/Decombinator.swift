@@ -61,10 +61,6 @@ public func Decombinator<Output>(
 }
 
 public extension Publisher {
-    private enum EnqueueError: Error {
-        case enqueueError
-    }
-
     init(
         file: StaticString = #file,
         line: UInt = #line,
@@ -80,7 +76,8 @@ public extension Publisher {
                 ) { demandResumption in
                     let enqueueStatus = stateTask.send(.distribute(.subscribe(downstream, demandResumption)))
                     guard case .enqueued = enqueueStatus else {
-                        return demandResumption.resume(throwing: EnqueueError.enqueueError)
+                        demandResumption.resume(throwing: PublisherError.enqueueError)
+                        return
                     }
                 }
                 continuation.resume()
@@ -88,7 +85,7 @@ public extension Publisher {
             } catch {
                 let c1 = Cancellable<Demand>.init {
                     switch error {
-                        case EnqueueError.enqueueError:
+                        case PublisherError.enqueueError:
                             let returnValue = try await downstream(.completion(.finished))
                             continuation.resume()
                             return returnValue

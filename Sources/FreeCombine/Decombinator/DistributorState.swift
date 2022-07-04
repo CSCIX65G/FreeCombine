@@ -15,7 +15,7 @@ public struct DistributorState<Output: Sendable> {
     }
 
     public enum Action: Sendable {
-        case receive(AsyncStream<Output>.Result, Resumption<Void>)
+        case receive(AsyncStream<Output>.Result, Resumption<Int>)
         case subscribe(
             @Sendable (AsyncStream<Output>.Result) async throws -> Demand,
             Resumption<Cancellable<Demand>>
@@ -56,12 +56,12 @@ public struct DistributorState<Output: Sendable> {
     static func dispose(action: Self.Action, completion: Reducer<Self, Self.Action>.Completion) async -> Void {
         switch action {
             case let .receive(_, continuation):
-                continuation.resume()
+                continuation.resume(throwing: PublisherError.cancelled)
             case let .subscribe(downstream, continuation):
                 switch completion {
                     case .failure(PublisherError.completed):
                         let _ = try? await downstream(.completion(.finished))
-                        continuation.resume(returning: .init { throw PublisherError.cancelled })
+                        continuation.resume(throwing: PublisherError.completed)
                     case .failure(PublisherError.cancelled):
                         let _ = try? await downstream(.completion(.cancelled))
                         continuation.resume(throwing: PublisherError.cancelled)
@@ -98,8 +98,9 @@ public struct DistributorState<Output: Sendable> {
                 if case let .value(newValue) = result, currentValue != nil { currentValue = newValue }
                 if case .completion = result { isComplete = true }
                 do {
+                    let repeaterCount = repeaters.count
                     try await process(currentRepeaters: repeaters, with: result)
-                    resumption.resume()
+                    resumption.resume(returning: repeaterCount)
                 } catch {
                     resumption.resume(throwing: error)
                     throw error
