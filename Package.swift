@@ -17,6 +17,12 @@ let package = Package(
                 "FreeCombine"
             ]
         ),
+        .library(
+            name: "Time",
+            targets: [
+                "Time"
+            ]
+        ),
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-atomics.git", .upToNextMajor(from: "1.0.0")),
@@ -31,6 +37,18 @@ let package = Package(
         .testTarget(
             name: "FreeCombineTests",
             dependencies: ["FreeCombine"]
+        ),
+        .target(
+            name: "Time",
+            dependencies: [
+                "FreeCombine"
+            ]
+        ),
+        .testTarget(
+            name: "TimeTests",
+            dependencies: [
+                "Time"
+            ]
         ),
     ]
 )

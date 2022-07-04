@@ -1,14 +1,14 @@
 //
-//  RemoveDuplicates.swift
+//  TryRemoveDuplicates.swift
 //  
 //
-//  Created by Van Simmons on 5/23/22.
+//  Created by Van Simmons on 7/3/22.
 //
 fileprivate actor Deduplicator<A> {
-    let isEquivalent: (A, A) async -> Bool
+    let isEquivalent: (A, A) async throws -> Bool
     var currentValue: A!
 
-    init(_ predicate: @escaping (A, A) async -> Bool) {
+    init(_ predicate: @escaping (A, A) async throws -> Bool) {
         self.isEquivalent = predicate
     }
 
@@ -20,7 +20,7 @@ fileprivate actor Deduplicator<A> {
             currentValue = value
             return try await downstream(.value(value))
         }
-        guard !(await isEquivalent(value, current)) else {
+        guard !(try await isEquivalent(value, current)) else {
             return .more
         }
         currentValue = value
@@ -29,14 +29,14 @@ fileprivate actor Deduplicator<A> {
 }
 
 extension Publisher where Output: Equatable {
-    func removeDuplicates() -> Publisher<Output> {
+    func tryRemoveDuplicates() -> Publisher<Output> {
         removeDuplicates(by: ==)
     }
 }
 
 extension Publisher {
-    func removeDuplicates(
-        by predicate: @escaping (Output, Output) async -> Bool
+    func tryRemoveDuplicates(
+        by predicate: @escaping (Output, Output) async throws -> Bool
     ) -> Publisher<Output> {
         .init { continuation, downstream in
             let deduplicator = Deduplicator<Output>(predicate)
@@ -46,7 +46,8 @@ extension Publisher {
                 }
                 switch r {
                     case .value(let a):
-                        return try await deduplicator.forward(value: a, with: downstream)
+                        do { return try await deduplicator.forward(value: a, with: downstream) }
+                        catch { return try await handleCancellation(of: downstream) }
                     case .completion(.failure(let e)):
                         return try await downstream(.completion(.failure(e)))
                     case .completion(.finished), .completion(.cancelled):
