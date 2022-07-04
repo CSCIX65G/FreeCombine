@@ -6,22 +6,12 @@
 //
 
 public struct ConnectableState<Output: Sendable> {
-    public enum Action: Sendable, CustomStringConvertible {
+    public enum Action: Sendable {
         case connect(Resumption<Void>)
         case pause(Resumption<Void>)
         case resume(Resumption<Void>)
         case disconnect(Resumption<Void>)
         case distribute(DistributorState<Output>.Action)
-
-        public var description: String {
-            switch self {
-                case .connect: return "connect"
-                case .pause: return "pause"
-                case .resume: return "resume"
-                case .disconnect: return "disconnect"
-                case let .distribute(subaction): return "distribute(\(subaction))"
-            }
-        }
     }
 
     public enum Error: Swift.Error {
@@ -35,7 +25,7 @@ public struct ConnectableState<Output: Sendable> {
     }
 
     let upstream: Publisher<Output>
-    let downstream: @Sendable (AsyncStream<Output>.Result) async throws -> Demand
+    let repeater: Channel<RepeatDistributeState<Output>.Action>
 
     var cancellable: Cancellable<Demand>?
     var upstreamContinuation: Resumption<Demand>?
@@ -47,39 +37,22 @@ public struct ConnectableState<Output: Sendable> {
         line: UInt = #line,
         deinitBehavior: DeinitBehavior = .assert,
         upstream: Publisher<Output>,
-        channel: Channel<ConnectableState<Output>.Action>
+        repeater: Channel<RepeatDistributeState<Output>.Action>
     ) {
         self.upstream = upstream
+        self.repeater = repeater
         self.distributor = .init(currentValue: .none, nextKey: 0, downstreams: [:])
-        self.downstream = { r in
-            var queueStatus: AsyncStream<ConnectableState<Output>.Action>.Continuation.YieldResult!
-            let _: Int = try await withResumption(file: file, line: line, deinitBehavior: deinitBehavior) { resumption in
-                queueStatus = channel.yield(.distribute(.receive(r, resumption)))
-                switch queueStatus {
-                    case .enqueued:
-                        ()
-                    case .terminated:
-                        resumption.resume(throwing: PublisherError.cancelled)
-                    case let .dropped(dropped):
-                        fatalError("Should never drop. dropped: \(dropped)")
-                    case .none:
-                        fatalError("must have a queue status")
-                    @unknown default:
-                        fatalError("Handle new case")
-                }
-            }
-            if case .enqueued = queueStatus { return .more }
-            return .done
-        }
     }
 
     static func create(
-        upstream: Publisher<Output>
+        upstream: Publisher<Output>,
+        repeater: Channel<RepeatDistributeState<Output>.Action>
     ) -> (Channel<ConnectableState<Output>.Action>) -> Self {
-        { channel in return .init(upstream: upstream, channel: channel) }
+        { channel in return .init(upstream: upstream, repeater: repeater) }
     }
 
     static func complete(state: inout Self, completion: Reducer<Self, Self.Action>.Completion) async -> Void {
+        state.repeater.finish()
         switch completion {
             case .finished, .exit:
                 try? await state.distributor.process(currentRepeaters: state.distributor.repeaters, with: .completion(.finished))
@@ -163,9 +136,29 @@ public struct ConnectableState<Output: Sendable> {
             return .none
         }
         let localUpstream = upstream
-        let localDownstream = downstream
+        let channel = repeater
+        let downstream: @Sendable (AsyncStream<Output>.Result) async throws -> Demand = { r in
+            var queueStatus: AsyncStream<RepeatDistributeState<Output>.Action>.Continuation.YieldResult!
+            let _: Int = try await withResumption { resumption in
+                queueStatus = channel.yield(.receive(r, resumption))
+                switch queueStatus {
+                    case .enqueued:
+                        ()
+                    case .terminated:
+                        resumption.resume(throwing: PublisherError.cancelled)
+                    case let .dropped(dropped):
+                        fatalError("Should never drop. dropped: \(dropped)")
+                    case .none:
+                        fatalError("must have a queue status")
+                    @unknown default:
+                        fatalError("Handle new case")
+                }
+            }
+            if case .enqueued = queueStatus { return .more }
+            return .done
+        }
         cancellable = try await Cancellable.join {
-            await localUpstream.sink(localDownstream)
+            await localUpstream.sink(downstream)
         }
         isRunning = true
         resumption.resume()

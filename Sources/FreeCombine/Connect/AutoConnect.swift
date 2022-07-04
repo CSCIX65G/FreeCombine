@@ -6,9 +6,12 @@
 //
 public extension Publisher {
     func autoconnect(
-        buffering: AsyncStream<ConnectableState<Output>.Action>.Continuation.BufferingPolicy = .bufferingOldest(1)
-    ) async -> Self {
-        let connectable: Connectable<Output> = await self.makeConnectable(buffering: buffering)
+        file: StaticString = #file,
+        line: UInt = #line,
+        deinitBehavior: DeinitBehavior = .assert,
+        buffering: AsyncStream<RepeatDistributeState<Output>.Action>.Continuation.BufferingPolicy = .bufferingOldest(1)
+    ) async throws -> Self {
+        let connectable: Connectable<Output> = try await self.makeConnectable(buffering: buffering)
         let cancellableRef: ValueRef<Cancellable<Demand>?> = .init(value: .none)
         return .init { continuation, downstream in
             Cancellable<Cancellable<Demand>>.join(.init {
@@ -16,14 +19,16 @@ public extension Publisher {
                 let refValue: Cancellable<Demand>! = await cancellableRef.value
                 if refValue == nil {
                     do {
-                        try await connectable.connect()
-                        await cancellableRef.set(value: cancellable)
                         Task {
-                            _ = await connectable.result;
-                            _ = await cancellable.result;
+                            _ = await connectable.result
+                            _ = await cancellable.result
                             await cancellableRef.set(value: .none)
                         }
+                        try await connectable.connect()
+                        await cancellableRef.set(value: cancellable)
                     } catch {
+//                        _ = try? await downstream(.completion(.finished))
+                        continuation.resume()
                         _ = try await connectable.cancelAndAwaitResult()
                     }
                 }

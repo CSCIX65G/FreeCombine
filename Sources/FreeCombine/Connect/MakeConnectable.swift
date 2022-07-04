@@ -6,11 +6,19 @@
 //
 public extension Publisher {
     func makeConnectable(
-        buffering: AsyncStream<ConnectableState<Output>.Action>.Continuation.BufferingPolicy = .bufferingOldest(1)
-    ) async -> Connectable<Output> {
-        try! await .init(
-            stateTask: Channel(buffering: buffering).stateTask(
-                initialState: ConnectableState<Output>.create(upstream: self),
+        file: StaticString = #file,
+        line: UInt = #line,
+        deinitBehavior: DeinitBehavior = .assert,
+        buffering: AsyncStream<RepeatDistributeState<Output>.Action>.Continuation.BufferingPolicy = .bufferingOldest(1)
+    ) async throws -> Connectable<Output> {
+        let repeater: Channel<RepeatDistributeState<Output>.Action> = .init(buffering: buffering)
+        return try await .init(
+            file: file,
+            line: line,
+            deinitBehavior: deinitBehavior,
+            repeater: repeater,
+            stateTask: Channel(buffering: .unbounded).stateTask(
+                initialState: ConnectableState<Output>.create(upstream: self, repeater: repeater),
                 reducer: Reducer(
                     onCompletion: ConnectableState<Output>.complete,
                     disposer: ConnectableState<Output>.dispose,

@@ -18,7 +18,7 @@ class MakeConnectableTests: XCTestCase {
         let expectation1 = await Expectation<Void>()
         let expectation2 = await Expectation<Void>()
 
-        let connectable = await Unfolded(0 ..< 100)
+        let connectable = try await Unfolded(0 ..< 100)
             .makeConnectable()
 
         let p = connectable.publisher()
@@ -71,7 +71,12 @@ class MakeConnectableTests: XCTestCase {
             }
         }
 
-        try await connectable.connect()
+        do {
+            try await connectable.connect()
+        }
+        catch {
+            XCTFail("Failed to connect")
+        }
 
         let d1 = try await u1.value
         XCTAssert(d1 == .done, "First chain has wrong value")
@@ -84,13 +89,14 @@ class MakeConnectableTests: XCTestCase {
         } catch {
             XCTFail("Timed out")
         }
-        let _ = try await connectable.cancelAndAwaitResult()
+
+        let _ = await connectable.result
     }
 
     func testSubjectMakeConnectable() async throws {
         let subj = try await PassthroughSubject(Int.self)
 
-        let connectable = await subj
+        let connectable = try await subj
             .publisher()
             .map { $0 }
             .makeConnectable()
