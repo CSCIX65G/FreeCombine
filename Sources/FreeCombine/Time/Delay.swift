@@ -2,27 +2,22 @@
 //  Delay.swift
 //  
 //
-//  Created by Van Simmons on 5/27/22.
+//  Created by Van Simmons on 7/4/22.
 //
-
+import Atomics
 public extension Publisher {
     func delay(
         interval: Duration
     ) -> Self {
         .init { continuation, downstream in
-            self(onStartup: continuation) { r in switch r {
-                case .value:
-                    do {
-                        try await Task.sleep(nanoseconds: interval.inNanoseconds)
-                        guard !Task.isCancelled else { throw PublisherError.cancelled }
-                        return try await downstream(r)
-                    }
-                    catch {
-                        return try await handleCancellation(of: downstream)
-                    }
-                case let .completion(value):
-                    return try await downstream(.completion(value))
-            } }
+            let shouldDelay = ManagedAtomic<Bool>(true)
+            return self(onStartup: continuation) { r in
+                if shouldDelay.exchange(false, ordering: .sequentiallyConsistent) {
+                    try await Task.sleep(nanoseconds: interval.inNanoseconds)
+                    guard !Task.isCancelled else { return try await handleCancellation(of: downstream) }
+                }
+                return try await downstream(r)
+            }
         }
     }
 }
