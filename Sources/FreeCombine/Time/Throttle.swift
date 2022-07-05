@@ -13,13 +13,47 @@ extension Publisher {
         latest: Bool
     ) -> Self {
         .init { continuation, downstream in
-//            let nextDateTime = ManagedAtomic<Double>(true)
-            self(onStartup: continuation) { r in switch r {
-                case .value(let a):
-                    return try await downstream(.value(a))
-                case let .completion(value):
-                    return try await downstream(.completion(value))
-            } }
+            let subjectRef = ValueRef<Subject<Output>?>(value: .none)
+            let cancellableRef = ValueRef<Cancellable<Demand>?>(value: .none)
+            return self(onStartup: continuation) { r in
+                var subject: Subject<Output>! = await subjectRef.value
+                var cancellable: Cancellable<Demand>! = await cancellableRef.value
+                if subject == nil {
+                    subject = try await PassthroughSubject(
+                        buffering: latest ? .bufferingNewest(1) : .bufferingOldest(1)
+                    )
+                    await subjectRef.set(value: subject)
+                    cancellable = await subject.publisher().throttleDemand(interval: interval).sink(downstream)
+                    await cancellableRef.set(value: cancellable)
+                }
+                guard !Task.isCancelled && !cancellable.isCancelled else {
+                    try await subject.finish()
+                    await subjectRef.set(value: .none)
+                    _ = await subject.result
+                    await cancellableRef.set(value: cancellable)
+                    _ = await cancellable.result
+                    return try await handleCancellation(of: downstream)
+                }
+                _ = try await subject.send(r)
+                switch r {
+                    case .value:
+                        return .more
+                    case .completion(.finished), .completion(.cancelled):
+                        try await subject.finish()
+                        await subjectRef.set(value: .none)
+                        _ = await subject.result
+                        await cancellableRef.set(value: cancellable)
+                        _ = await cancellable.result
+                        return .done
+                    case .completion(.failure(let error)):
+                        try await subject.finish()
+                        await subjectRef.set(value: .none)
+                        _ = await subject.result
+                        await cancellableRef.set(value: cancellable)
+                        _ = await cancellable.result
+                        throw error
+                }
+            }
         }
     }
 }

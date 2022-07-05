@@ -27,6 +27,7 @@
  observe how the zip blocks of value `Int(14)` and `String("hello, combined world!")` are all emitted at the very end.
  */
 import Combine
+import Atomics
 
 func combineVersion() {
     let subject1 = Combine.PassthroughSubject<Int, Error>()
@@ -52,6 +53,7 @@ func combineVersion() {
     subject2.send("hello, combined world!")
     subject1.send(completion: .finished)
     subject2.send(completion: .finished)
+    cancellable.cancel()
 }
 combineVersion()
 print("=========================================================")
@@ -66,8 +68,8 @@ import _Concurrency
 
 func freeCombineVersion() {
     Task {
-        let subject1 = await PassthroughSubject(Int.self)
-        let subject2 = await PassthroughSubject(String.self)
+        let subject1 = try await PassthroughSubject(Int.self)
+        let subject2 = try await PassthroughSubject(String.self)
         
         let seq1 = "abcdefghijklmnopqrstuvwxyz".asyncPublisher
         let seq2 = (1 ... 100).asyncPublisher

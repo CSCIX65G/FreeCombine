@@ -36,6 +36,7 @@ public extension Publisher where Output == UInt64 {
     }
 }
 
+#if swift(>=5.7)
 @available(macOS 13.0, iOS 16.0, watchOS 9.0, tvOS 16.0, *)
 public func Heartbeat<C: Clock>(
     clock: C,
@@ -54,26 +55,27 @@ public extension Publisher {
         maxTicks: Int = Int.max
     ) where Output == C.Instant {
         self = Publisher<C.Instant> { continuation, downstream  in
-            .init {
-                let startTime = clock.now
-                var ticks: Int = .zero
-                continuation.resume()
-                while ticks < maxTicks {
-                    guard !Task.isCancelled else {
-                        return try await handleCancellation(of: downstream)
+                .init {
+                    let startTime = clock.now
+                    var ticks: Int = .zero
+                    continuation.resume()
+                    while ticks < maxTicks {
+                        guard !Task.isCancelled else {
+                            return try await handleCancellation(of: downstream)
+                        }
+                        ticks += 1
+                        let nextTime = startTime.advanced(by: interval * ticks)
+                        let currentTime = clock.now
+                        if currentTime > nextTime { continue }
+                        switch try await downstream(.value(currentTime)) {
+                            case .done: return .done
+                            case .more: try await clock.sleep(until: nextTime, tolerance: tolerance)
+                        }
                     }
-                    ticks += 1
-                    let nextTime = startTime.advanced(by: interval * ticks)
-                    let currentTime = clock.now
-                    if currentTime > nextTime { continue }
-                    switch try await downstream(.value(currentTime)) {
-                        case .done: return .done
-                        case .more: try await clock.sleep(until: nextTime, tolerance: tolerance)
-                    }
+                    _ = try await downstream(.completion(.finished))
+                    return .done
                 }
-                _ = try await downstream(.completion(.finished))
-                return .done
-            }
         }
     }
 }
+#endif
