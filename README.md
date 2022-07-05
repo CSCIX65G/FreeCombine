@@ -118,4 +118,17 @@ Following onto the ideas in those posts, [Holly Borla in SE-335](https://github.
 Existential types in Swift have an extremely lightweight spelling: a plain protocol name in type context means an existential type. Over the years, this has risen to the level of active harm by causing confusion, leading programmers down the wrong path that often requires them to re-write code once they hit a fundamental limitation of value-level abstraction.
 ```
 
-In my opinion, what SE-335 is saying applies to Combine (and frankly to AsyncSequence in the standard library). The question is: how do we _NOT_ use existentials in a library like Combine. And the answer is to use generics instead. In the next playground we derive a generic-only version of Combine from the required Combine protocols */
+In my opinion, what SE-335 is saying applies to Combine (and frankly to AsyncSequence in the standard library). The question is: how do we _NOT_ use existentials in a library like Combine. And the answer is to use generics instead. In the next playground we derive a generic-only version of Combine from the required Combine protocols 
+
+### Flow of Control
+
+1. Subscription provides 1 demand
+1. Additional values are only sent when previous call returns .more
+1. An infinite number of values can be sent
+1. Completion can occur in the following ways:
+    * Returning .done means that no more values will be sent (reactive completion).
+    * Throwing an error means that no more values will be sent
+    * Sending .completion(.finished|.cancelled|.failure(Error)) means that the value returned is ignored (proactive)
+    * External cancellation causes .completion(.cancelled) to be sent as the next demanded value (external)
+
+

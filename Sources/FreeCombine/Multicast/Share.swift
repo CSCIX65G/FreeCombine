@@ -21,17 +21,11 @@ public extension Publisher {
                                 case .value(let value):
                                     try await subject.send(value)
                                     return .more
-                                case .completion(.finished):
-                                    try await subject.finish()
-                                    _ = await subject.result
-                                    return .done
-                                case .completion(.cancelled):
-                                    try await subject.cancel()
-                                    _ = await subject.result
+                                case .completion(.finished), .completion(.cancelled):
+                                    try await subject.send(result)
                                     return .done
                                 case .completion(.failure(let error)):
-                                    try await subject.fail(error)
-                                    _ = await subject.result
+                                    try await subject.send(result)
                                     throw error
                             }
                         } catch {
