@@ -4,6 +4,8 @@
 //
 //  Created by Van Simmons on 7/2/22.
 //
+
+import Darwin
 public struct RepeatReceiveState<Output: Sendable> {
     var distributorChannel: Channel<DistributorState<Output>.Action>
 
@@ -13,6 +15,7 @@ public struct RepeatReceiveState<Output: Sendable> {
 
     public enum Action: Sendable {
         case receive(AsyncStream<Output>.Result, Resumption<Int>)
+        case nonBlockingReceive(AsyncStream<Output>.Result)
     }
 
     public init(
@@ -38,23 +41,32 @@ public struct RepeatReceiveState<Output: Sendable> {
                     default:
                         continuation.resume(throwing: PublisherError.completed)
                 }
+            case .nonBlockingReceive(_):
+                ()
         }
     }
 
-    static func reduce(`self`: inout Self, action: Self.Action) async throws -> Reducer<Self, Action>.Effect {
+    static func reduce(state: inout Self, action: Self.Action) async throws -> Reducer<Self, Action>.Effect {
         if Task.isCancelled {
             switch action {
                 case .receive(_, let resumption):
                     resumption.resume(throwing: PublisherError.cancelled)
+                case .nonBlockingReceive(_):
+                    ()
             }
             return .completion(.cancel)
         }
-        return try await `self`.reduce(action: action)
+        return try await state.reduce(action: action)
     }
 
     mutating func reduce(action: Action) async throws -> Reducer<Self, Action>.Effect {
-        guard case let .receive(result, resumption) = action else {
-            fatalError("Unknown action")
+        var result: AsyncStream<Output>.Result! = .none
+        var resumption: Resumption<Int>! = .none
+        if case let .receive(r1, r3) = action  {
+            result = r1
+            resumption = r3
+        } else if case let .nonBlockingReceive(r2) = action {
+            result = r2
         }
         do {
             let subscribers: Int = try await withResumption { innerResumption in
@@ -69,10 +81,10 @@ public struct RepeatReceiveState<Output: Sendable> {
                         fatalError("Unhandled continuation value")
                 }
             }
-            resumption.resume(returning: subscribers)
+            resumption?.resume(returning: subscribers)
             return .none
         } catch {
-            resumption.resume(throwing: error)
+            resumption?.resume(throwing: error)
             return .completion(.failure(error))
         }
     }

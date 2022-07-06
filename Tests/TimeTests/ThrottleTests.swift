@@ -18,8 +18,10 @@ class ThrottleTests: XCTestCase {
     func testSimpleThrottle() async throws {
         let expectation = await Expectation<Void>()
 
+        let inputCounter = Counter()
         let counter = Counter()
         let t = await (1 ... 15).asyncPublisher
+            .handleEvents(receiveOutput: { _ in await inputCounter.increment() })
             .throttle(interval: .milliseconds(1000), latest: false)
             .sink({ value in
                 switch value {
@@ -34,14 +36,16 @@ class ThrottleTests: XCTestCase {
                     case .completion(.cancelled):
                         return .done
                 }
-        })
+            })
 
         do {
             try await FreeCombine.wait(for: expectation, timeout: 1_000_000_000)
         } catch {
             t.cancel()
             let count = await counter.count
-            XCTAssert(count == 2, "Got wrong count = \(count)")
+            let inputCount = await inputCounter.count
+            XCTAssert(count == 1, "Got wrong count = \(count)")
+            XCTAssert(inputCount == 15, "Got wrong count = \(inputCount)")
         }
 
         _ = await t.result

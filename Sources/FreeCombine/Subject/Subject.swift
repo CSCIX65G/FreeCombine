@@ -149,6 +149,22 @@ public extension Subject {
         return count
     }
 
+    func receive(
+        _ result: AsyncStream<Output>.Result
+    ) throws -> Void {
+        let queueStatus = receiveStateTask.send(.nonBlockingReceive(result))
+        switch queueStatus {
+            case .enqueued:
+                ()
+            case .terminated:
+                throw PublisherError.completed
+            case .dropped:
+                throw PublisherError.enqueueError
+            @unknown default:
+                throw PublisherError.enqueueError
+        }
+    }
+
     @discardableResult
     @Sendable func send(_ result: AsyncStream<Output>.Result) async throws -> Int {
         try await receive(result)
@@ -156,5 +172,11 @@ public extension Subject {
     @discardableResult
     @Sendable func send(_ value: Output) async throws -> Int {
         try await receive(.value(value))
+    }
+    @Sendable func send(_ result: AsyncStream<Output>.Result) throws -> Void {
+        try receive(result)
+    }
+    @Sendable func send(_ value: Output) throws -> Void {
+        try receive(.value(value))
     }
 }

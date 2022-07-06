@@ -4,8 +4,7 @@
 //
 //  Created by Van Simmons on 7/4/22.
 //
-//func throttle<S>(for interval: S.SchedulerTimeType.Stride, scheduler: S,
-// latest: Bool) -> Publishers.Throttle<Self, S>
+//func throttle<S>(for interval: S.SchedulerTimeType.Stride, scheduler: S, latest: Bool) -> Publishers.Throttle<Self, S>
 import Atomics
 extension Publisher {
     func throttle(
@@ -34,7 +33,8 @@ extension Publisher {
                     _ = await cancellable.result
                     return try await handleCancellation(of: downstream)
                 }
-                _ = try await subject.send(r)
+                do { let _: Void = try subject.send(r) }
+                catch { }
                 switch r {
                     case .value:
                         return .more
