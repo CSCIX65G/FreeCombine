@@ -67,10 +67,8 @@ public extension Publisher {
                         let nextTime = startTime.advanced(by: interval * ticks)
                         let currentTime = clock.now
                         if currentTime > nextTime { continue }
-                        switch try await downstream(.value(currentTime)) {
-                            case .done: return .done
-                            case .more: try await clock.sleep(until: nextTime, tolerance: tolerance)
-                        }
+                        try await clock.sleep(until: nextTime, tolerance: tolerance)
+                        return try await downstream(.value(currentTime))
                     }
                     _ = try await downstream(.completion(.finished))
                     return .done
