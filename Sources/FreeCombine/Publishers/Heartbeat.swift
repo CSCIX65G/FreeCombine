@@ -10,14 +10,21 @@ public func Heartbeat(interval: Duration) -> Publisher<UInt64> {
 }
 
 public extension Publisher where Output == UInt64 {
-    init(interval: Duration, maxTicks: Int = Int.max) {
+    init(interval: Duration, maxTicks: Int = Int.max, tickAtStart: Bool = false) {
         self = Publisher<UInt64> { continuation, downstream  in
             .init {
+                var ticks: UInt64 = 0
+                continuation.resume()
+                var maxTicks = maxTicks
                 do {
                     let start = DispatchTime.now().uptimeNanoseconds
                     var current = start
-                    var ticks: UInt64 = 0
-                    continuation.resume()
+                    if tickAtStart {
+                        maxTicks -= 1
+                        guard try await downstream(.value(current)) != .done else {
+                            return .done
+                        }
+                    }
                     while ticks < maxTicks {
                         guard !Task.isCancelled else {
                             return try await handleCancellation(of: downstream)
@@ -58,26 +65,41 @@ public extension Publisher {
         clock: C,
         interval: C.Instant.Duration,
         tolerance: C.Instant.Duration? = .none,
-        maxTicks: Int = Int.max
+        maxTicks: Int = Int.max,
+        tickAtStart: Bool = false
     ) where Output == C.Instant {
         self = Publisher<C.Instant> { continuation, downstream  in
                 .init {
                     let start = clock.now
                     var ticks: Int = .zero
                     continuation.resume()
-                    while ticks < maxTicks {
-                        guard !Task.isCancelled else {
-                            return try await handleCancellation(of: downstream)
+                    var maxTicks = maxTicks
+                    do {
+                        var current = start
+                        if tickAtStart {
+                            maxTicks -= 1
+                            guard try await downstream(.value(current)) != .done else {
+                                return .done
+                            }
                         }
-                        ticks += 1
-                        let nextTime = start.advanced(by: interval * ticks)
-                        let current = clock.now
-                        if current > nextTime { continue }
-                        try await clock.sleep(until: nextTime, tolerance: tolerance)
-                        let now = clock.now
-                        return try await downstream(.value(now))
+                        while ticks < maxTicks {
+                            guard !Task.isCancelled else {
+                                return try await handleCancellation(of: downstream)
+                            }
+                            ticks += 1
+                            let next = start.advanced(by: interval * ticks)
+                            current = clock.now
+                            if current > next { continue }
+                            try await clock.sleep(until: next, tolerance: tolerance)
+                            current = clock.now
+                            guard try await downstream(.value(current)) != .done else {
+                                return .done
+                            }
+                        }
+                        _ = try await downstream(.completion(.finished))
+                    } catch {
+                        throw error
                     }
-                    _ = try await downstream(.completion(.finished))
                     return .done
                 }
         }

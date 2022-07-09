@@ -4,10 +4,20 @@
 
 ## Like Combine. Only free. And concurrent.
 
+FreeCombine is a functional streaming library for the Swift language.  
+
+Functional streaming comes in two forms: push and pull.  FreeCombine is pull.  RxSwift and ReactiveSwift are push.  Combine is both, but primarily pull. (If you have ever wondered what a Subscription is in Combine, it's the implementation of pull semantics). AsyncSequence in Apple's Swift standard library is pull-only.  While there are exceptions, streams in synchronous systems tend to be push, in asynchronous systems they tend to be pull. Different applications are better suited to one form of streaming than the other. The main differences lie in how the two treat combinators like zip or decombinators like Combine's Subject. 
+
+All streaming libraries are written in the Continuation Passing Style (CPS).  Because of this they share certain operations for the Continuation type: map, flatMap, filter, reduce, et al.  
+
+Promise/Future systems are also written in CPS and as a result share many of the same operations.  FreeCombine incorporates NIO-style Promises and Futures as a result.
+
+FreeCombine differs from AsyncSequence (and its support in Apple's swift-async-algorithms package) in the following key ways.  FreeCombine is:
+
 * Protocol-free.
   * No protocols, only concrete types
   * Eager type erasure
-  * Continuation-passing style
+  * Explicit implemenation of the continuation-passing style via Continuation type.
 * Race-free.
   * Yield-free.
   * Sleep-free.
@@ -19,10 +29,8 @@
   * Queueing channel instead of locking channel
   * Blocking, not locking
   * No use of `os_unfair_lock` or equivalent constructs in other operating system 
-* Foundation-free.
-  * depends only on Swift std lib and swift-atomics.
 
-Implies the following Do's and Dont's
+These "freedoms" imply the following specific restrictions:
 
 Don'ts:
 * No use of `protocol`
@@ -35,30 +43,21 @@ Sort of Don'ts:
 * Use of `Task.init` only in Cancellable
 * Use of `[Checked|Unsafe]Continuation` only in Resumption
 * Use of `AsyncStream.init` only in Channel
-* Use of .unbounded as BufferingPolicy
+* Use of .unbounded as BufferingPolicy only in Channel's which accept subscribe operations
 
 ## Salient features
 
 1. "Small things that compose"
 1. Implement all operations supported by Combine, but some require modification
 1. Uses "imprecise" errors throughout in the manner of Swift NIO.
-1. Tasks and Continuations can _always_ fail due to cancellation
+1. Tasks and Continuations can _always_ fail due to cancellation so no Failure type on Continuations
 1. Principled handling of cancellation throughout 
 1. Futures _AND_ Streams, chocolate _AND_ peanut butter
+1. No dependency on Foundation
+1. Finally and very importantly, ownership of Tasks/Cancellables can be transferred or even shared.
 
-## Todo
 
-1. ~~Implement leak prevention on UnsafeContinuation, Task, and AsyncStream.Continuation~~
-1. maybe add an additional repo (FreeCombineDispatch) that depends on libdispatch to get delay, debounce, throttle
-1. revamp StateThread to be exactly a concurrency aware version of TCA's store
-1. Add support for Promise/Future
-1. Add a repo which implements asyncPublishers for everything in Foundation that currently has a `publisher`
-1. fully implement all Combine operators
-1. Add a Buffer publisher/operator to reintroduce a push model via an independent source of demand upstream
-1. Get to 100% test coverage
-1. Document this at the level of writing a book in the form of playgrounds
-
-  ## Introduction
+## Introduction
 
   For a long time I've been exploring the idea of what Apple's Swift Combine framework would look like if written without using protocols. The advent of Concurrency support in Swift 5.5 provided an impetus to complete that exploration. This repository represents the current state of that effort and consists of material that I intend to incorporate into classes I teach on iOS development at [Harvard](https://courses.dce.harvard.edu/?details&srcdb=202203&crn=33540) and at [Tufts](https://www.cs.tufts.edu/t/courses/description/fall2021/CS/151-02).
 
@@ -66,8 +65,9 @@ Sort of Don'ts:
   
   Secondarily, this repo is my own feeble attempt to answer the following questions: 
   
-  1. Why does Swift's Structured Concurrency, not have the same set of primitives as Concurrent Haskell?
-  1. Why is that whenever I ask someone: do you use TaskGroup or `async let`, they respond, I don't but I'm sure that there are other people who do?
+  1. Why does Swift's Structured Concurrency, not have the same set of primitives as (say) Concurrent Haskell?
+  1. Why is that whenever I ask someone: do you use TaskGroup or `async let`, they respond, "I don't but I'm sure that there are other people who do." ?
+  1. Why is it that Task lifetimes much align with their parent's lifetime, but that other objects which are in a parent-child relationship have no such restriction?
   1. Are there differences between what we mean when we refer to Structured Concurrency and what we mean when we refer to Functional Concurrency and precisely what would those differences be?
 
   ### Functional Requirements
@@ -132,4 +132,14 @@ In my opinion, what SE-335 is saying applies to Combine (and frankly to AsyncSeq
     * Sending .completion(.finished|.cancelled|.failure(Error)) means that the value returned is ignored (proactive)
     * External cancellation causes .completion(.cancelled) to be sent as the next demanded value (external)
 
+## Todo
 
+1. ~~Implement leak prevention on UnsafeContinuation, Task, and AsyncStream.Continuation~~
+1. ~~maybe add an additional repo (FreeCombineDispatch) that depends on libdispatch to get delay, debounce, throttle~~
+1. revamp StateThread to be exactly a concurrency aware version of TCA's store
+1. Add support for Promise/Future
+1. Add a repo which implements asyncPublishers for everything in Foundation that currently has a `publisher`
+1. ~~fully implement all Combine operators~~
+1. Add a Buffer publisher/operator to reintroduce a push model via an independent source of demand upstream
+1. Get to 100% test coverage
+1. Document this at the level of writing a book in the form of playgrounds

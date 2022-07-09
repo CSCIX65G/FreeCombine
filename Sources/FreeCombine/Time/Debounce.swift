@@ -1,11 +1,15 @@
 //
-//  Throttle.swift
+//  File.swift
 //  
 //
-//  Created by Van Simmons on 7/4/22.
+//  Created by Van Simmons on 7/8/22.
 //
-
-import Atomics
+//init(
+//    upstream: Upstream,
+//    dueTime: Context.SchedulerTimeType.Stride,
+//    scheduler: Context,
+//    options: Context.SchedulerOptions?
+//)
 extension Publisher {
     private func cleanup(
         _ subject: Subject<Output>,
@@ -20,10 +24,8 @@ extension Publisher {
         await cancellableRef.set(value: .none)
     }
 
-    func throttle(
-        interval: Duration,
-        latest: Bool = false,
-        bufferSize: Int = 1
+    func debounce(
+        interval: Duration
     ) -> Self {
         .init { continuation, downstream in
             let subjectRef = ValueRef<Subject<Output>?>(value: .none)
@@ -32,12 +34,10 @@ extension Publisher {
                 var subject: Subject<Output>! = await subjectRef.value
                 var cancellable: Cancellable<Demand>! = await cancellableRef.value
                 if subject == nil {
-                    subject = try await PassthroughSubject(
-                        buffering: latest ? .bufferingNewest(bufferSize) : .bufferingOldest(bufferSize)
-                    )
+                    subject = try await PassthroughSubject()
                     await subjectRef.set(value: subject)
                     cancellable = await subject.publisher()
-                        .throttleDemand(interval: interval)
+                        .delayEachDemand(interval: interval)
                         .sink(downstream)
                     await cancellableRef.set(value: cancellable)
                 }
@@ -46,7 +46,7 @@ extension Publisher {
                     return try await handleCancellation(of: downstream)
                 }
                 do { let _: Void = try subject.send(r) }
-                catch { /* ignore failure to enqueue */ }
+                catch { /* ignore failure to enqueue, that's the entire point */ }
                 switch r {
                     case .value:
                         return .more
