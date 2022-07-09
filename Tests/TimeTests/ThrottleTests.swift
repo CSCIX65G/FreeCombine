@@ -52,6 +52,7 @@ class ThrottleTests: XCTestCase {
     }
 
     func testSimpleSubjectThrottle() async throws {
+        let values = ValueRef<[Int]>.init(value: [])
         let inputCounter = Counter()
         let counter = Counter()
         let subject = try await PassthroughSubject(Int.self)
@@ -61,7 +62,8 @@ class ThrottleTests: XCTestCase {
             .sink({ value in
                 switch value {
                     case .value(let value):
-                        print(value)
+                        let vals = await values.value
+                        await values.set(value: vals + [value])
                         await counter.increment()
                         return .more
                     case let .completion(.failure(error)):
@@ -89,10 +91,14 @@ class ThrottleTests: XCTestCase {
         let inputCount = await inputCounter.count
         XCTAssert(inputCount == 15, "Got wrong count = \(inputCount)")
 
+        let vals = await values.value
+        XCTAssert(vals == [0, 1], "Incorrect values")
+
         _ = await t.result
     }
 
     func testSimpleSubjectThrottleLatest() async throws {
+        let values = ValueRef<[Int]>.init(value: [])
         let inputCounter = Counter()
         let counter = Counter()
         let subject = try await PassthroughSubject(Int.self)
@@ -102,7 +108,8 @@ class ThrottleTests: XCTestCase {
             .sink({ value in
                 switch value {
                     case .value(let value):
-                        print(value)
+                        let vals = await values.value
+                        await values.set(value: vals + [value])
                         await counter.increment()
                         return .more
                     case let .completion(.failure(error)):
@@ -129,6 +136,9 @@ class ThrottleTests: XCTestCase {
 
         let inputCount = await inputCounter.count
         XCTAssert(inputCount == 15, "Got wrong count = \(inputCount)")
+
+        let vals = await values.value
+        XCTAssert(vals == [0, 9], "Incorrect values")
 
         _ = await t.result
     }

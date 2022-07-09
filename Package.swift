@@ -1,14 +1,13 @@
 // swift-tools-version: 5.6
-
 import PackageDescription
 
 let package = Package(
     name: "FreeCombine",
     platforms: [
-        .iOS(.v13),
-        .macOS(.v10_15),
-        .watchOS(.v6),
-        .tvOS(.v13)
+        .iOS(.v15),
+        .macOS(.v12),
+        .watchOS(.v8),
+        .tvOS(.v15)
     ],
     products: [
         .library(
@@ -25,7 +24,7 @@ let package = Package(
         ),
     ],
     dependencies: [
-        .package(url: "https://github.com/apple/swift-atomics.git", .upToNextMajor(from: "1.0.0")),
+        .package(url: "https://github.com/apple/swift-atomics.git", .upToNextMajor(from: "1.0.2")),
     ],
     targets: [
         .target(

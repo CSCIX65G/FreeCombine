@@ -11,16 +11,16 @@
 * Race-free.
   * Yield-free.
   * Sleep-free.
-  * Continuations are only created after upstream continuations are guaranteed to exist
+  * subscribeOn-race-free.  (Continuations are only created after upstream continuations are guaranteed to exist)
 * Leak-free.
-  * Memory-bound Task resolution
-  * Memory-bound Continuation resolution
-  * Unbounded queue-free.
+  * ARC-like Task lifetimes
+  * ARC-like Continuation lifetimes
 * Lock-free.
   * Queueing channel instead of locking channel
+  * Blocking, not locking
   * No use of `os_unfair_lock` or equivalent constructs in other operating system 
 * Foundation-free.
-  * depends only on Swift std lib (and swift-atomics)
+  * depends only on Swift std lib and swift-atomics.
 
 Implies the following Do's and Dont's
 
@@ -35,6 +35,7 @@ Sort of Don'ts:
 * Use of `Task.init` only in Cancellable
 * Use of `[Checked|Unsafe]Continuation` only in Resumption
 * Use of `AsyncStream.init` only in Channel
+* Use of .unbounded as BufferingPolicy
 
 ## Salient features
 

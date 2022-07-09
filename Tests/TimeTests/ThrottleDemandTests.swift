@@ -43,7 +43,7 @@ class ThrottleDemandTests: XCTestCase {
         } catch {
             t.cancel()
             let count = await counter.count
-            XCTAssert(count == 11, "Got wrong count = \(count)")
+            XCTAssert(count == 10, "Got wrong count = \(count)")
         }
 
         _ = await t.result

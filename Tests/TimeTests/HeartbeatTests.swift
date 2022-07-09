@@ -23,8 +23,7 @@ class HeartbeatTests: XCTestCase {
             .handleEvents(receiveOutput: { _ in await inputCounter.increment() })
             .sink({ value in
                 switch value {
-                    case .value(let value):
-                        print(value)
+                    case .value:
                         let count = await counter.increment()
                         return count >= 10 ? .done : .more
                     case let .completion(.failure(error)):
@@ -37,7 +36,8 @@ class HeartbeatTests: XCTestCase {
                 }
             })
 
-        _ = await t.result
+        let r = await t.result
+        print(r)
         let count = await counter.count
         XCTAssert(count == 10, "Got wrong count = \(count)")
         let inputCount = await inputCounter.count

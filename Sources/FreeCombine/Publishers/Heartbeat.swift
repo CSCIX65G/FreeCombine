@@ -13,23 +13,29 @@ public extension Publisher where Output == UInt64 {
     init(interval: Duration, maxTicks: Int = Int.max) {
         self = Publisher<UInt64> { continuation, downstream  in
             .init {
-                let startTime = DispatchTime.now().uptimeNanoseconds
-                var ticks: UInt64 = 0
-                continuation.resume()
-                while ticks < maxTicks {
-                    guard !Task.isCancelled else {
-                        return try await handleCancellation(of: downstream)
+                do {
+                    let start = DispatchTime.now().uptimeNanoseconds
+                    var current = start
+                    var ticks: UInt64 = 0
+                    continuation.resume()
+                    while ticks < maxTicks {
+                        guard !Task.isCancelled else {
+                            return try await handleCancellation(of: downstream)
+                        }
+                        ticks += 1
+                        let next = start + (ticks * interval.inNanoseconds)
+                        current = DispatchTime.now().uptimeNanoseconds
+                        if current > next { continue }
+                        try? await Task.sleep(nanoseconds: next - current)
+                        current = DispatchTime.now().uptimeNanoseconds
+                        guard try await downstream(.value(current)) != .done else {
+                            return .done
+                        }
                     }
-                    ticks += 1
-                    let nextTime = startTime + (ticks * interval.inNanoseconds)
-                    let currentTime = DispatchTime.now().uptimeNanoseconds
-                    if currentTime > nextTime { continue }
-                    switch try await downstream(.value(currentTime)) {
-                        case .done: return .done
-                        case .more: try? await Task.sleep(nanoseconds: nextTime - currentTime)
-                    }
+                    _ = try await downstream(.completion(.finished))
+                } catch {
+                    throw error
                 }
-                _ = try await downstream(.completion(.finished))
                 return .done
             }
         }
@@ -56,7 +62,7 @@ public extension Publisher {
     ) where Output == C.Instant {
         self = Publisher<C.Instant> { continuation, downstream  in
                 .init {
-                    let startTime = clock.now
+                    let start = clock.now
                     var ticks: Int = .zero
                     continuation.resume()
                     while ticks < maxTicks {
@@ -64,11 +70,12 @@ public extension Publisher {
                             return try await handleCancellation(of: downstream)
                         }
                         ticks += 1
-                        let nextTime = startTime.advanced(by: interval * ticks)
-                        let currentTime = clock.now
-                        if currentTime > nextTime { continue }
+                        let nextTime = start.advanced(by: interval * ticks)
+                        let current = clock.now
+                        if current > nextTime { continue }
                         try await clock.sleep(until: nextTime, tolerance: tolerance)
-                        return try await downstream(.value(currentTime))
+                        let now = clock.now
+                        return try await downstream(.value(now))
                     }
                     _ = try await downstream(.completion(.finished))
                     return .done

@@ -4,11 +4,28 @@ https://youtu.be/T5oB8PZQNvY
 
 https://leanpub.com/sofp
 
+### Swift's Structure Concurrency
+
+[SE-304 Structured Concurrency](https://github.com/apple/swift-evolution/blob/main/proposals/0304-structured-concurrency.md#structured-concurrency-1) The original structured concurrency proposal from Apple.
+
+[Sources for a lot of the design](https://forums.swift.org/t/concurrency-designs-from-other-communities/32389/16)
+
+[Notes on structured concurrency](https://vorpus.org/blog/notes-on-structured-concurrency-or-go-statement-considered-harmful/) the original post that sparked Apple's approach of structured concurrency, in particular the idea that Task lifetimes should be organized hierarchically.
+
+[Timeouts and Cancellation for Humans](https://vorpus.org/blog/timeouts-and-cancellation-for-humans/) - influential on Apple's thinking
+
+[Guidelines on NIO](https://github.com/swift-server/guides/blob/main/docs/concurrency-adoption-guidelines.md).  The official guidelines that implementors of server-side code are supposed to consider.
+
+[NIO Roadmap](https://forums.swift.org/t/future-of-swift-nio-in-light-of-concurrency-roadmap/41633/4).  Basically that NIO needs custom executors.
 
 ### Theory of Streams
-* [Stream Fusion: From Lists to Streams to Nothing At All](https://github.com/bitemyapp/papers/blob/master/Stream%20Fusion:%20From%20Lists%20to%20Streams%20to%20Nothing%20At%20All.pdf)
+* [A Brief History of Streams](https://shonan.nii.ac.jp/archives/seminar/136/wp-content/uploads/sites/172/2018/09/a-brief-history-of-streams.pdf) - see especially page 21 comparing push and pull strategies
+
+[History of Haskell](https://www.microsoft.com/en-us/research/wp-content/uploads/2016/07/history.pdf) - see in particular Section 7.1 on Stream and Continuation-based I/O
 
 * [Oleg Kiselyov's Stream Page](https://okmij.org/ftp/Streams.html)
+
+* [Stream Fusion: From Lists to Streams to Nothing At All](https://github.com/bitemyapp/papers/blob/master/Stream%20Fusion:%20From%20Lists%20to%20Streams%20to%20Nothing%20At%20All.pdf)
 
 * [All Things Flow: A History of Streams](https://okmij.org/ftp/Computation/streams-hapoc2021.pdf)
 
@@ -16,6 +33,10 @@ https://leanpub.com/sofp
 
 * [Functional Stream Libraries and Fusion: What's Next?](https://okmij.org/ftp/meta-programming/shonan-streams.pdf)
 
+### Theory of State
+[Lazy Functional State Threads](https://github.com/bitemyapp/papers/blob/master/Lazy%20Functional%20State%20Threads.pdf) - the original paper on the ST monad
+
+### Generalized Functional Concurrency
 https://github.com/bitemyapp/papers/blob/master/A%20Poor%20Man's%20Concurrency%20Monad.pdf
 https://github.com/bitemyapp/papers/blob/master/Cheap%20(But%20Functional)%20Threads.pdf
 https://github.com/bitemyapp/papers/blob/master/Combining%20Events%20and%20Threads%20for%20Scalable%20Network%20Services:%20Implementation%20and%20Evaluation%20of%20Monadic%2C%20Application-Level%20Concurrency%20Primitives.pdf
@@ -23,22 +44,16 @@ https://github.com/bitemyapp/papers/blob/master/Compiling%20with%20Continuations
 https://github.com/bitemyapp/papers/blob/master/Functional%20Reactive%20Programming%20from%20First%20Principles.pdf
 https://github.com/bitemyapp/papers/blob/master/Functional%20Reactive%20Programming%2C%20Continued.pdf
 https://github.com/bitemyapp/papers/blob/master/Higher-Order%20Functional%20Reactive%20Programming%20without%20Spacetime%20Leaks.pdf
-https://github.com/bitemyapp/papers/blob/master/Lazy%20Functional%20State%20Threads.pdf
 https://github.com/bitemyapp/papers/blob/master/Push-pull%20functional%20reactive%20programming.pdf
 https://github.com/bitemyapp/papers/blob/master/Stream%20Fusion%20on%20Haskell%20Unicode%20Strings.pdf
 
 
-### Theory of State
-
-
-
 ### Stream Libraries
 
-[Akka Streams](https://qconnewyork.com/ny2015/system/files/presentation-slides/AkkaStreamsQconNY.pdf)
-
-### Combine
+[Akka Streams](https://qconnewyork.com/ny2015/system/files/presentation-slides/AkkaStreamsQconNY.pdf) - important for the idea of dynamic push/pull mode.  See especially starting on page 29.
 
 [Conversation on Combine](https://iosdevelopers.slack.com/archives/C0AET0JQ5/p1623102144192300)
+[And](https://iosdevelopers.slack.com/archives/C0AET0JQ5/p1623177619245300?thread_ts=1623102144.192300&cid=C0AET0JQ5)
 
 ### Concepts
 
