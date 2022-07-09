@@ -23,7 +23,7 @@ public final class Cancellable<Output: Sendable>: Sendable {
 
     public var isCancelled: Bool { task.isCancelled }
     public var isCompleting: Bool { deallocGuard.load(ordering: .sequentiallyConsistent) }
-    public var value: Output {  get async throws { try await task.value } }
+    public var value: Output { get async throws { try await task.value } }
     public var result: Result<Output, Swift.Error> {  get async { await task.result } }
 
     @Sendable public func cancel() -> Void {

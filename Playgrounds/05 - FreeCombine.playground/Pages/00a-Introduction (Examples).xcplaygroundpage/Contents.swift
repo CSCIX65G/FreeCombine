@@ -27,7 +27,7 @@
  observe how the zip blocks of value `Int(14)` and `String("hello, combined world!")` are all emitted at the very end.
  */
 import Combine
-import Atomics
+
 
 func combineVersion() {
     let subject1 = Combine.PassthroughSubject<Int, Error>()

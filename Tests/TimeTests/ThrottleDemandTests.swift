@@ -19,9 +19,10 @@ class ThrottleDemandTests: XCTestCase {
         let expectation = await Expectation<Void>()
 
         let counter = Counter()
-        let t = await (1 ... 15).asyncPublisher
-            .throttleDemand(interval: .milliseconds(100))
+        let t = await (0 ... 15).asyncPublisher
+            .throttleDemand(interval: .seconds(1))
             .sink({ value in
+                print(value)
                 switch value {
                     case .value(_):
                         await counter.increment()
@@ -38,11 +39,11 @@ class ThrottleDemandTests: XCTestCase {
         })
 
         do {
-            try await FreeCombine.wait(for: expectation, timeout: 1_000_000_000)
+            try await FreeCombine.wait(for: expectation, timeout: 10_000_000_000)
         } catch {
             t.cancel()
             let count = await counter.count
-            XCTAssert(count == 11, "Got wrong count = \(count)")
+            XCTAssert(count == 10, "Got wrong count = \(count)")
         }
 
         _ = await t.result
