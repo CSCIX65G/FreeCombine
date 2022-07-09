@@ -1,15 +1,9 @@
 //
-//  File.swift
+//  Debounce.swift
 //  
 //
 //  Created by Van Simmons on 7/8/22.
 //
-//init(
-//    upstream: Upstream,
-//    dueTime: Context.SchedulerTimeType.Stride,
-//    scheduler: Context,
-//    options: Context.SchedulerOptions?
-//)
 extension Publisher {
     private func cleanup(
         _ subject: Subject<Output>,
