@@ -1,4 +1,3 @@
-
 /*:
  # Introduction
 
@@ -27,8 +26,6 @@
  observe how the zip blocks of value `Int(14)` and `String("hello, combined world!")` are all emitted at the very end.
  */
 import Combine
-
-
 func combineVersion() {
     let subject1 = Combine.PassthroughSubject<Int, Error>()
     let subject2 = Combine.PassthroughSubject<String, Error>()
@@ -46,7 +43,7 @@ func combineVersion() {
     
     let m2 = z1.merge(with: m1)
     let cancellable = m2.sink { value in
-        print("received: \(value)")
+        print("Combine received: \(value)")
     }
     
     subject1.send(14)
@@ -59,17 +56,16 @@ combineVersion()
 print("=========================================================")
 
 /*:
- Here's the same example done using FreeCombine.  It's the same algorithm as the combineVersion,
- observe how the zip does not block at all and value `Int(14)` and `String("hello, combined world!")`
- are emitted randomly as they occur.
+ Here's the same example done using FreeCombine.  It's the same algorithm
+ as the combineVersion, observe how the zip does not block at all and value
+ `Int(14)` and `String("hello, combined world!")` are emitted randomly as they occur.
  */
 import FreeCombine
 import _Concurrency
-
 func freeCombineVersion() {
     Task {
-        let subject1 = try await PassthroughSubject(Int.self)
-        let subject2 = try await PassthroughSubject(String.self)
+        let subject1 = try await FreeCombine.PassthroughSubject(Int.self)
+        let subject2 = try await FreeCombine.PassthroughSubject(String.self)
         
         let seq1 = "abcdefghijklmnopqrstuvwxyz".asyncPublisher
         let seq2 = (1 ... 100).asyncPublisher
@@ -86,7 +82,7 @@ func freeCombineVersion() {
         let m2 = z1.merge(with: m1)
         let cancellable = await m2.sink { value in
             guard case let .value(value) = value else { return .more }
-            print("received: \(value)")
+            print("FreeCombine received: \(value)")
             return .more
         }
         
@@ -94,12 +90,10 @@ func freeCombineVersion() {
         try await subject2.send("hello, combined world!")
         try await subject1.finish()
         try await subject2.finish()
-        let finalDemand = try await cancellable.value
-        print(finalDemand)
+        _ = await cancellable.result
     }
 }
 freeCombineVersion()
-print("=========================================================")
 
 /*:
  ## Project Requirements

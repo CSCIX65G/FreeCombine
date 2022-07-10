@@ -1,11 +1,10 @@
-### Functional Programming
+### Functional Programming Reference
 
 https://youtu.be/T5oB8PZQNvY
 
 https://leanpub.com/sofp
 
 ### Swift's Structure Concurrency
-
 [SE-304 Structured Concurrency](https://github.com/apple/swift-evolution/blob/main/proposals/0304-structured-concurrency.md#structured-concurrency-1) The original structured concurrency proposal from Apple.
 
 [Sources for a lot of the design](https://forums.swift.org/t/concurrency-designs-from-other-communities/32389/16)
@@ -60,6 +59,6 @@ https://github.com/bitemyapp/papers/blob/master/Stream%20Fusion%20on%20Haskell%2
 [Resource Acquisition is Initialization](https://en.wikipedia.org/wiki/Resource_acquisition_is_initialization)
 
 ### Odds and Ends
-
+[Actor-isolation and Executors](https://github.com/apple/swift-evolution/blob/main/proposals/0338-clarify-execution-non-actor-async.md)
 [EventLoopPromise](https://github.com/apple/swift-nio/blob/e2c7fa4d4bda7cb7f4150b6a0bd69be2a54ef8c4/Sources/NIOCore/EventLoopFuture.swift#L159)
 [EventLoopFuture deinit](https://github.com/apple/swift-nio/blob/e2c7fa4d4bda7cb7f4150b6a0bd69be2a54ef8c4/Sources/NIOCore/EventLoopFuture.swift#L428)

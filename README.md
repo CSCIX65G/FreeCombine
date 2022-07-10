@@ -2,6 +2,141 @@
 
 # FreeCombine
 
+## TL;DR
+
+FreeCombine is a streaming library designed to implement every Publisher operator in Apple's Combine framework only in `async` context.  This does NOT mean that _all_ semantics or syntax stays the same.  Implementing a streaming library like this in a concurrent fashion means that some things must change to prevent races and leaks.
+
+Here's a silly example of Combine that you can cut and paste into any playground:
+```swift
+import Combine
+func combineVersion() {
+    let subject1 = Combine.PassthroughSubject<Int, Error>()
+    let subject2 = Combine.PassthroughSubject<String, Error>()
+    
+    let seq1 = "abcdefghijklmnopqrstuvwxyz".publisher
+    let seq2 = (1 ... 100).publisher
+    
+    let z1 = seq1.zip(seq2)
+        .map { left, right in String(left) + String(right) }
+    let m1 = subject1
+        .map(String.init)
+        .mapError { _ in fatalError() }
+        .merge(with: subject2)
+        .replaceError(with: "")
+    
+    let m2 = z1.merge(with: m1)
+    let cancellable = m2.sink { value in
+        print("Combine received: \(value)")
+    }
+    
+    subject1.send(14)
+    subject2.send("hello, combined world!")
+    subject1.send(completion: .finished)
+    subject2.send(completion: .finished)
+    cancellable.cancel()
+}
+combineVersion()
+```
+This produces the following.  Note that `14` and `hello, combined world!` always appear at the end:
+```
+Combine received: a1
+Combine received: b2
+Combine received: c3
+Combine received: d4
+Combine received: e5
+Combine received: f6
+Combine received: g7
+Combine received: h8
+Combine received: i9
+Combine received: j10
+Combine received: k11
+Combine received: l12
+Combine received: m13
+Combine received: n14
+Combine received: o15
+Combine received: p16
+Combine received: q17
+Combine received: r18
+Combine received: s19
+Combine received: t20
+Combine received: u21
+Combine received: v22
+Combine received: w23
+Combine received: x24
+Combine received: y25
+Combine received: z26
+Combine received: 14
+Combine received: hello, combined world!
+```
+Here's the same example using FreeCombine which can be cut and pasted into a Playground which has access to FreeCombine:
+```swift
+import FreeCombine
+import _Concurrency
+func freeCombineVersion() {
+    Task {
+        let subject1 = try await FreeCombine.PassthroughSubject(Int.self)
+        let subject2 = try await FreeCombine.PassthroughSubject(String.self)
+        
+        let seq1 = "abcdefghijklmnopqrstuvwxyz".asyncPublisher
+        let seq2 = (1 ... 100).asyncPublisher
+        
+        let z1 = seq1.zip(seq2)
+            .map { left, right in String(left) + String(right) }
+        let m1 = subject1.publisher()
+            .map(String.init)
+            .mapError { _ in fatalError() }
+            .merge(with: subject2.publisher())
+            .replaceError(with: "")
+        
+        
+        let m2 = z1.merge(with: m1)
+        let cancellable = await m2.sink { value in
+            guard case let .value(value) = value else { return .more }
+            print("FreeCombine received: \(value)")
+            return .more
+        }
+        
+        try await subject1.send(14)
+        try await subject2.send("hello, combined world!")
+        try await subject1.finish()
+        try await subject2.finish()
+        _ = await cancellable.result
+    }
+}
+freeCombineVersion()
+```
+This produces the following. Observe how the zip does not block at all and value Int(14) and String("hello, combined world!") are emitted asynchronously as they occur.
+```
+FreeCombine received: a1
+FreeCombine received: b2
+FreeCombine received: 14
+FreeCombine received: c3
+FreeCombine received: d4
+FreeCombine received: e5
+FreeCombine received: hello, combined world!
+FreeCombine received: f6
+FreeCombine received: g7
+FreeCombine received: h8
+FreeCombine received: i9
+FreeCombine received: j10
+FreeCombine received: k11
+FreeCombine received: l12
+FreeCombine received: m13
+FreeCombine received: n14
+FreeCombine received: o15
+FreeCombine received: p16
+FreeCombine received: q17
+FreeCombine received: r18
+FreeCombine received: s19
+FreeCombine received: t20
+FreeCombine received: u21
+FreeCombine received: v22
+FreeCombine received: w23
+FreeCombine received: x24
+FreeCombine received: y25
+FreeCombine received: z26
+```
+
 ## Like Combine. Only free. And concurrent.
 
 FreeCombine is a functional streaming library for the Swift language.  
