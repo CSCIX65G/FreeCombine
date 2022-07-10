@@ -4,8 +4,24 @@
 
 ## TL;DR
 
-FreeCombine is a streaming library designed to implement every Publisher operator in Apple's Combine framework only in `async` context.  This does NOT mean that _all_ semantics or syntax stays the same.  Implementing a streaming library like this in a concurrent fashion means that some things must change to prevent races and leaks.
+FreeCombine is a streaming library designed to implement every Publisher operator in Apple's Combine framework only in `async` context.  This does _NOT_ mean that the semantics or syntax of each operator stays exactly the same.  Implementing a streaming library like this in a concurrent fashion means that some things must change to prevent races and leaks.
 
+An example of a change in syntax is `map`.  Here's the Combine definition of `map` on a Publisher:
+```
+func map<T>(_ transform: @escaping (Self.Output) -> T) -> Publishers.Map<Self, T>
+```
+Here's the same function on Publisher in FreeCombine:
+```
+func map<B>( _ f: @escaping (Output) async -> B) -> Publisher<B>
+```
+Note two significant changes:
+
+1. FreeCombine returns a standard Publisher, not a special MapPublisher
+1. FreeCombine accepts an `async` transform function.
+
+These differences are pervasive throughout the library and are explained in much more detail below and in the example and explanatory playgrounds in this repository.
+
+## First Example
 Here's a silly example of Combine that you can cut and paste into any playground:
 ```swift
 import Combine
@@ -37,7 +53,7 @@ func combineVersion() {
 }
 combineVersion()
 ```
-This produces the following.  Note that `14` and `hello, combined world!` always appear at the end:
+This produces the following output.  Note that `14` and `hello, combined world!` always appear at the end:
 ```
 Combine received: a1
 Combine received: b2
@@ -105,7 +121,7 @@ func freeCombineVersion() {
 }
 freeCombineVersion()
 ```
-This produces the following. Observe how the zip does not block at all and value Int(14) and String("hello, combined world!") are emitted asynchronously as they occur.
+This produces the following. Observe how the zip does not block at all and the values `14` and `hello, combined world!` are emitted asynchronously as they occur into the stream.
 ```
 FreeCombine received: a1
 FreeCombine received: b2
@@ -141,11 +157,11 @@ FreeCombine received: z26
 
 FreeCombine is a functional streaming library for the Swift language.  
 
-Functional streaming comes in two forms: push and pull.  FreeCombine is pull.  RxSwift and ReactiveSwift are push.  Combine is both, but primarily pull. (If you have ever wondered what a Subscription is in Combine, it's the implementation of pull semantics). AsyncSequence in Apple's Swift standard library is pull-only.  While there are exceptions, streams in synchronous systems tend to be push, in asynchronous systems they tend to be pull. Different applications are better suited to one form of streaming than the other. The main differences lie in how the two treat combinators like zip or decombinators like Combine's Subject. 
+Functional streaming comes in two forms: push and pull.  FreeCombine is pull.  RxSwift and ReactiveSwift are push.  Combine is both, but primarily pull in that the vast majority of use cases are push mode. (If you have ever wondered what a Subscription is in Combine, it's the implementation of pull semantics.  Any use of `sink` or `assign` puts the stream into push mode). AsyncSequence in Apple's Swift standard library is pull-only.  While there are exceptions, streams in synchronous systems tend to be push, in asynchronous systems they tend to be pull. Different applications are better suited to one form of streaming than the other. The main differences lie in how the two modes treat combinators like zip or decombinators like Combine's Subject. 
 
 All streaming libraries are written in the Continuation Passing Style (CPS).  Because of this they share certain operations for the Continuation type: map, flatMap, filter, reduce, et al.  
 
-Promise/Future systems are also written in CPS and as a result share many of the same operations.  FreeCombine incorporates NIO-style Promises and Futures as a result.
+Promise/Future systems are also written in CPS and as a result share many of the same operations.  FreeCombine incorporates NIO-style Promises and Futures almost by default as a result of its implemenation of CPS.
 
 FreeCombine differs from AsyncSequence (and its support in Apple's swift-async-algorithms package) in the following key ways.  FreeCombine is:
 
@@ -156,14 +172,16 @@ FreeCombine differs from AsyncSequence (and its support in Apple's swift-async-a
 * Race-free.
   * Yield-free.
   * Sleep-free.
-  * subscribeOn-race-free.  (Continuations are only created after upstream continuations are guaranteed to exist)
+  * subscribeOn-race-free.  (Continuations are only created after upstream continuations are guaranteed to exist and have started)
+  * All tests must execute successfully for 10,000 repetitions under Xcode's `Run [Tests] Repeatedly` option.
 * Leak-free.
   * ARC-like Task lifetimes
   * ARC-like Continuation lifetimes
+  * Leaks of FreeCombine primitives are considered programmer error and are handled in a way similar to leaks of NIO EventLoopPromises.
 * Lock-free.
-  * Queueing channel instead of locking channel
+  * Use queueing channels instead of locking channels
   * Blocking, not locking
-  * No use of `os_unfair_lock` or equivalent constructs in other operating system 
+  * No use of `os_unfair_lock` or equivalent constructs in other operating systems 
 
 These "freedoms" imply the following specific restrictions:
 
@@ -178,7 +196,7 @@ Sort of Don'ts:
 * Use of `Task.init` only in Cancellable
 * Use of `[Checked|Unsafe]Continuation` only in Resumption
 * Use of `AsyncStream.init` only in Channel
-* Use of .unbounded as BufferingPolicy only in Channel's which accept subscribe operations
+* Use of .unbounded as BufferingPolicy only in Channels which accept downstream-specific operations
 
 ## Salient features
 
