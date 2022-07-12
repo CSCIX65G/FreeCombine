@@ -9,8 +9,12 @@ extension Publisher {
         _ subject: Subject<Output>,
         _ subjectRef: ValueRef<Subject<Output>?>,
         _ cancellable: Cancellable<Demand>,
-        _ cancellableRef: ValueRef<Cancellable<Demand>?>
+        _ cancellableRef: ValueRef<Cancellable<Demand>?>,
+        _ timerCancellableRef: ValueRef<Cancellable<Void>?>
     ) async throws  -> Void {
+        let timerCancellable = await timerCancellableRef.value
+        _ = await timerCancellable?.cancelAndAwaitResult()
+        await timerCancellableRef.set(value: .none)
         try await subject.finish()
         _ = await subject.result
         await subjectRef.set(value: .none)
@@ -24,31 +28,40 @@ extension Publisher {
         .init { continuation, downstream in
             let subjectRef = ValueRef<Subject<Output>?>(value: .none)
             let cancellableRef = ValueRef<Cancellable<Demand>?>(value: .none)
+            let timerCancellableRef = ValueRef<Cancellable<Void>?>(value: .none)
             return self(onStartup: continuation) { r in
                 var subject: Subject<Output>! = await subjectRef.value
                 var cancellable: Cancellable<Demand>! = await cancellableRef.value
                 if subject == nil {
-                    subject = try await PassthroughSubject()
+                    subject = try await PassthroughSubject(buffering: .bufferingNewest(1))
                     await subjectRef.set(value: subject)
-                    cancellable = await subject.publisher()
-                        .delayEachDemand(interval: interval)
-                        .sink(downstream)
+                    cancellable = await subject.publisher().sink(downstream)
                     await cancellableRef.set(value: cancellable)
                 }
                 guard !Task.isCancelled && !cancellable.isCancelled else {
-                    try await cleanup(subject, subjectRef, cancellable, cancellableRef)
+                    try await cleanup(subject, subjectRef, cancellable, cancellableRef, timerCancellableRef)
                     return try await handleCancellation(of: downstream)
                 }
-                do { let _: Void = try subject.send(r) }
-                catch { /* ignore failure to enqueue, that's the entire point */ }
+                if let timer = await timerCancellableRef.value {
+                    // FIXME: Need to check if value got sent anyway
+                    _ = await timer.cancelAndAwaitResult()
+                    await timerCancellableRef.set(value: .none)
+                }
+                await timerCancellableRef.set(value: .init {
+                    guard let subject = await subjectRef.value else {
+                        throw PublisherError.internalError
+                    }
+                    try await Task.sleep(nanoseconds: interval.inNanoseconds)
+                    let _: Void = try subject.send(r)
+                })
                 switch r {
                     case .value:
                         return .more
                     case .completion(.finished), .completion(.cancelled):
-                        try await cleanup(subject, subjectRef, cancellable, cancellableRef)
+                        try await cleanup(subject, subjectRef, cancellable, cancellableRef, timerCancellableRef)
                         return .done
                     case .completion(.failure(let error)):
-                        try await cleanup(subject, subjectRef, cancellable, cancellableRef)
+                        try await cleanup(subject, subjectRef, cancellable, cancellableRef, timerCancellableRef)
                         throw error
                 }
             }

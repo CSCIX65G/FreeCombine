@@ -4,7 +4,7 @@
 
 ## TL;DR
 
-FreeCombine is a streaming library designed to implement every Publisher operator in Apple's Combine framework only in `async` context.  This does _NOT_ mean that the semantics or syntax of each operator stays exactly the same.  Implementing a streaming library like this in a concurrent fashion means that some things must change to prevent races and leaks.
+FreeCombine is a streaming library designed to implement every Publisher operator in Apple's Combine framework - only in `async` context.  This does _NOT_ mean that the semantics or syntax of each operator stays exactly the same.  Implementing a streaming library like this in a concurrent fashion means that some things must change to prevent races and leaks.
 
 An example of a change in syntax is `map`.  Here's the Combine definition of `map` on a Publisher:
 ```
@@ -84,7 +84,14 @@ Combine received: z26
 Combine received: 14
 Combine received: hello, combined world!
 ```
-Here's the same example using FreeCombine which can be cut and pasted into a Playground which has access to FreeCombine:
+Here's the same example using FreeCombine which can be cut and pasted into a Playground which has access to FreeCombine.  Note the following differences:
+
+1. The PassthroughSubject calls take the Output type as a function parameter rather than a type parameter.
+1. The PasshthroughSubject calls do not require a Failure type. In the manner of NIO and all Subjects in FreeCombine use imprecise Error handling and therefore use `Swift.Error` as the error type.
+1. The Sequence types Array and String have been extended with `asyncPublisher` rather than just `publisher`
+1. The cancellable at the end is awaited instead of simply cancelled.
+
+All of these differences are explained in this repo.
 ```swift
 import FreeCombine
 import _Concurrency
@@ -121,7 +128,7 @@ func freeCombineVersion() {
 }
 freeCombineVersion()
 ```
-This produces the following. Observe how the zip does not block at all and the values `14` and `hello, combined world!` are emitted asynchronously as they occur into the stream.
+This produces the following. Observe how the zip does not block at all and the values `14` and `hello, combined world!` are emitted asynchronously as they occur into the stream.  The location in the output in which you will receive those two values if you run this code may vary and different runs of the same code may place them in different locations.
 ```
 FreeCombine received: a1
 FreeCombine received: b2
@@ -157,18 +164,20 @@ FreeCombine received: z26
 
 FreeCombine is a functional streaming library for the Swift language.  
 
-Functional streaming comes in two forms: push and pull.  FreeCombine is pull.  RxSwift and ReactiveSwift are push.  Combine is both, but primarily pull in that the vast majority of use cases are push mode. (If you have ever wondered what a Subscription is in Combine, it's the implementation of pull semantics.  Any use of `sink` or `assign` puts the stream into push mode). AsyncSequence in Apple's Swift standard library is pull-only.  While there are exceptions, streams in synchronous systems tend to be push, in asynchronous systems they tend to be pull. Different applications are better suited to one form of streaming than the other. The main differences lie in how the two modes treat combinators like zip or decombinators like Combine's Subject. 
+Functional streaming comes in two forms: push and pull.  FreeCombine is pull.  RxSwift and ReactiveSwift are push.  Combine is both, but primarily pull in that the vast majority of use cases utilize push mode. (If you have ever wondered what a Subscription is in Combine, it's the implementation of pull semantics.  Any use of `sink` or `assign` puts the stream into push mode and ignores Demand). AsyncSequence in Apple's Swift standard library is pull-only. 
 
-All streaming libraries are written in the Continuation Passing Style (CPS).  Because of this they share certain operations for the Continuation type: map, flatMap, filter, reduce, et al.  
+While there are exceptions, streams in synchronous systems tend to be push, in asynchronous systems they tend to be pull. Different applications are better suited to one form of streaming than the other. The main differences lie in how the two modes treat combinators like zip or decombinators like Combine's Subject. A good summary of the differences is found in this presentation: [A Brief History of Streams](https://shonan.nii.ac.jp/archives/seminar/136/wp-content/uploads/sites/172/2018/09/a-brief-history-of-streams.pdf) - especially the table on page 21
 
-Promise/Future systems are also written in CPS and as a result share many of the same operations.  FreeCombine incorporates NIO-style Promises and Futures almost by default as a result of its implemenation of CPS.
+All streaming libraries are written in the Continuation Passing Style (CPS).  Because of this they share certain operations for the Continuation type: map, flatMap, join, filter, reduce, et al.  
+
+Promise/Future systems are also written in CPS and as a result share many of the same operations.  FreeCombine incorporates NIO-style Promises and Futures almost by default as a result of FreeCombine's direct implemenation of CPS.
 
 FreeCombine differs from AsyncSequence (and its support in Apple's swift-async-algorithms package) in the following key ways.  FreeCombine is:
 
 * Protocol-free.
   * No protocols, only concrete types
   * Eager type erasure
-  * Explicit implemenation of the continuation-passing style via Continuation type.
+  * Explicit implemenation of the continuation-passing style via Publisher type.
 * Race-free.
   * Yield-free.
   * Sleep-free.
@@ -177,7 +186,7 @@ FreeCombine differs from AsyncSequence (and its support in Apple's swift-async-a
 * Leak-free.
   * ARC-like Task lifetimes
   * ARC-like Continuation lifetimes
-  * Leaks of FreeCombine primitives are considered programmer error and are handled in a way similar to leaks of NIO EventLoopPromises.
+  * Leaks of FreeCombine primitives are considered programmer error and are handled in a way similar to [leaks of NIO EventLoopPromises](https://github.com/apple/swift-nio/blob/48916a49afedec69275b70893c773261fdd2cfde/Sources/NIOCore/EventLoopFuture.swift#L431).
 * Lock-free.
   * Use queueing channels instead of locking channels
   * Blocking, not locking
