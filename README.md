@@ -21,6 +21,8 @@ Note two significant changes:
 
 These differences are pervasive throughout the library and are explained in much more detail below and in the example and explanatory playgrounds in this repository.
 
+But TL;DR... This is an Async version of Combine.
+
 ## First Example
 Here's a silly example of Combine that you can cut and paste into any playground:
 ```swift
@@ -87,11 +89,11 @@ Combine received: hello, combined world!
 Here's the same example using FreeCombine which can be cut and pasted into a Playground which has access to FreeCombine.  Note the following differences:
 
 1. The PassthroughSubject calls take the Output type as a function parameter rather than a type parameter.
-1. The PasshthroughSubject calls do not require a Failure type. In the manner of NIO and all Subjects in FreeCombine use imprecise Error handling and therefore use `Swift.Error` as the error type.
-1. The Sequence types Array and String have been extended with `asyncPublisher` rather than just `publisher`
-1. The cancellable at the end is awaited instead of simply cancelled.
+1. The PasshthroughSubject calls do not require a Failure type. In the manner of NIO, all Subjects in FreeCombine use imprecise Error handling and therefore use `Swift.Error` as the error type.
+1. The Sequence types: `Array` and `String` have been extended with `asyncPublisher` rather than just `publisher`
+1. The cancellable at the end is awaited instead of simply discarded.
 
-All of these differences are explained in this repo.
+All of these differences are explained in this repo in the `Playgrounds` section.  If you are not interested in the `why?'s` but only in the `how?'s`, the Example section is for you.
 ```swift
 import FreeCombine
 import _Concurrency
@@ -164,7 +166,7 @@ FreeCombine received: z26
 
 FreeCombine is a functional streaming library for the Swift language.  
 
-Functional streaming comes in two forms: push and pull.  FreeCombine is pull.  RxSwift and ReactiveSwift are push.  Combine is both, but primarily pull in that the vast majority of use cases utilize push mode. (If you have ever wondered what a Subscription is in Combine, it's the implementation of pull semantics.  Any use of `sink` or `assign` puts the stream into push mode and ignores Demand). AsyncSequence in Apple's Swift standard library is pull-only. 
+Functional streaming comes in two forms: push and pull.  FreeCombine is pull.  RxSwift and ReactiveSwift are push.  Combine is both, but primarily pull in that the vast majority of use cases utilize push mode. (If you have ever wondered what a Subscription is in Combine, it's the implementation of pull semantics.  Any use of `sink` or `assign` puts the stream into push mode and ignores Demand). AsyncSequence in Apple's Swift standard library is pull. 
 
 While there are exceptions, streams in synchronous systems tend to be push, in asynchronous systems they tend to be pull. Different applications are better suited to one form of streaming than the other. The main differences lie in how the two modes treat combinators like zip or decombinators like Combine's Subject. A good summary of the differences is found in this presentation: [A Brief History of Streams](https://shonan.nii.ac.jp/archives/seminar/136/wp-content/uploads/sites/172/2018/09/a-brief-history-of-streams.pdf) - especially the table on page 21
 
@@ -207,6 +209,12 @@ Sort of Don'ts:
 * Use of `AsyncStream.init` only in Channel
 * Use of .unbounded as BufferingPolicy only in Channels which accept downstream-specific operations
 
+In the immortal words of [John Hughes](https://www.cs.kent.ac.uk/people/staff/dat/miranda/whyfp90.pdf): 
+
+    The functional programmer sounds rather like a medieval monk, denying himself the pleasures of life in the hope that it will make him virtuous. To those more interested in material benefits, these “advantages” are totally unconvincing.
+
+That's not a bad description of what we are doing here.  :)
+
 ## Salient features
 
 1. "Small things that compose"
@@ -227,11 +235,15 @@ Sort of Don'ts:
   
   Secondarily, this repo is my own feeble attempt to answer the following questions: 
   
-  1. Why does Swift's Structured Concurrency, not have the same set of primitives as (say) Concurrent Haskell?
-  1. Why is that whenever I ask someone: do you use TaskGroup or `async let`, they respond, "I don't but I'm sure that there are other people who do." ?
-  1. Why is it that Task lifetimes much align with their parent's lifetime, but that other objects which are in a parent-child relationship have no such restriction?
+  1. Why does Swift's Structured Concurrency not have the same set of primitives as (say) Haskell or Java?
+  1. Why, when I start out using TaskGroup and `async let` in my designs do I eventually end up discarding them and using their unstructured counterparts?
+  1. Why is that whenever I ask someone: "Do you use TaskGroup or `async let` and if so, how?", they respond, "I don't but I'm sure that there are many other people who do." ?
+  1. Why is it that in Structured Concurrency, Task lifetimes must align with their parent's lifetime, but that other objects which are in a parent-child relationship have no such lifetime restriction?
+  1. What are the real differences between an `actor` and an AtomicReference
+  1. Why, when I start out using actors in my design do I always end up using an AsyncStream or an AtomicReference instead?
   1. Are there differences between what we mean when we refer to Structured Concurrency and what we mean when we refer to Functional Concurrency and precisely what would those differences be?
-
+  1. Why is it that the use of protocols seems to produce much more complicated APIs than if the same APIs had been implemented with concrete types instead.
+   
   ### Functional Requirements
 
   In November of 2021 [Phillipe Hausler observed](https://forums.swift.org/t/should-asyncsequence-replace-combine-in-the-future-or-should-they-coexist/53370/10) that there were several things that needed to be done to bring Combine functionality into the new world of Swift Concurrency. The list provided there was added to the requirements and the following are currently in the library:
@@ -260,7 +272,7 @@ Sort of Don'ts:
 
   ### On Deprotocolization
 
-The answer to question 1 on why every function returns a different type essentially comes down to the use of having Publisher be an existential type (aka a protocol) rather than a plain generic type. Here's an example of what I'm talking about:
+The answer to question 1 about Combine, on why every function returns a different type, essentially comes down to the use of having Publisher be an existential type (aka a protocol) rather than a concrete generic type. Here's an example of what I'm talking about:
 
 ![Combine Return Types](Images/CombineReturnTypes.png)
 
