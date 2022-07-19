@@ -36,8 +36,7 @@ class HeartbeatTests: XCTestCase {
                 }
             })
 
-        let r = await t.result
-        print(r)
+        _ = await t.result
         let count = await counter.count
         XCTAssert(count == 10, "Got wrong count = \(count)")
         let inputCount = await inputCounter.count

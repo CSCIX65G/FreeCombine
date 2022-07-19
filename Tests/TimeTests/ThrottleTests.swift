@@ -16,13 +16,11 @@ class ThrottleTests: XCTestCase {
     override func tearDownWithError() throws { }
 
     func testSimpleThrottle() async throws {
-        let expectation = await Expectation<Void>()
-
         let inputCounter = Counter()
         let counter = Counter()
         let t = await (1 ... 15).asyncPublisher
             .handleEvents(receiveOutput: { _ in await inputCounter.increment() })
-            .throttle(interval: .milliseconds(1000), latest: false)
+            .throttle(interval: .milliseconds(100), latest: false)
             .sink({ value in
                 switch value {
                     case .value(_):
@@ -38,17 +36,11 @@ class ThrottleTests: XCTestCase {
                 }
             })
 
-        do {
-            try await FreeCombine.wait(for: expectation, timeout: 1_000_000_000)
-        } catch {
-            t.cancel()
-            let count = await counter.count
-            let inputCount = await inputCounter.count
-            XCTAssert(count == 1, "Got wrong count = \(count)")
-            XCTAssert(inputCount == 15, "Got wrong count = \(inputCount)")
-        }
-
         _ = await t.result
+        let count = await counter.count
+        let inputCount = await inputCounter.count
+        XCTAssert(count == 1, "Got wrong count = \(count)")
+        XCTAssert(inputCount == 15, "Got wrong count = \(inputCount)")
     }
 
     func testSimpleSubjectThrottle() async throws {
@@ -58,7 +50,7 @@ class ThrottleTests: XCTestCase {
         let subject = try await PassthroughSubject(Int.self)
         let t = await subject.publisher()
             .handleEvents(receiveOutput: { _ in await inputCounter.increment() })
-            .throttle(interval: .milliseconds(1000), latest: false)
+            .throttle(interval: .milliseconds(100), latest: false)
             .sink({ value in
                 switch value {
                     case .value(let value):
@@ -79,10 +71,11 @@ class ThrottleTests: XCTestCase {
 
         for i in (0 ..< 15) {
             try await subject.send(i)
-            try await Task.sleep(nanoseconds: 100_000_000)
+            try await Task.sleep(nanoseconds: 9_000_000)
         }
-
         try await subject.finish()
+
+        _ = await t.result
         _ = await subject.result
 
         let count = await counter.count
@@ -92,9 +85,8 @@ class ThrottleTests: XCTestCase {
         XCTAssert(inputCount == 15, "Got wrong count = \(inputCount)")
 
         let vals = await values.value
-        XCTAssert(vals == [0, 1], "Incorrect values")
+        XCTAssert(vals == [0, 10] || vals == [0, 9] || vals == [0, 11], "Incorrect values: \(vals)")
 
-        _ = await t.result
     }
 
     func testSimpleSubjectThrottleLatest() async throws {
@@ -104,7 +96,7 @@ class ThrottleTests: XCTestCase {
         let subject = try await PassthroughSubject(Int.self)
         let t = await subject.publisher()
             .handleEvents(receiveOutput: { _ in await inputCounter.increment() })
-            .throttle(interval: .milliseconds(1000), latest: true)
+            .throttle(interval: .milliseconds(100), latest: true)
             .sink({ value in
                 switch value {
                     case .value(let value):
@@ -125,10 +117,11 @@ class ThrottleTests: XCTestCase {
 
         for i in (0 ..< 15) {
             try await subject.send(i)
-            try await Task.sleep(nanoseconds: 100_000_000)
+            try await Task.sleep(nanoseconds: 10_000_000)
         }
-
         try await subject.finish()
+
+        _ = await t.result
         _ = await subject.result
 
         let count = await counter.count
@@ -138,8 +131,6 @@ class ThrottleTests: XCTestCase {
         XCTAssert(inputCount == 15, "Got wrong count = \(inputCount)")
 
         let vals = await values.value
-        XCTAssert(vals == [0, 9], "Incorrect values")
-
-        _ = await t.result
+        XCTAssert(vals == [8, 14] || vals == [7, 14] , "Incorrect values: \(vals)")
     }
 }

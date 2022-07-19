@@ -1,3 +1,7 @@
+### Functional Programming
+
+[Why Functional Programming Matters](https://www.cs.kent.ac.uk/people/staff/dat/miranda/whyfp90.pdf)
+
 ### Functional Programming Reference
 
 https://youtu.be/T5oB8PZQNvY
