@@ -211,7 +211,7 @@ Sort of Don'ts:
 
 In the immortal words of [John Hughes](https://www.cs.kent.ac.uk/people/staff/dat/miranda/whyfp90.pdf): 
 
-    The functional programmer sounds rather like a medieval monk, denying himself the pleasures of life in the hope that it will make him virtuous. To those more interested in material benefits, these “advantages” are totally unconvincing.
+> The functional programmer sounds rather like a medieval monk, denying himself the pleasures of life in the hope that it will make him virtuous. To those more interested in material benefits, these “advantages” are totally unconvincing.
 
 That's not a bad description of what we are doing here.  :)
 
@@ -244,7 +244,7 @@ That's not a bad description of what we are doing here.  :)
   1. Are there differences between what we mean when we refer to Structured Concurrency and what we mean when we refer to Functional Concurrency and precisely what would those differences be?
   1. Why is it that the use of protocols seems to produce much more complicated APIs than if the same APIs had been implemented with concrete types instead.
    
-  ### Functional Requirements
+### Functional Requirements
 
   In November of 2021 [Phillipe Hausler observed](https://forums.swift.org/t/should-asyncsequence-replace-combine-in-the-future-or-should-they-coexist/53370/10) that there were several things that needed to be done to bring Combine functionality into the new world of Swift Concurrency. The list provided there was added to the requirements and the following are currently in the library:
 
@@ -254,7 +254,7 @@ That's not a bad description of what we are doing here.  :)
   4. Failure Transformation
   5. Getting the first result from N running tasks
 
-  ## Design Philosophy
+## Design Philosophy
 
   I've taught Combine several times now and invariably 3 questions come up:
 
@@ -270,7 +270,7 @@ That's not a bad description of what we are doing here.  :)
   1. Why can't NIO just use Concurrency like other Swift libraries?
   1. Are there other use cases that I should be worrying about where I can't use Concurrency?
 
-  ### On Deprotocolization
+### On Deprotocolization
 
 The answer to question 1 about Combine, on why every function returns a different type, essentially comes down to the use of having Publisher be an existential type (aka a protocol) rather than a concrete generic type. Here's an example of what I'm talking about:
 
@@ -289,9 +289,8 @@ If we insist on the use of protocols for Combine, the only real alternative is t
 
 Following onto the ideas in those posts, [Holly Borla in SE-335](https://github.com/apple/swift-evolution/blob/main/proposals/0335-existential-any.md#introduction) makes a very compelling case for why we avoid should protocols in libraries like Combine. Here's the money quote:
 
-```
-Existential types in Swift have an extremely lightweight spelling: a plain protocol name in type context means an existential type. Over the years, this has risen to the level of active harm by causing confusion, leading programmers down the wrong path that often requires them to re-write code once they hit a fundamental limitation of value-level abstraction.
-```
+
+> Existential types in Swift have an extremely lightweight spelling: a plain protocol name in type context means an existential type. Over the years, this has risen to the level of active harm by causing confusion, leading programmers down the wrong path that often requires them to re-write code once they hit a fundamental limitation of value-level abstraction.
 
 In my opinion, what SE-335 is saying applies to Combine (and frankly to AsyncSequence in the standard library). The question is: how do we _NOT_ use existentials in a library like Combine. And the answer is to use generics instead. In the next playground we derive a generic-only version of Combine from the required Combine protocols 
 
