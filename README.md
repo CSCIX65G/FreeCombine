@@ -207,7 +207,7 @@ Sort of Don'ts:
 * Use of `Task.init` only in Cancellable
 * Use of `[Checked|Unsafe]Continuation` only in Resumption
 * Use of `AsyncStream.init` only in Channel
-* Use of .unbounded as BufferingPolicy only in Channels which accept downstream-specific operations
+* Use of `.unbounded` as a BufferingPolicy only in Channels which accept downstream-specific operations such as subscribe and unsubscribe.
 
 In the immortal words of [John Hughes](https://www.cs.kent.ac.uk/people/staff/dat/miranda/whyfp90.pdf): 
 
