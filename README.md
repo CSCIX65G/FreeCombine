@@ -96,7 +96,7 @@ Note the following differences:
 
 1. The PassthroughSubject calls take the Output type as a function parameter rather than a type parameter.
 1. The PasshthroughSubject calls do not require a Failure type. In the manner of NIO, all Subjects and Publishers in FreeCombine use imprecise Error handling and therefore use `Swift.Error` as the error type.
-1. The `subject`s require you to ask them for a `publisher`.  In FreeCombine, Subject is _not_ a Publisher, bc Publisher is _not_ a protocol.
+1. The Subjects require you to ask them for a `publisher()`.  In FreeCombine, Subject _cannot be_ a Publisher, because Publisher is _not_ a protocol.
 1. The Sequence types: `Array` and `String` have been extended with `asyncPublisher` rather than just `publisher`
 1. The cancellable and the subjects at the end are all awaited instead of simply discarded.
 
@@ -176,7 +176,7 @@ FreeCombine is a functional streaming library for the Swift language.
 
 Functional streaming comes in two forms: push and pull.  FreeCombine is pull.  RxSwift and ReactiveSwift are push.  Combine is both, but primarily pull in that the vast majority of use cases utilize push mode. (If you have ever wondered what a Subscription is in Combine, it's the implementation of pull semantics.  Any use of `sink` or `assign` puts the stream into push mode and ignores Demand). AsyncSequence in Apple's Swift standard library is pull. 
 
-The difference between push and pull is fundamental.  It explains why, as of this writing in July '22, Swift Async Algorithms still lacks a `Subject`-like. `Subject`, `ConnectablePublisher` and operations like `throttle`, `delay` and `debounce` are really hard to get right in a pull system.  OTOH, operations like `zip` are really hard to get right in a push system because the require the introduction of unbounded queues upstream.
+The difference between push and pull is fundamental.  It explains why, as of this writing in July '22, Swift Async Algorithms still lacks a `Subject`-like type. It's because `Subject`, `ConnectablePublisher` and operations like `throttle`, `delay` and `debounce` are really hard to get right in a pull system and they are much easier to implement in push systems.  OTOH, operations like `zip` are really hard to get right in a push system because the require the introduction of unbounded queues upstream.
 
 While there are exceptions, streams in synchronous systems tend to be push, in asynchronous systems they tend to be pull. Different applications are better suited to one form of streaming than the other. The main differences lie in how the two modes treat combinators like zip or decombinators like Combine's Subject. A good summary of the differences is found in this presentation: [A Brief History of Streams](https://shonan.nii.ac.jp/archives/seminar/136/wp-content/uploads/sites/172/2018/09/a-brief-history-of-streams.pdf) - especially the table on page 21
 
@@ -236,10 +236,10 @@ That's not a bad description of what we are doing here.  :)
   
   1. Why does Swift Concurrency seem to avoid use of functional constructs like `map`, `flatMap`, and `zip` when dealing with generic types like Tasks, but to embrance them fully when dealing with generic types like `AsyncStream`?
   1. Why does the use of protocols in things like Combine and AsyncSequence seem to produce much more complicated APIs than if the same APIs had been implemented with concrete types instead?
-  1. Why does Swift's Structured Concurrency not have a set of primitives similar to (say) Haskell or Java?  In particular, why does writing constructs like Haskell's [ST monad](https://hackage.haskell.org/package/base-4.3.1.0/docs/Control-Monad-ST.html), [MVar](https://hackage.haskell.org/package/base-4.16.2.0/docs/Control-Concurrent-MVar.html), or [TVar](https://hackage.haskell.org/package/stm-2.5.0.2/docs/Control-Concurrent-STM-TVar.html) or implementing the common Producer/Consumer pattern seen ubiquitously in Java, seem so difficult?
+  1. Why does Swift's Structured Concurrency not have a set of primitives similar to (say) Haskell or Java?  In particular, why does writing constructs like Haskell's [ST monad](https://hackage.haskell.org/package/base-4.3.1.0/docs/Control-Monad-ST.html), [MVar](https://hackage.haskell.org/package/base-4.16.2.0/docs/Control-Concurrent-MVar.html), or [TVar](https://hackage.haskell.org/package/stm-2.5.0.2/docs/Control-Concurrent-STM-TVar.html) or implementing the common [Producer/Consumer pattern](https://www.baeldung.com/java-producer-consumer-problem) seen ubiquitously in Java concurrency, seem so difficult?
   1. Why, when I start out using TaskGroup and `async let` in my designs do I eventually end up discarding them and using their unstructured counterparts?
   1. Why is that whenever I ask someone: "Do you use TaskGroup or `async let` and if so, how?", they respond, "I don't but I'm sure that there are many other people who do." ?
-  1. Why is it that in Structured Concurrency, Task lifetimes must align with their parent's lifetime, but that other objects which are in a parent-child relationship have no such lifetime restriction?
+  1. Why is it that in Structured Concurrency, Task lifetimes must align with their parent's lifetime, but that other objects which are in a parent-child relationship have no such lifetime restriction and can instead be shared or have ownership transferred and in the end are managed by ARC?
   1. What are the differences between `actor` and swift-atomics `AtomicReference`?
   1. Why, when I start out using actors in my design do I always end up using an AsyncStream or an AtomicReference instead?
   1. Are there differences between what we mean when we refer to Structured Concurrency and what we mean when we refer to Functional Concurrency and precisely what would those differences be?
