@@ -39,7 +39,7 @@ extension Publisher {
             }
         }
 
-        private func cleanup() async throws  -> Void {
+        fileprivate func cleanup() async throws  -> Void {
             _ = await timerCancellable.cancelAndAwaitResult()
             try await subject.finish()
             _ = await cancellable.result
@@ -70,57 +70,28 @@ extension Publisher {
         bufferSize: Int = 1
     ) -> Self {
         .init { continuation, downstream in
-            let throttler: Throttler? = .init()
-            let subjectRef = ValueRef<Subject<Output>?>(value: .none)
-            let cancellableRef = ValueRef<Cancellable<Demand>?>(value: .none)
-            let valueRef = ValueRef<AsyncStream<Output>.Result?>(value: .none)
-            let completionRef = ValueRef<AsyncStream<Output>.Result?>(value: .none)
-            let timerCancellableRef = ValueRef<Cancellable<Demand>?>(value: .none)
+            let throttler: Throttler = .init()
             return self(onStartup: continuation) { r in
-                var vSubject: Subject<Output>! = await subjectRef.value
-                var vCancellable: Cancellable<Demand>! = await cancellableRef.value
-                try await throttler?.activate(interval: interval, latest: latest, downstream: downstream)
+                try await throttler.activate(interval: interval, latest: latest, downstream: downstream)
 
-                if vSubject == nil {
-                    vSubject = try await PassthroughSubject(buffering: .bufferingNewest(1))
-                    await subjectRef.set(value: vSubject)
-                    vCancellable = await vSubject.publisher().sink(downstream)
-                    await cancellableRef.set(value: vCancellable)
-                }
-                var timerCancellable: Cancellable<Demand>! = await timerCancellableRef.value
-                let subject = vSubject!
-                let cancellable = vCancellable!
-                if timerCancellable == nil {
-                    timerCancellable = await Heartbeat(interval: interval).sink { _ in
-                        if let value = await valueRef.value {
-                            try await subject.send(value)
-                            await valueRef.set(value: .none)
-                        }
-                        if let completion = await completionRef.value {
-                            try await subject.send(completion)
-                            try await cleanup(subject, subjectRef, cancellable, cancellableRef, timerCancellableRef)
-                        }
-                    }
-                    await timerCancellableRef.set(value: timerCancellable)
-                }
-                guard !Task.isCancelled && !cancellable.isCancelled else {
-                    try await cleanup(subject, subjectRef, cancellable, cancellableRef, timerCancellableRef)
+                // Check for cancellation
+                let isCancelled = await throttler.cancellable.isCancelled
+                guard !Task.isCancelled && !isCancelled else {
+                    try await throttler.cleanup()
                     return try await handleCancellation(of: downstream)
                 }
 
                 switch r {
                     case .value:
-                        let value = await valueRef.value
-                        if value == nil || latest {
-                            await valueRef.set(value: r); return .more
-                        }
+                        let value = await throttler.value
+                        if value == nil || latest { await throttler.set(value: r); return .more }
                         return .more
                     case .completion(.finished), .completion(.cancelled):
-                        _ = await completionRef.set(value: r)
-                        return try await cancellable.value
+                        _ = await throttler.set(completion: r)
+                        return try await throttler.cancellable.value
                     case .completion(.failure(let error)):
-                        _ = await completionRef.set(value: r)
-                        _ = try await cancellable.value
+                        _ = await throttler.set(completion: r)
+                        _ = try await throttler.cancellable.value
                         throw error
                 }
             }
