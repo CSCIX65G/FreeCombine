@@ -95,7 +95,7 @@ Below is the same example using FreeCombine.  This can also be cut and pasted in
 Note the following differences:
 
 1. The PassthroughSubject calls take the Output type as a function parameter rather than a type parameter.
-1. The PasshthroughSubject calls do not require a Failure type. In the manner of NIO, all Subjects and Publishers in FreeCombine use imprecise Error handling and therefore use `Swift.Error` as the error type.
+1. The PasshthroughSubject calls do not require a Failure type. In the manner of NIO and Concurrency, all Subjects and Publishers in FreeCombine use [imprecise Error handling](https://forums.swift.org/t/precise-error-typing-in-swift/52045) and therefore use `Swift.Error` as the error type.
 1. The Subjects require you to ask them for a `publisher()`.  In FreeCombine, Subject _cannot be_ a Publisher, because Publisher is _not_ a protocol.
 1. The Sequence types: `Array` and `String` have been extended with `asyncPublisher` rather than just `publisher`
 1. The cancellable and the subjects at the end are all awaited instead of simply discarded.
@@ -137,7 +137,7 @@ func freeCombineVersion() {
 }
 freeCombineVersion()
 ```
-This code produces the following output. Observe how the zip does not block at all and the values `14` and `hello, combined world!` are emitted asynchronously into the stream as they occur. _And they occur asyncronously_.  The location in the output where you receive those two values if you run this code will vary and different runs of the same code may place them in different places.
+This code produces the following output. Observe how the zip does not block at all and the values `14` and `hello, combined world!` are emitted asynchronously into the stream as they occur. _And unlike the Combine example, they do occur asyncronously_.  The location in the output where you receive those two values if you run this code will vary and different runs of the same code may place them in different places.
 ```
 FreeCombine received: a1
 FreeCombine received: b2
@@ -176,16 +176,16 @@ FreeCombine is a functional streaming library for the Swift language.
 
 Functional streaming comes in two forms: push and pull.  FreeCombine is pull.  RxSwift and ReactiveSwift are push.  Combine is both, but primarily pull in that the vast majority of use cases utilize push mode. (If you have ever wondered what a Subscription is in Combine, it's the implementation of pull semantics.  Any use of `sink` or `assign` puts the stream into push mode and ignores Demand). AsyncSequence in Apple's Swift standard library is pull. 
 
-The difference between push and pull is fundamental.  It explains why, as of this writing in July '22, Swift Async Algorithms still lacks a `Subject`-like type. It's because `Subject`, `ConnectablePublisher` and operations like `throttle`, `delay` and `debounce` are really hard to get right in a pull system and they are much easier to implement in push systems.  OTOH, operations like `zip` are really hard to get right in a push system because the require the introduction of unbounded queues upstream.
+The difference between push and pull is fundamental.  It explains why, as of this writing in July '22, Swift Async Algorithms still lacks a `Subject`-like type. It's because `Subject`, `ConnectablePublisher` and operations like `throttle`, `delay` and `debounce` are really hard to get right in a pull system and they are much easier to implement in push systems.  OTOH, operations like `zip` are really hard to get right in a push system because they require the introduction of unbounded queues upstream.
 
 While there are exceptions, streams in synchronous systems tend to be push, in asynchronous systems they tend to be pull. Different applications are better suited to one form of streaming than the other. The main differences lie in how the two modes treat combinators like zip or decombinators like Combine's Subject. A good summary of the differences is found in this presentation: [A Brief History of Streams](https://shonan.nii.ac.jp/archives/seminar/136/wp-content/uploads/sites/172/2018/09/a-brief-history-of-streams.pdf) - especially the table on page 21
 
-All streaming libraries are written in the Continuation Passing Style (CPS).  Because of this they share certain operations for the Continuation type: map, flatMap, join, filter, reduce, et al.  
+All streaming libraries are written in the [Continuation Passing Style (CPS)](https://en.wikipedia.org/wiki/Continuation-passing_style).  Because of this they share certain operations for the Continuation type: map, flatMap, join, filter, reduce, et al.  FWIW, OOP notation is also CPS just slightly disguised.
 
 Promise/Future systems are also written in CPS and as a result share many of the same operations.  FreeCombine incorporates NIO-style Promises and Futures almost by default as a result of FreeCombine's direct implemenation of CPS.
 
 ## What makes FreeCombine "Free"
-FreeCombine differs from AsyncSequence (and its support in Apple's swift-async-algorithms package) in the following key ways.  FreeCombine is:
+FreeCombine differs from AsyncSequence (and its support in Apple's swift-async-algorithms package) in the following key ways.  FreeCombine is free in the sense that it is:
 
 * Protocol-free.
   * No use of protocols, only concrete types
@@ -194,31 +194,33 @@ FreeCombine differs from AsyncSequence (and its support in Apple's swift-async-a
 * Race-free.
   * Yield-free.
   * Sleep-free.
-  * subscribeOn-race-free.  (Continuations are only created after upstream continuations are guaranteed to exist and have started)
-  * All tests must execute successfully for 10,000 repetitions under Xcode's `Run [Tests] Repeatedly` option.
+  * subscribeOn-free.  `subscribeOn`-like functionality is inherent in FreeCombine.  The race conditions it creates are prevented because continuations are only created after upstream continuations are guaranteed to exist and have started.  `subscribeOn` is guaranteed to be in the right async context.
+  * All tests must demonstrate race-free operation by executing successfully for 10,000 repetitions under Xcode's `Run [Tests] Repeatedly` option.
 * Leak-free.
   * ARC-like Task lifetimes
   * ARC-like Continuation lifetimes
   * Leaks of FreeCombine primitives are considered programmer error and are handled in a way similar to [leaks of NIO EventLoopPromises](https://github.com/apple/swift-nio/blob/48916a49afedec69275b70893c773261fdd2cfde/Sources/NIOCore/EventLoopFuture.swift#L431).
 * Lock-free.
-  * Use queueing channels instead of locking channels
-  * Blocking, not locking
+  * Uses queueing channels instead of locking channels
+  * i.e. Blocking, not locking
   * No use of `os_unfair_lock` or equivalent constructs in other operating systems 
+
+The key take away here is: Protocol-free, race-free, leak-free, lock-free is the motto of the firm.
 
 These "freedoms" imply the following specific restrictions:
 
 Don'ts:
 * No use of `protocol`
 * No use of `TaskGroup` or `async let`
-* No use of `AsyncSequence`
-* No use of `swift-async-algorithms`
+* No use of `AsyncSequence`, use AsyncStream only
+* No use of `swift-async-algorithms` due to pervasive use of locking algorithms and AsyncSequence
 
 Sort of Don'ts:
 * Use of `for await` only in StateTask
 * Use of `Task.init` only in Cancellable
-* Use of `[Checked|Unsafe]Continuation` only in Resumption
+* Use of `[Checked|Unsafe]Continuation.init` only in Resumption
 * Use of `AsyncStream.init` only in Channel
-* Use of `.unbounded` as a BufferingPolicy only in Channels which accept downstream-specific operations such as subscribe and unsubscribe.
+* Use of `.unbounded` as a BufferingPolicy only in Channels which accept downstream-specific operations such as subscribe and unsubscribe.  Upstream operations such as `receiveValue` must be `.oldest(1)` except in specific cases like `throttle` where they may be `.newest(1)`.
 
 In the immortal words of [John Hughes](https://www.cs.kent.ac.uk/people/staff/dat/miranda/whyfp90.pdf): 
 
@@ -228,11 +230,11 @@ That's not a bad description of what we are doing here.  :)
 
 ## Introduction
 
-  For a long time I've been exploring the idea of what Apple's Swift Combine framework would look like if written without using protocols. The advent of Concurrency support in Swift 5.5 provided an impetus to complete that exploration. This repository represents the current state of that effort and consists of material that I intend to incorporate into classes I teach on iOS development at [Harvard](https://courses.dce.harvard.edu/?details&srcdb=202203&crn=33540) and at [Tufts](https://www.cs.tufts.edu/t/courses/description/fall2021/CS/151-02).
+For a long time I've been exploring the idea of what Apple's Swift Combine framework would look like if written without using protocols. The advent of Concurrency support in Swift 5.5 provided an impetus to complete that exploration. This repository represents the current state of that effort and consists of material that I intend to incorporate into classes I teach on iOS development at [Harvard](https://courses.dce.harvard.edu/?details&srcdb=202203&crn=33540) and at [Tufts](https://www.cs.tufts.edu/t/courses/description/fall2021/CS/151-02).
 
-  Ideally, this material would become the core of an expanded course on Functional Concurrent Programming using Swift, but that course is still fairly far off.  
+Ideally, this material would become the core of an expanded course on Functional Concurrent Programming using Swift, but that course is still fairly far off.  
   
-  Secondarily, this repo is my own feeble attempt to answer the following questions: 
+Secondarily, this repo is my own feeble attempt to answer the following questions: 
   
   1. Why does Swift Concurrency seem to avoid use of functional constructs like `map`, `flatMap`, and `zip` when dealing with generic types like Tasks, but to embrance them fully when dealing with generic types like `AsyncStream`?
   1. Why does the use of protocols in things like Combine and AsyncSequence seem to produce much more complicated APIs than if the same APIs had been implemented with concrete types instead?
