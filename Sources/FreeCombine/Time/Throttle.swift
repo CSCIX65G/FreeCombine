@@ -47,23 +47,6 @@ extension Publisher {
         }
     }
 
-    private func cleanup(
-        _ subject: Subject<Output>,
-        _ subjectRef: ValueRef<Subject<Output>?>,
-        _ cancellable: Cancellable<Demand>,
-        _ cancellableRef: ValueRef<Cancellable<Demand>?>,
-        _ timerCancellableRef: ValueRef<Cancellable<Demand>?>
-    ) async throws  -> Void {
-        let timerCancellable = await timerCancellableRef.value
-        _ = await timerCancellable?.cancelAndAwaitResult()
-        await timerCancellableRef.set(value: .none)
-        try await subject.finish()
-        _ = await cancellable.result
-        await cancellableRef.set(value: .none)
-        _ = await subject.result
-        await subjectRef.set(value: .none)
-    }
-
     func throttle(
         interval: Duration,
         latest: Bool = false,
