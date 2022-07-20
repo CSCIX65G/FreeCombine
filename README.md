@@ -2,9 +2,13 @@
 
 # FreeCombine
 
+Note that this README is still under construction...
+
 ## TL;DR
 
-FreeCombine is a streaming library designed to implement every Publisher operator in Apple's Combine framework - only in `async` context.  This does _NOT_ mean that the semantics or syntax of each operator stays exactly the same.  Implementing a streaming library like this in a concurrent fashion means that some things must change to prevent races and leaks.
+FreeCombine is a streaming library designed to implement every Publisher operator in Apple's Combine framework - only in `async` context.  This does _NOT_ mean that the semantics or syntax of each operator will stay exactly the same.  Implementing a streaming library using Swift Concurrency means that some things _must_ change semantically to prevent data races and task leaks.
+
+Additionally, FreeCombine takes a different stance on how Publishers are constructed - we don't use protocols, instead we use concrete types.  This also leads to code that looks and feels almost the same as Combine, but which is slightly different.
 
 An example of a change in syntax is `map`.  Here's the Combine definition of `map` on a Publisher:
 ```
@@ -21,7 +25,7 @@ Note two significant changes:
 
 These differences are pervasive throughout the library and are explained in much more detail below and in the example and explanatory playgrounds in this repository.
 
-But TL;DR... This is an Async version of Combine.
+But TL;DR... This is an async version of Combine.
 
 ## First Example
 Here's a silly example of Combine that you can cut and paste into any playground:
@@ -86,12 +90,15 @@ Combine received: z26
 Combine received: 14
 Combine received: hello, combined world!
 ```
-Here's the same example using FreeCombine which can be cut and pasted into a Playground which has access to FreeCombine.  Note the following differences:
+Below is the same example using FreeCombine.  This can also be cut and pasted into a Playground which has access to FreeCombine.
+  
+Note the following differences:
 
 1. The PassthroughSubject calls take the Output type as a function parameter rather than a type parameter.
-1. The PasshthroughSubject calls do not require a Failure type. In the manner of NIO, all Subjects in FreeCombine use imprecise Error handling and therefore use `Swift.Error` as the error type.
+1. The PasshthroughSubject calls do not require a Failure type. In the manner of NIO, all Subjects and Publishers in FreeCombine use imprecise Error handling and therefore use `Swift.Error` as the error type.
+1. The `subject`s require you to ask them for a `publisher`.  In FreeCombine, Subject is _not_ a Publisher, bc Publisher is _not_ a protocol.
 1. The Sequence types: `Array` and `String` have been extended with `asyncPublisher` rather than just `publisher`
-1. The cancellable at the end is awaited instead of simply discarded.
+1. The cancellable and the subjects at the end are all awaited instead of simply discarded.
 
 All of these differences are explained in this repo in the `Playgrounds` section.  If you are not interested in the `why?'s` but only in the `how?'s`, the Example section is for you.
 ```swift
@@ -130,7 +137,7 @@ func freeCombineVersion() {
 }
 freeCombineVersion()
 ```
-This produces the following. Observe how the zip does not block at all and the values `14` and `hello, combined world!` are emitted asynchronously as they occur into the stream.  The location in the output in which you will receive those two values if you run this code may vary and different runs of the same code may place them in different locations.
+This code produces the following output. Observe how the zip does not block at all and the values `14` and `hello, combined world!` are emitted asynchronously into the stream as they occur. _And they occur asyncronously_.  The location in the output where you receive those two values if you run this code will vary and different runs of the same code may place them in different places.
 ```
 FreeCombine received: a1
 FreeCombine received: b2
@@ -161,6 +168,7 @@ FreeCombine received: x24
 FreeCombine received: y25
 FreeCombine received: z26
 ```
+# The Long Version
 
 ## Like Combine. Only free. And concurrent.
 
@@ -168,18 +176,21 @@ FreeCombine is a functional streaming library for the Swift language.
 
 Functional streaming comes in two forms: push and pull.  FreeCombine is pull.  RxSwift and ReactiveSwift are push.  Combine is both, but primarily pull in that the vast majority of use cases utilize push mode. (If you have ever wondered what a Subscription is in Combine, it's the implementation of pull semantics.  Any use of `sink` or `assign` puts the stream into push mode and ignores Demand). AsyncSequence in Apple's Swift standard library is pull. 
 
+The difference between push and pull is fundamental.  It explains why, as of this writing in July '22, Swift Async Algorithms still lacks a `Subject`-like. `Subject`, `ConnectablePublisher` and operations like `throttle`, `delay` and `debounce` are really hard to get right in a pull system.  OTOH, operations like `zip` are really hard to get right in a push system because the require the introduction of unbounded queues upstream.
+
 While there are exceptions, streams in synchronous systems tend to be push, in asynchronous systems they tend to be pull. Different applications are better suited to one form of streaming than the other. The main differences lie in how the two modes treat combinators like zip or decombinators like Combine's Subject. A good summary of the differences is found in this presentation: [A Brief History of Streams](https://shonan.nii.ac.jp/archives/seminar/136/wp-content/uploads/sites/172/2018/09/a-brief-history-of-streams.pdf) - especially the table on page 21
 
 All streaming libraries are written in the Continuation Passing Style (CPS).  Because of this they share certain operations for the Continuation type: map, flatMap, join, filter, reduce, et al.  
 
 Promise/Future systems are also written in CPS and as a result share many of the same operations.  FreeCombine incorporates NIO-style Promises and Futures almost by default as a result of FreeCombine's direct implemenation of CPS.
 
+## What makes FreeCombine "Free"
 FreeCombine differs from AsyncSequence (and its support in Apple's swift-async-algorithms package) in the following key ways.  FreeCombine is:
 
 * Protocol-free.
-  * No protocols, only concrete types
-  * Eager type erasure
-  * Explicit implemenation of the continuation-passing style via Publisher type.
+  * No use of protocols, only concrete types
+  * Eager type erasure, no long nested types as seen in Combine.
+  * Explicit implemenation of the continuation-passing style via the Publisher and StateTask types.
 * Race-free.
   * Yield-free.
   * Sleep-free.
@@ -207,25 +218,13 @@ Sort of Don'ts:
 * Use of `Task.init` only in Cancellable
 * Use of `[Checked|Unsafe]Continuation` only in Resumption
 * Use of `AsyncStream.init` only in Channel
-* Use of .unbounded as BufferingPolicy only in Channels which accept downstream-specific operations
+* Use of `.unbounded` as a BufferingPolicy only in Channels which accept downstream-specific operations such as subscribe and unsubscribe.
 
 In the immortal words of [John Hughes](https://www.cs.kent.ac.uk/people/staff/dat/miranda/whyfp90.pdf): 
 
 > The functional programmer sounds rather like a medieval monk, denying himself the pleasures of life in the hope that it will make him virtuous. To those more interested in material benefits, these “advantages” are totally unconvincing.
 
 That's not a bad description of what we are doing here.  :)
-
-## Salient features
-
-1. "Small things that compose"
-1. Implement all operations supported by Combine, but some require modification
-1. Uses "imprecise" errors throughout in the manner of Swift NIO.
-1. Tasks and Continuations can _always_ fail due to cancellation so no Failure type on Continuations
-1. Principled handling of cancellation throughout 
-1. Futures _AND_ Streams, chocolate _AND_ peanut butter
-1. No dependency on Foundation
-1. Finally and very importantly, ownership of Tasks/Cancellables can be transferred or even shared.
-
 
 ## Introduction
 
@@ -235,14 +234,19 @@ That's not a bad description of what we are doing here.  :)
   
   Secondarily, this repo is my own feeble attempt to answer the following questions: 
   
-  1. Why does Swift's Structured Concurrency not have the same set of primitives as (say) Haskell or Java?
+  1. Why does Swift Concurrency seem to avoid use of functional constructs like `map`, `flatMap`, and `zip` when dealing with generic types like Tasks, but to embrance them fully when dealing with generic types like `AsyncStream`?
+  1. Why does the use of protocols in things like Combine and AsyncSequence seem to produce much more complicated APIs than if the same APIs had been implemented with concrete types instead?
+  1. Why does Swift's Structured Concurrency not have a set of primitives similar to (say) Haskell or Java?  In particular, why does writing constructs like Haskell's [ST monad](https://hackage.haskell.org/package/base-4.3.1.0/docs/Control-Monad-ST.html), [MVar](https://hackage.haskell.org/package/base-4.16.2.0/docs/Control-Concurrent-MVar.html), or [TVar](https://hackage.haskell.org/package/stm-2.5.0.2/docs/Control-Concurrent-STM-TVar.html) or implementing the common Producer/Consumer pattern seen ubiquitously in Java, seem so difficult?
   1. Why, when I start out using TaskGroup and `async let` in my designs do I eventually end up discarding them and using their unstructured counterparts?
   1. Why is that whenever I ask someone: "Do you use TaskGroup or `async let` and if so, how?", they respond, "I don't but I'm sure that there are many other people who do." ?
   1. Why is it that in Structured Concurrency, Task lifetimes must align with their parent's lifetime, but that other objects which are in a parent-child relationship have no such lifetime restriction?
-  1. What are the real differences between an `actor` and an AtomicReference
+  1. What are the differences between `actor` and swift-atomics `AtomicReference`?
   1. Why, when I start out using actors in my design do I always end up using an AsyncStream or an AtomicReference instead?
   1. Are there differences between what we mean when we refer to Structured Concurrency and what we mean when we refer to Functional Concurrency and precisely what would those differences be?
-  1. Why is it that the use of protocols seems to produce much more complicated APIs than if the same APIs had been implemented with concrete types instead.
+   
+   
+   
+## Additional notes to be organized in the future
    
 ### Functional Requirements
 
@@ -254,7 +258,7 @@ That's not a bad description of what we are doing here.  :)
   4. Failure Transformation
   5. Getting the first result from N running tasks
 
-## Design Philosophy
+### Design Philosophy
 
   I've taught Combine several times now and invariably 3 questions come up:
 
@@ -269,6 +273,18 @@ That's not a bad description of what we are doing here.  :)
   1. Why is Future a class and not a struct?
   1. Why can't NIO just use Concurrency like other Swift libraries?
   1. Are there other use cases that I should be worrying about where I can't use Concurrency?
+
+### Salient features
+
+1. "Small things that compose"
+1. Implement all operations supported by Combine, but some require modification
+1. Uses "imprecise" errors throughout in the manner of Swift NIO.
+1. Tasks and Continuations can _always_ fail due to cancellation so no Failure type on Continuations
+1. Principled handling of cancellation throughout 
+1. Futures _AND_ Streams, chocolate _AND_ peanut butter
+1. No dependency on Foundation
+1. Finally and very importantly, ownership of Tasks/Cancellables can be transferred or even shared.
+
 
 ### On Deprotocolization
 
@@ -305,7 +321,7 @@ In my opinion, what SE-335 is saying applies to Combine (and frankly to AsyncSeq
     * Sending .completion(.finished|.cancelled|.failure(Error)) means that the value returned is ignored (proactive)
     * External cancellation causes .completion(.cancelled) to be sent as the next demanded value (external)
 
-## Todo
+### Todo
 
 1. ~~Implement leak prevention on UnsafeContinuation, Task, and AsyncStream.Continuation~~
 1. ~~maybe add an additional repo (FreeCombineDispatch) that depends on libdispatch to get delay, debounce, throttle~~
