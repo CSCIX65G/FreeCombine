@@ -6,9 +6,9 @@ Note that this README is still under construction. The places herein where I ref
 
 ## TL;DR
 
-FreeCombine is a streaming library designed to implement every Publisher operator in Apple's Combine framework - only in `async` context and allowing `async` functions where ever Combine accepts a function as an argument.  NB this does _NOT_ mean that the semantics or syntax of each operator will stay exactly the same.  Implementing a streaming library using Swift Concurrency means that some things _must_ change semantically to prevent data races and task leaks.
+FreeCombine is a streaming library designed to implement every Publisher operator in Apple's Combine framework - only in `async` context and allowing `async` functions whereever Combine accepts a function as an argument.  NB this does _NOT_ mean that the semantics or syntax of each operator will stay exactly the same.  Implementing a streaming library using Swift Concurrency means that some things _must_ change semantically to prevent data races and task leaks.
 
-Additionally, FreeCombine takes a different stance on how Publishers are constructed - we don't use protocols, instead we use concrete types.  This also leads to code that looks and feels almost the same as Combine, but which is slightly different.  To facilitate the use of FreeCombine, several liberties have been taken with Swift syntax to make it appear as much as possible like Combine.
+Additionally, FreeCombine takes a different stance on how Publishers are constructed - we don't use protocols, instead we use concrete types.  This also leads to code that looks and feels almost the same as Combine, but which is slightly different.  To facilitate the use of FreeCombine, several liberties have been taken with Swift syntax to make FreeCombine appear as much as possible like Combine.
 
 An example of a change in syntax is `map`.  Here's the Combine definition of `map` on a Publisher:
 ```
@@ -25,7 +25,7 @@ Note two significant changes:
 
 These differences are pervasive throughout the library and are explained in much more detail below and in the Example and explanatory playgrounds in this repository.
 
-But TL;DR... This is an async version of Combine.
+But really TL;DR... This is an async version of Combine.
 
 ## First Example
 Here's a silly example of Combine that you can cut and paste into any playground:
@@ -186,7 +186,7 @@ While there are exceptions, streams in synchronous systems tend to be push, in a
 
 All streaming libraries are written in the [Continuation Passing Style (CPS)](https://en.wikipedia.org/wiki/Continuation-passing_style).  Because of this they share certain operations for the Continuation type: map, flatMap, join, filter, reduce, et al.  (FWIW, everything you know Object-Oriented notation is also CPS just slightly disguised and this is shown Playground 2 in the Playgrounds directory).
 
-Promise/Future systems are also written in CPS and as a result share many of the same operations.  FreeCombine incorporates NIO-style Promises and Futures almost by default as a result of FreeCombine's direct implemenation of CPS.  In FreeCombine's implementation of Publisher and Future, it is easy to read the relationship directly from the type signatures. Futures can be thought of as "one-shot" streams, i.e. a stream which will one ever send exactly one element down the stream.  Promises can be seen to be the exact analog of Subject in the one-shot world. If you find the concept of a "one-shot" stream odd, it is worth noting that the Swift Standard Library has an exactly analogous notion in the type [CollectionOfOne](https://developer.apple.com/documentation/swift/collectionofone).
+Promise/Future systems are also written in CPS and as a result share many of the same operations.  FreeCombine incorporates NIO-style Promises and Futures almost by default as a result of FreeCombine's direct implemenation of CPS.  In FreeCombine's implementation of Publisher and Future, it is easy to read the relationship directly from the type signatures. Futures can be thought of as "one-shot" streams, i.e. a stream which will only ever send exactly one element downstream.  In this paradigm, Promises can be seen to be the exact one-shot representation of Subject from the "normal" streaming world. If you find the concept of a "one-shot" stream odd, it is worth noting that the Swift Standard Library already has an exactly analogous notion in the type [CollectionOfOne](https://developer.apple.com/documentation/swift/collectionofone).
 
 ## What makes FreeCombine "Free"
 So what makes FreeCombine different from AsyncSequence (and its support in Apple's swift-async-algorithms package)? And what do you mean by _free_ anyway.  FreeCombine is "free" in the sense that it is:
@@ -240,45 +240,48 @@ Ideally, this material would become the core of an expanded course on Functional
   
 Secondarily, this repo is my own feeble attempt to answer the following questions: 
   
-  1. Why does Swift Concurrency seem to avoid use of functional constructs like `map`, `flatMap`, and `zip` when dealing with generic types like Tasks, but to embrance them fully when dealing with generic types like `AsyncStream`?
-  1. Why does the use of protocols in things like Combine and AsyncSequence seem to produce much more complicated APIs than if the same APIs had been implemented with concrete types instead?
-  1. Why does Swift's Structured Concurrency not have a set of primitives similar to (say) Haskell or Java?  In particular, why does it seem so difficult to use Structured Concurrency to write constructs like Haskell's [ST monad](https://hackage.haskell.org/package/base-4.3.1.0/docs/Control-Monad-ST.html), [MVar](https://hackage.haskell.org/package/base-4.16.2.0/docs/Control-Concurrent-MVar.html), or [TVar](https://hackage.haskell.org/package/stm-2.5.0.2/docs/Control-Concurrent-STM-TVar.html) or to implement the common [Producer/Consumer pattern](https://www.baeldung.com/java-producer-consumer-problem) seen ubiquitously in Java concurrency?
-  1. Why, when I start out using TaskGroup and `async let` in my designs do I eventually find myself ending up discarding them and using their unstructured counterparts?
-  1. Why is that whenever I ask someone: "Do you use TaskGroup or `async let` and if so, how?", they respond, "I don't but I'm sure that there are many other people who do." ?
-  1. Why is it that in Structured Concurrency, Task lifetimes must align with the lifetime of the object that created them, but that other objects which are in a parent-child relationship have no such lifetime restriction and can instead be shared or have ownership transferred and in the end just get managed by ARC?
-  1. What are the differences between `actor` and swift-atomics `AtomicReference`?
-  1. Why, when I start out using actors in my design do I always end up using an AsyncStream or an AtomicReference instead?
-  1. Are there differences between what we mean when we refer to Structured Concurrency and what we mean when we refer to Functional Concurrency and precisely what would those differences be?
+1. Why does the use of protocols in things like Combine and AsyncSequence seem to produce much more complicated APIs than if the same APIs had been implemented with concrete types instead?
+1. Why does Swift Concurrency seem to avoid use of functional constructs like `map`, `flatMap`, and `zip` when dealing with generic types like Tasks, but to embrance them fully when dealing with generic types like `AsyncStream`? (not to mention run-of-the-mill types like `Optional`, `Result`, and `Sequence`)  
+1. If, in Swift, we decorate "effectful" functions with keywords like `throws` and `async` can we expect other kinds of effects to introduce additional keywords on function declaration?
+1. Is there a general way of dealing with effects in Swift and what might such a mechanism look like?
+1. Why does Swift's Structured Concurrency not have a set of primitives similar to (say) Haskell or Java?  In particular, why does it seem so difficult to use Structured Concurrency to write constructs like Haskell's [ST monad](https://hackage.haskell.org/package/base-4.3.1.0/docs/Control-Monad-ST.html), [MVar](https://hackage.haskell.org/package/base-4.16.2.0/docs/Control-Concurrent-MVar.html), or [TVar](https://hackage.haskell.org/package/stm-2.5.0.2/docs/Control-Concurrent-STM-TVar.html) or to implement the common [Producer/Consumer pattern](https://www.baeldung.com/java-producer-consumer-problem) seen ubiquitously in Java concurrency?
+1. Why, when I start out using TaskGroup and `async let` in my designs do I eventually find myself ending up discarding them and using their unstructured counterparts?
+1. Why is that whenever I ask someone: "Do you use TaskGroup or `async let` and if so, how?", they (to date) have invariably responded, "I don't but I'm sure that there are many other people who do because they are really great."?
+1. Why is it that in Structured Concurrency, Task lifetimes must align with the lifetime of the object that created them, but that all of my other objects which are in a parent-child relationship have no such lifetime restriction and can instead be shared or have ownership transferred and in the end just be managed by ARC?
+1. What are the differences between `actor` and swift-atomics `AtomicReference` and when would I use one over the other?
+1. In what cases would I use an AsyncStream to manage mutable state and in what cases would I use an `actor`?
+1. Why, when I start out using actors in my design do I always end up using an AsyncStream or an AtomicReference instead?
+1. Are there differences between what we mean when we refer to Structured Concurrency and what we mean when we refer to Functional Concurrency and precisely what would those differences be?
    
-  These questions have been nagging at me since early 2021 as Swift Concurrency was introduced.  Developing this repository has helped me answer them to my own satisfaction, though of course, YMMV.  My answers to these questions are in Playgrounds section here. 
+These questions have been nagging at me since early 2021 as Swift Concurrency was introduced.  Developing this repository has helped me answer them to my own satisfaction, though of course, YMMV.  My answers to these questions are in Playgrounds section here. 
    
 ## Additional notes to be organized in the future
    
 ### Functional Requirements
 
-  In November of 2021 [Phillipe Hausler observed](https://forums.swift.org/t/should-asyncsequence-replace-combine-in-the-future-or-should-they-coexist/53370/10) that there were several things that needed to be done to bring Combine functionality into the new world of Swift Concurrency. The list provided there was added to the requirements and the following are currently in the library:
+In November of 2021 [Phillipe Hausler observed](https://forums.swift.org/t/should-asyncsequence-replace-combine-in-the-future-or-should-they-coexist/53370/10) that there were several things that needed to be done to bring Combine functionality into the new world of Swift Concurrency. The list provided there was added to the requirements and the following are currently in the library:
 
-  1. Combinators
-  2. Distributors (which I have termed Decombinators)
-  3. Temporal Transformation
-  4. Failure Transformation
-  5. Getting the first result from N running tasks
+1. Combinators
+1.. Distributors (which I have termed Decombinators)
+1. Temporal Transformation
+1. Failure Transformation
+1. Getting the first result from N running tasks
 
 ### Design Philosophy
 
-  I've taught Combine several times now and invariably 3 questions come up:
+I've taught Combine several times now and invariably 3 questions come up:
 
-  1. Why does every function on a Publisher return a different type?
-  1. Why does chaining of Publisher functions produce incomprehensible types?
-  1. Why do the required functions for a Publisher and Subscriber all say `receive`?
+1. Why does every function on a Publisher return a different type?
+1. Why does chaining of Publisher functions produce incomprehensible types?
+1. Why do the required functions for a Publisher and Subscriber all say `receive`?
 
-  I believe that these are reasonable questions and this project attempts to deal with all three.
+I believe that these are reasonable questions and this project attempts to deal with all three.
 
-  Additionally, there are similar questions with EventLoopFuture and EventLoopPromise in NIO.
+Additionally, there are similar questions with EventLoopFuture and EventLoopPromise in NIO.
 
-  1. Why is Future a class and not a struct?
-  1. Why can't NIO just use Concurrency like other Swift libraries?
-  1. Are there other use cases that I should be worrying about where I can't use Concurrency?
+1. Why is Future a class and not a struct?
+1. Why can't NIO just use Concurrency like other Swift libraries?
+1. Are there other use cases that I should be worrying about where I can't use Concurrency?
 
 ### Salient features
 
@@ -290,7 +293,6 @@ Secondarily, this repo is my own feeble attempt to answer the following question
 1. Futures _AND_ Streams, chocolate _AND_ peanut butter
 1. No dependency on Foundation
 1. Finally and very importantly, ownership of Tasks/Cancellables can be transferred or even shared.
-
 
 ### On Deprotocolization
 
