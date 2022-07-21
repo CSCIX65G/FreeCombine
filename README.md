@@ -6,7 +6,9 @@ Note that this README is still under construction. The places herein where I ref
 
 ## TL;DR
 
-FreeCombine is a streaming library designed to implement every Publisher operator in Apple's Combine framework - only in `async` context and allowing `async` functions whereever Combine accepts a function as an argument.  NB this does _NOT_ mean that the semantics or syntax of each operator will stay exactly the same.  Implementing a streaming library using Swift Concurrency means that some things _must_ change semantically to prevent data races and task leaks.
+FreeCombine is a streaming library designed to implement every Publisher operator in Apple's Combine framework - only in `async` context and allowing `async` functions whereever Combine accepts a function as an argument.  
+
+NB this does _NOT_ mean that the semantics or syntax of each operator will stay exactly the same.  Implementing a streaming library using Swift Concurrency means that some things _must_ change semantically to prevent data races and task leaks.
 
 Additionally, FreeCombine takes a different stance on how Publishers are constructed - we don't use protocols, instead we use concrete types.  This also leads to code that looks and feels almost the same as Combine, but which is slightly different.  To facilitate the use of FreeCombine, several liberties have been taken with Swift syntax to make FreeCombine appear as much as possible like Combine.
 
@@ -23,9 +25,9 @@ Note two significant changes:
 1. FreeCombine returns a standard Publisher, not a special Publishers.Map
 1. FreeCombine accepts an `async` transform function.
 
-These differences are pervasive throughout the library and are explained in much more detail below and in the Example and explanatory playgrounds in this repository.
+These differences are pervasive throughout the library and are explained in much more detail below and in the Example and explanatory Playgrounds in this repository.
 
-But really TL;DR... This is an async version of Combine.
+But _really_ TL;DR... This is an async version of Combine.
 
 ## First Example
 Here's a silly example of Combine that you can cut and paste into any playground:
@@ -135,7 +137,7 @@ Note the following differences:
 1. The Sequence types: `Array` and `String` have been extended with `asyncPublisher` rather than just `publisher`
 1. The cancellable and the subjects at the end are all awaited instead of simply discarded.
 
-All of these differences are explained in this repo in the `Playgrounds` section.  If you are not interested in the _why?'s_ but only in the _how?'s_, the `Examples` section is what you want.  It consists of playgrounds with example use of every operator is, many in a variety of contexts and is there for the "just-show-me-how-to-use-it" crowd.
+All of these differences are explained in this repo in the `Playgrounds` section.  If you are not interested in the _why?'s_ but only in the _how?'s_, the `Examples` section is what you want.  It consists of playgrounds with example use of every operator, many in a variety of contexts, and is there for the "just-show-me-how-to-use-it" crowd.
 
 This code produces the output below. Observe how the `zip` does not block at all and the values `14` and `hello, combined world!` are emitted asynchronously into the stream as they occur. And unlike the Combine example, _they do occur asyncronously_ rather than at the end of the other streams.  The location in the output where you receive those two values if you run this code will vary and different runs of the same code may place them in different places.
 ```
@@ -176,9 +178,9 @@ FreeCombine is a functional streaming library for the Swift language.
 
 Functional streaming comes in two forms: push and pull.  FreeCombine is pull.  RxSwift and ReactiveSwift are push.  Combine is both, but primarily pull, in that the vast majority of use cases utilize only the push mode.
 
-As an aside, if you have ever wondered what a Subscription is in Combine, it's the implementation of pull semantics.  Any use of `sink` or `assign` puts the stream into push mode and ignores Demand.  If you've never used AnySubscriber or have never written your own Subscriber type, then you've only been using Combine in push mode.  My experience is that this is the vast majority of Combine uses. 
+As an aside, if you have ever wondered what a Subscription is in Combine, it's the implementation of pull semantics.  Any use of `sink` or `assign` puts the stream into push mode and ignores Demand.  If you've never used AnySubscriber or have never written your own Subscriber type, then you've only been using Combine in push mode.  My experience is that this is the vast majority of Combine users. 
 
-AsyncStream in Apple's Swift standard library is a _pull_ stream and accordingly several things that seem natural in Combine turn out to have different meaningins in AsyncStream (and are much more difficult to implement). In particular, having several downstream subscribers to the same stream is very complicated when compared to doing the same thing in a push environment.  AsyncStream conforms to AsyncSequence and all of the other conformances to AsyncSequence are also pull-mode streams.
+AsyncStream in Apple's Swift standard library is a _pull_ stream and accordingly several things that seem natural in Combine turn out to have different meaningins in AsyncStream (and are much more difficult to implement). In particular, having several downstream subscribers to the same stream is very complicated when compared to doing the same thing in a push environment.  AsyncStream conforms to AsyncSequence and all of the other conformances to AsyncSequence are also pull-mode streams and share the same semantics.
 
 The difference between push and pull is really fundamental, yet in my experience, most users of Combine are surprised to learn that it exists.  It explains why, as of this writing in July '22, Swift Async Algorithms still lacks a `Subject`-like type. It's because `Subject`, `ConnectablePublisher` and operations like `throttle`, `delay` and `debounce` are really hard to get right in a pull system and they are much easier to implement in push systems.  OTOH, operations like `zip` are really hard to get right in a push system because they require the introduction of unbounded queues upstream and this is more than a little problematic if the user has not explicitly accounted for this.
 

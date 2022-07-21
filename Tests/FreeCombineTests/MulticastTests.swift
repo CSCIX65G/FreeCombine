@@ -21,7 +21,7 @@ class MulticastTests: XCTestCase {
         let subject = try await PassthroughSubject(Int.self)
 
         let counter1 = Counter()
-        let u1 = await subject.publisher().sink { (result: AsyncStream<Int>.Result) in
+        let u1 = await subject.asyncPublisher.sink { (result: AsyncStream<Int>.Result) in
             switch result {
                 case .value:
                     await counter1.increment()
@@ -45,7 +45,7 @@ class MulticastTests: XCTestCase {
         }
 
         let counter2 = Counter()
-        let u2 = await subject.publisher().sink { (result: AsyncStream<Int>.Result) in
+        let u2 = await subject.asyncPublisher.sink { (result: AsyncStream<Int>.Result) in
             switch result {
                 case .value:
                     await counter2.increment()

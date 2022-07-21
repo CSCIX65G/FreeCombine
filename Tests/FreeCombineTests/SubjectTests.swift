@@ -17,7 +17,7 @@ class SubjectTests: XCTestCase {
         let expectation = await Expectation<Void>()
 
         let subject = try await CurrentValueSubject(currentValue: 14)
-        let publisher = subject.publisher()
+        let publisher = subject.asyncPublisher
 
         let counter = Counter()
         let c1 = await publisher.sink { (result: AsyncStream<Int>.Result) in
@@ -76,7 +76,7 @@ class SubjectTests: XCTestCase {
         let expectation2 = await Expectation<Void>()
 
         let subject = try await CurrentValueSubject(currentValue: 14)
-        let publisher = subject.publisher()
+        let publisher = subject.asyncPublisher
 
         let counter1 = Counter()
         let c1 = await publisher.sink { (result: AsyncStream<Int>.Result) in
@@ -159,7 +159,7 @@ class SubjectTests: XCTestCase {
         let release = await Expectation<Void>()
 
         let subject = try await PassthroughSubject(Int.self)
-        let p = subject.publisher()
+        let p = subject.asyncPublisher
 
         let can = await p.sink({ result in
             switch result {
@@ -235,7 +235,7 @@ class SubjectTests: XCTestCase {
         let expectation = await Expectation<Void>()
 
         let subject = try await PassthroughSubject(Int.self)
-        let p = subject.publisher()
+        let p = subject.asyncPublisher
 
         let c1 = await p.sink( { result in
             switch result {
@@ -279,7 +279,7 @@ class SubjectTests: XCTestCase {
         let expectation = await Expectation<Void>()
 
         let subject = try await PassthroughSubject(Int.self)
-        let p = subject.publisher()
+        let p = subject.asyncPublisher
 
         let c1 = await p.sink({ result in
             switch result {

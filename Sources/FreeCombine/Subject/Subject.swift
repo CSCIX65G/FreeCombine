@@ -130,6 +130,10 @@ public extension Subject {
         .init(file: file, line: line, deinitBehavior: deinitBehavior, stateTask: stateTask)
     }
 
+    var asyncPublisher: Publisher<Output> {
+        get { .init(file: file, line: line, deinitBehavior: deinitBehavior, stateTask: stateTask) }
+    }
+
     func receive(
         _ result: AsyncStream<Output>.Result
     ) async throws -> Int {

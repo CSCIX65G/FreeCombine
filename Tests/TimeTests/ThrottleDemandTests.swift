@@ -20,9 +20,8 @@ class ThrottleDemandTests: XCTestCase {
 
         let counter = Counter()
         let t = await (0 ... 15).asyncPublisher
-            .throttleDemand(interval: .seconds(1))
+            .throttleDemand(interval: .milliseconds(100))
             .sink({ value in
-                print(value)
                 switch value {
                     case .value(_):
                         await counter.increment()
@@ -39,7 +38,7 @@ class ThrottleDemandTests: XCTestCase {
         })
 
         do {
-            try await FreeCombine.wait(for: expectation, timeout: 10_000_000_000)
+            try await FreeCombine.wait(for: expectation, timeout: 1_000_000_000)
         } catch {
             t.cancel()
             let count = await counter.count
