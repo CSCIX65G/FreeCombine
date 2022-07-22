@@ -25,7 +25,7 @@ public struct ConnectableState<Output: Sendable> {
     }
 
     let upstream: Publisher<Output>
-    let repeater: Channel<RepeatDistributeState<Output>.Action>
+    let repeater: Channel<ConnectableRepeaterState<Output>.Action>
 
     var cancellable: Cancellable<Demand>?
     var upstreamContinuation: Resumption<Demand>?
@@ -37,7 +37,7 @@ public struct ConnectableState<Output: Sendable> {
         line: UInt = #line,
         deinitBehavior: DeinitBehavior = .assert,
         upstream: Publisher<Output>,
-        repeater: Channel<RepeatDistributeState<Output>.Action>
+        repeater: Channel<ConnectableRepeaterState<Output>.Action>
     ) {
         self.upstream = upstream
         self.repeater = repeater
@@ -46,7 +46,7 @@ public struct ConnectableState<Output: Sendable> {
 
     static func create(
         upstream: Publisher<Output>,
-        repeater: Channel<RepeatDistributeState<Output>.Action>
+        repeater: Channel<ConnectableRepeaterState<Output>.Action>
     ) -> (Channel<ConnectableState<Output>.Action>) -> Self {
         { channel in return .init(upstream: upstream, repeater: repeater) }
     }
@@ -138,7 +138,7 @@ public struct ConnectableState<Output: Sendable> {
         let localUpstream = upstream
         let channel = repeater
         let downstream: @Sendable (AsyncStream<Output>.Result) async throws -> Demand = { r in
-            var queueStatus: AsyncStream<RepeatDistributeState<Output>.Action>.Continuation.YieldResult!
+            var queueStatus: AsyncStream<ConnectableRepeaterState<Output>.Action>.Continuation.YieldResult!
             let _: Int = try await withResumption { resumption in
                 queueStatus = channel.yield(.receive(r, resumption))
                 switch queueStatus {

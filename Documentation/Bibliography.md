@@ -8,8 +8,17 @@ https://youtu.be/T5oB8PZQNvY
 
 https://leanpub.com/sofp
 
-### Swift's Structure Concurrency
-[SE-304 Structured Concurrency](https://github.com/apple/swift-evolution/blob/main/proposals/0304-structured-concurrency.md#structured-concurrency-1) The original structured concurrency proposal from Apple.
+### Swift Concurrency
+[SE-296 Async/Await](https://github.com/apple/swift-evolution/blob/main/proposals/0296-async-await.md)
+[SE-298 AsyncSequence](https://github.com/apple/swift-evolution/blob/main/proposals/0298-asyncsequence.md)
+[SE-300 Continuations, Unsafe and Checked](https://github.com/apple/swift-evolution/blob/main/proposals/0300-continuation.md)
+[SE-302 Sendable](https://github.com/apple/swift-evolution/blob/main/proposals/0302-concurrent-value-and-concurrent-closures.md)
+[SE-314 AsyncStream](https://github.com/apple/swift-evolution/blob/main/proposals/0314-async-stream.md)
+
+### Swift _Structured_ Concurrency
+[SE-304 Structured Concurrency](https://github.com/apple/swift-evolution/blob/main/proposals/0304-structured-concurrency.md#proposed-solution) The original structured concurrency proposal from Apple and the solution they propose 
+[SE-306 Actors](https://github.com/apple/swift-evolution/blob/main/proposals/0306-actors.md)
+[SE-317 async let](https://github.com/apple/swift-evolution/blob/main/proposals/0317-async-let.md)
 
 [Sources for a lot of the design](https://forums.swift.org/t/concurrency-designs-from-other-communities/32389/16)
 

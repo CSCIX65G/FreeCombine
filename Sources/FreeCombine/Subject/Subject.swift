@@ -1,5 +1,5 @@
 //
-//  Distributor.swift
+//  Subject.swift
 //  
 //
 //  Created by Van Simmons on 6/28/22.

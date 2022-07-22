@@ -4,7 +4,7 @@
 //
 //  Created by Van Simmons on 7/3/22.
 //
-public struct RepeatDistributeState<Output: Sendable> {
+public struct ConnectableRepeaterState<Output: Sendable> {
     var distributorChannel: Channel<ConnectableState<Output>.Action>
 
     public enum Error: Swift.Error {
@@ -23,7 +23,7 @@ public struct RepeatDistributeState<Output: Sendable> {
 
     static func create(
         distributorChannel: Channel<ConnectableState<Output>.Action>
-    ) -> (Channel<RepeatDistributeState<Output>.Action>) -> Self {
+    ) -> (Channel<ConnectableRepeaterState<Output>.Action>) -> Self {
         { channel in .init(channel: distributorChannel) }
     }
 
