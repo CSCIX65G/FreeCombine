@@ -106,10 +106,10 @@ func freeCombineVersion() {
         
         let z1 = seq1.zip(seq2)
             .map { left, right in String(left) + String(right) }
-        let m1 = subject1.publisher()
+        let m1 = subject1.asyncPublisher
             .map(String.init)
             .mapError { _ in fatalError() }
-            .merge(with: subject2.publisher())
+            .merge(with: subject2.asyncPublisher)
             .replaceError(with: "")
         
         
@@ -133,13 +133,13 @@ Note the following differences:
 
 1. The PassthroughSubject calls take the Output type as a function parameter rather than as a generic type parameter.
 1. The PasshthroughSubject calls do not require a Failure type. In the manner of NIO and Concurrency, all Subjects and Publishers in FreeCombine use [imprecise Error handling](https://forums.swift.org/t/precise-error-typing-in-swift/52045) and therefore use `Swift.Error` as the error type.
-1. The Subjects require you to ask them for a `publisher()`.  In FreeCombine, Subject _cannot be_ a Publisher, because Publisher _is not_ a protocol.
+1. The Subjects require you to ask them for a `asyncPublisher`.  In FreeCombine, Subject _cannot be_ a Publisher, because Publisher _is not_ a protocol.
 1. The Sequence types: `Array` and `String` have been extended with `asyncPublisher` rather than just `publisher`
 1. The cancellable and the subjects at the end are all awaited instead of simply discarded.
 
 All of these differences are explained in this repo in the `Playgrounds` section.  If you are not interested in the _why?'s_ but only in the _how?'s_, the `Examples` section is what you want.  It consists of playgrounds with example use of every operator, many in a variety of contexts, and is there for the "just-show-me-how-to-use-it" crowd.
 
-This code produces the output below. Observe how the `zip` does not block at all and the values `14` and `hello, combined world!` are emitted asynchronously into the stream as they occur. And unlike the Combine example, _they do occur asyncronously_ rather than at the end of the other streams.  The location in the output where you receive those two values if you run this code will vary and different runs of the same code may place them in different places.
+The code above produces the output below. Observe how the `zip` does not block at all and the values `14` and `hello, combined world!` are emitted asynchronously into the stream as they occur. And unlike the Combine example, _they actually do occur asyncronously_ rather than at the end of the other streams.  The location in the output where you receive those two values if you run this code will vary and different runs of the same code may place them in different places.
 ```
 FreeCombine received: a1
 FreeCombine received: b2
@@ -180,7 +180,7 @@ Functional streaming comes in two forms: push and pull.  FreeCombine is pull.  R
 
 As an aside, if you have ever wondered what a Subscription is in Combine, it's the implementation of pull semantics.  Any use of `sink` or `assign` puts the stream into push mode and ignores Demand.  If you've never used `AnySubscriber` and have never written your own `Subscriber` implementation, then you've only been using Combine in push mode.  My experience is that this is the vast majority of Combine users. 
 
-AsyncStream in Apple's Swift standard library is a _pull_ stream. Accordingly several things that seem natural in Combine turn out to have different meaningins in AsyncStream (and are much more difficult to implement). In particular, having several downstream subscribers to the same stream is very complicated when compared to doing the same thing in a push environment.  AsyncStream conforms to AsyncSequence and all of the other conformaning types to AsyncSequence are also pull-mode streams and share the same semantics.
+AsyncStream in Apple's Swift standard library is a _pull_ stream. Accordingly several things that seem natural in Combine turn out to have different meaningins in AsyncStream (and are much more difficult to implement). In particular, having several downstream subscribers to the same stream is very complicated when compared to doing the same thing in a push environment.  AsyncStream conforms to AsyncSequence and all of the other conforming types to AsyncSequence are also pull-mode streams and share the same semantics.
 
 The difference between push and pull is really fundamental, yet in my experience, most users of Combine are surprised to learn that it exists.  It explains why, as of this writing in July '22, Swift Async Algorithms still lacks a `Subject`-like type. It's because `Subject`, `ConnectablePublisher` and operations like `throttle`, `delay` and `debounce` are really hard to get right in a pull system and they are much easier to implement in push systems.  OTOH, operations like `zip` are really hard to get right in a push system because they require the introduction of unbounded queues upstream and this is more than a little problematic if the user has not explicitly accounted for this.
 
