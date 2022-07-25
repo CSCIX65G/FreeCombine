@@ -28,12 +28,12 @@ class RepeaterTests: XCTestCase {
         let nextKey = 1
         let _: Void = try await withResumption { resumption in
             Task {
-                let repeaterState = RepeaterState(id: nextKey, downstream: downstream)
-                let repeater: StateTask<RepeaterState<Int, Int>, RepeaterState<Int, Int>.Action> = .init(
+                let repeaterState = DistributorRepeaterState(id: nextKey, downstream: downstream)
+                let repeater: StateTask<DistributorRepeaterState<Int, Int>, DistributorRepeaterState<Int, Int>.Action> = .init(
                     channel: .init(buffering: .bufferingOldest(1)),
                     initialState: {_ in repeaterState },
                     onStartup: resumption,
-                    reducer: Reducer(reducer: RepeaterState.reduce)
+                    reducer: Reducer(reducer: DistributorRepeaterState.reduce)
                 )
                 try await withResumption { (completedResumption: Resumption<[Int]>) in
                     let semaphore = Semaphore.init(

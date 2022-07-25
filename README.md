@@ -334,10 +334,11 @@ In my opinion, what SE-335 is saying applies to Combine (and frankly to AsyncSeq
 
 1. ~~Implement leak prevention on UnsafeContinuation, Task, and AsyncStream.Continuation~~
 1. ~~maybe add an additional repo (FreeCombineDispatch) that depends on libdispatch to get delay, debounce, throttle~~
-1. revamp StateThread to be exactly a concurrency aware version of TCA's store
+1. Revamp and simplify StateThread to be exactly a concurrency aware version of TCA's store
 1. Add support for Promise/Future
 1. Add a repo which implements asyncPublishers for everything in Foundation that currently has a `publisher`
 1. ~~fully implement all Combine operators~~
 1. Add a Buffer publisher/operator to reintroduce a push model via an independent source of demand upstream
+1. Create a `Scheduler`-like version of `sleep` which allows us to control clock advance.
 1. Get to 100% test coverage
 1. Document this at the level of writing a book in the form of playgrounds

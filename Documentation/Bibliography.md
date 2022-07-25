@@ -2,11 +2,14 @@
 
 [Why Functional Programming Matters](https://www.cs.kent.ac.uk/people/staff/dat/miranda/whyfp90.pdf)
 
-### Functional Programming Reference
+### Applied Functional Type Theory
 
-https://youtu.be/T5oB8PZQNvY
+[What I learned about functional programming while writing a book about it](https://youtu.be/T5oB8PZQNvY)
 
-https://leanpub.com/sofp
+[Sergei Winitzki's AMAZING book](https://leanpub.com/sofp)
+> After reading this book, you will understand everything in FP. Prove that your application's business logic satisfies the laws for free Tambara profunctor lens over a holographic co-product monoidal category (whatever that means), and implement the necessary code in Scala? Will be no problem for you.
+
+^^^ This statement is true.
 
 ### Swift Concurrency
 [SE-296 Async/Await](https://github.com/apple/swift-evolution/blob/main/proposals/0296-async-await.md)
@@ -28,7 +31,18 @@ https://leanpub.com/sofp
 
 [Guidelines on NIO](https://github.com/swift-server/guides/blob/main/docs/concurrency-adoption-guidelines.md).  The official guidelines that implementors of server-side code are supposed to consider.
 
-[NIO Roadmap](https://forums.swift.org/t/future-of-swift-nio-in-light-of-concurrency-roadmap/41633/4).  Basically that NIO needs custom executors.
+[NIO Roadmap](https://forums.swift.org/t/future-of-swift-nio-in-light-of-concurrency-roadmap/41633/4).  Basically NIO needs custom executors to build its own version of a ThreadPool.
+
+### Theory of Coroutines
+[Haskell's Coroutine Module](https://hackage.haskell.org/package/monad-coroutine-0.9.2/docs/Control-Monad-Coroutine.html)
+[Explanation of Coroutines in Haskell](https://www.schoolofhaskell.com/school/to-infinity-and-beyond/pick-of-the-week/coroutines-for-streaming)
+[Co: a dsl for coroutines](https://abhinavsarkar.net/posts/implementing-co-1/)
+> Coroutine implementations often come with support for Channels for inter-coroutine communication. One coroutine can send a message over a channel, and another coroutine can receive the message from the same channel. Coroutines and channels together are an implementation of Communicating Sequential Processes (CSP)@5, a formal language for describing patterns of interaction in concurrent systems.
+
+[Communicating Sequential Processes](https://en.wikipedia.org/wiki/Communicating_sequential_processes)
+> CSP message-passing fundamentally involves a rendezvous between the processes involved in sending and receiving the message, i.e. the sender cannot transmit a message until the receiver is ready to accept it. In contrast, message-passing in actor systems is fundamentally asynchronous, i.e. message transmission and reception do not have to happen at the same time, and senders may transmit messages before receivers are ready to accept them. These approaches may also be considered duals of each other, in the sense that rendezvous-based systems can be used to construct buffered communications that behave as asynchronous messaging systems, while asynchronous systems can be used to construct rendezvous-style communications by using a message/acknowledgement protocol to synchronize senders and receivers.
+
+NB FreeCombine takes the message/acknowledgement protocol approach as primitive and builds out from there.
 
 ### Theory of Streams
 * [A Brief History of Streams](https://shonan.nii.ac.jp/archives/seminar/136/wp-content/uploads/sites/172/2018/09/a-brief-history-of-streams.pdf) - see especially page 21 comparing push and pull strategies
@@ -59,9 +73,7 @@ https://github.com/bitemyapp/papers/blob/master/Higher-Order%20Functional%20Reac
 https://github.com/bitemyapp/papers/blob/master/Push-pull%20functional%20reactive%20programming.pdf
 https://github.com/bitemyapp/papers/blob/master/Stream%20Fusion%20on%20Haskell%20Unicode%20Strings.pdf
 
-
 ### Stream Libraries
-
 [Akka Streams](https://qconnewyork.com/ny2015/system/files/presentation-slides/AkkaStreamsQconNY.pdf) - important for the idea of dynamic push/pull mode.  See especially starting on page 29.
 
 [Conversation on Combine](https://iosdevelopers.slack.com/archives/C0AET0JQ5/p1623102144192300)
