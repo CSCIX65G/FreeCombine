@@ -26,7 +26,7 @@ extension Publisher {
         ) async throws -> Void {
             guard subject == nil else { return }
             subject = try await PassthroughSubject(buffering: .bufferingNewest(1))
-            cancellable = await subject.publisher().sink(downstream)
+            cancellable = await subject.asyncPublisher.sink(downstream)
             timerCancellable = await Heartbeat(interval: interval).sink { _ in
                 if let value = await self.value {
                     try await self.subject.send(value)

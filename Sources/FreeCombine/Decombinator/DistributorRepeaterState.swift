@@ -9,7 +9,7 @@ public enum RepeatedAction<ID: Hashable & Sendable>: Sendable {
     case repeated(ID, Demand)
 }
 
-public struct RepeaterState<ID: Hashable & Sendable, Output: Sendable>: Identifiable, Sendable {
+public struct DistributorRepeaterState<ID: Hashable & Sendable, Output: Sendable>: Identifiable, Sendable {
     public enum Action {
         case `repeat`(AsyncStream<Output>.Result, Semaphore<[ID], RepeatedAction<ID>>)
     }

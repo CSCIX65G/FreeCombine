@@ -9,7 +9,7 @@ public extension Publisher {
         file: StaticString = #file,
         line: UInt = #line,
         deinitBehavior: DeinitBehavior = .assert,
-        buffering: AsyncStream<RepeatDistributeState<Output>.Action>.Continuation.BufferingPolicy = .bufferingOldest(1)
+        buffering: AsyncStream<ConnectableRepeaterState<Output>.Action>.Continuation.BufferingPolicy = .bufferingOldest(1)
     ) async throws -> Self {
         let connectable: Connectable<Output> = try await self.makeConnectable(buffering: buffering)
         let cancellableRef: ValueRef<Cancellable<Demand>?> = .init(value: .none)

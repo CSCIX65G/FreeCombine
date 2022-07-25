@@ -6,7 +6,7 @@
 //
 public final class Connectable<Output: Sendable> {
     private let stateTask: StateTask<ConnectableState<Output>, ConnectableState<Output>.Action>
-    private let distributeStateTask: StateTask<RepeatDistributeState<Output>, RepeatDistributeState<Output>.Action>
+    private let distributeStateTask: StateTask<ConnectableRepeaterState<Output>, ConnectableRepeaterState<Output>.Action>
     
     let file: StaticString
     let line: UInt
@@ -16,7 +16,7 @@ public final class Connectable<Output: Sendable> {
         file: StaticString = #file,
         line: UInt = #line,
         deinitBehavior: DeinitBehavior = .assert,
-        repeater: Channel<RepeatDistributeState<Output>.Action>,
+        repeater: Channel<ConnectableRepeaterState<Output>.Action>,
         stateTask: StateTask<ConnectableState<Output>, ConnectableState<Output>.Action>
     ) async throws {
         self.file = file
@@ -27,11 +27,11 @@ public final class Connectable<Output: Sendable> {
             file: file,
             line: line,
             deinitBehavior: deinitBehavior,
-            initialState: RepeatDistributeState<Output>.create(distributorChannel: stateTask.channel),
+            initialState: ConnectableRepeaterState<Output>.create(distributorChannel: stateTask.channel),
             reducer: .init(
-                onCompletion: RepeatDistributeState<Output>.complete,
-                disposer: RepeatDistributeState<Output>.dispose,
-                reducer: RepeatDistributeState<Output>.reduce
+                onCompletion: ConnectableRepeaterState<Output>.complete,
+                disposer: ConnectableRepeaterState<Output>.dispose,
+                reducer: ConnectableRepeaterState<Output>.reduce
             )
         )
     }

@@ -17,7 +17,7 @@ class DebounceTests: XCTestCase {
         let inputCounter = Counter()
         let counter = Counter()
         let subject = try await PassthroughSubject(Int.self)
-        let t = await subject.publisher()
+        let t = await subject.asyncPublisher
             .handleEvents(receiveOutput: { _ in await inputCounter.increment() })
             .debounce(interval: .milliseconds(100))
             .sink({ value in
@@ -64,7 +64,7 @@ class DebounceTests: XCTestCase {
         let inputCounter = Counter()
         let counter = Counter()
         let subject = try await PassthroughSubject(Int.self)
-        let t = await subject.publisher()
+        let t = await subject.asyncPublisher
             .handleEvents(receiveOutput: { _ in await inputCounter.increment() })
             .debounce(interval: .milliseconds(100))
             .sink({ value in

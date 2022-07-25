@@ -48,7 +48,7 @@ class ThrottleTests: XCTestCase {
         let inputCounter = Counter()
         let counter = Counter()
         let subject = try await PassthroughSubject(Int.self)
-        let t = await subject.publisher()
+        let t = await subject.asyncPublisher
             .handleEvents(receiveOutput: { _ in await inputCounter.increment() })
             .throttle(interval: .milliseconds(100), latest: false)
             .sink({ value in
@@ -97,7 +97,7 @@ class ThrottleTests: XCTestCase {
         let inputCounter = Counter()
         let counter = Counter()
         let subject = try await PassthroughSubject(Int.self)
-        let t = await subject.publisher()
+        let t = await subject.asyncPublisher
             .handleEvents(receiveOutput: { _ in await inputCounter.increment() })
             .throttle(interval: .milliseconds(100), latest: true)
             .sink({ value in

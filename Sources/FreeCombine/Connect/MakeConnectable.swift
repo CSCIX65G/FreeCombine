@@ -9,9 +9,9 @@ public extension Publisher {
         file: StaticString = #file,
         line: UInt = #line,
         deinitBehavior: DeinitBehavior = .assert,
-        buffering: AsyncStream<RepeatDistributeState<Output>.Action>.Continuation.BufferingPolicy = .bufferingOldest(1)
+        buffering: AsyncStream<ConnectableRepeaterState<Output>.Action>.Continuation.BufferingPolicy = .bufferingOldest(1)
     ) async throws -> Connectable<Output> {
-        let repeater: Channel<RepeatDistributeState<Output>.Action> = .init(buffering: buffering)
+        let repeater: Channel<ConnectableRepeaterState<Output>.Action> = .init(buffering: buffering)
         return try await .init(
             file: file,
             line: line,

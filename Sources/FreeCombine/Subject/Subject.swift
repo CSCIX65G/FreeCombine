@@ -1,5 +1,5 @@
 //
-//  Distributor.swift
+//  Subject.swift
 //  
 //
 //  Created by Van Simmons on 6/28/22.
@@ -128,6 +128,10 @@ public extension Subject {
         deinitBehavior: DeinitBehavior = .assert
     ) -> Publisher<Output> {
         .init(file: file, line: line, deinitBehavior: deinitBehavior, stateTask: stateTask)
+    }
+
+    var asyncPublisher: Publisher<Output> {
+        get { .init(file: file, line: line, deinitBehavior: deinitBehavior, stateTask: stateTask) }
     }
 
     func receive(
