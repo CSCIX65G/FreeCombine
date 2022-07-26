@@ -157,7 +157,7 @@ public struct PromiseState<Output: Sendable> {
             )
 
             currentRepeaters.forEach { key, downstreamTask in
-                let queueStatus = downstreamTask.send(.repeat(result, semaphore))
+                let queueStatus = downstreamTask.send(.complete(result, semaphore))
                 switch queueStatus {
                     case .enqueued:
                         ()
