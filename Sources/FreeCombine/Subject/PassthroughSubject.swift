@@ -9,7 +9,7 @@ public func PassthroughSubject<Output>(
     line: UInt = #line,
     deinitBehavior: DeinitBehavior = .assert,
     _ type: Output.Type = Output.self,
-    buffering: AsyncStream<RepeatReceiveState<Output>.Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
+    buffering: AsyncStream<DistributorReceiveState<Output>.Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
     onStartup: Resumption<Void>
 ) async throws -> Subject<Output> {
     try await .init(
@@ -31,7 +31,7 @@ public func PassthroughSubject<Output>(
     line: UInt = #line,
     deinitBehavior: DeinitBehavior = .assert,
     _ type: Output.Type = Output.self,
-    buffering: AsyncStream<RepeatReceiveState<Output>.Action>.Continuation.BufferingPolicy = .bufferingOldest(1)
+    buffering: AsyncStream<DistributorReceiveState<Output>.Action>.Continuation.BufferingPolicy = .bufferingOldest(1)
 ) async throws -> Subject<Output> {
     try await .init(
         buffering: buffering,

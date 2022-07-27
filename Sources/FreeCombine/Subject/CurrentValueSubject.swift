@@ -10,7 +10,7 @@ public func CurrentValueSubject<Output>(
     line: UInt = #line,
     deinitBehavior: DeinitBehavior = .assert,
     currentValue: Output,
-    buffering: AsyncStream<RepeatReceiveState<Output>.Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
+    buffering: AsyncStream<DistributorReceiveState<Output>.Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
     onStartup: Resumption<Void>
 ) async throws -> Subject<Output> {
     try await .init(
@@ -35,7 +35,7 @@ public func CurrentValueSubject<Output>(
     line: UInt = #line,
     deinitBehavior: DeinitBehavior = .assert,
     currentValue: Output,
-    buffering: AsyncStream<RepeatReceiveState<Output>.Action>.Continuation.BufferingPolicy = .bufferingOldest(1)
+    buffering: AsyncStream<DistributorReceiveState<Output>.Action>.Continuation.BufferingPolicy = .bufferingOldest(1)
 ) async throws -> Subject<Output> {
     try await .init(
         buffering: buffering,

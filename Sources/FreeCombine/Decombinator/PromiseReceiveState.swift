@@ -1,32 +1,31 @@
 //
-//  RepeatReceiveState.swift
+//  PromiseReceiveState.swift
+//  
 //
+//  Created by Van Simmons on 7/27/22.
 //
-//  Created by Van Simmons on 7/2/22.
-//
-
-public struct RepeatReceiveState<Output: Sendable> {
-    var distributorChannel: Channel<DistributorState<Output>.Action>
+public struct PromiseReceiveState<Output: Sendable> {
+    var promiseChannel: Channel<PromiseState<Output>.Action>
 
     public enum Error: Swift.Error {
         case alreadyCompleted
     }
 
     public enum Action: Sendable {
-        case receive(AsyncStream<Output>.Result, Resumption<Int>)
-        case nonBlockingReceive(AsyncStream<Output>.Result)
+        case receive(Result<Output, Swift.Error>, Resumption<Int>)
+        case nonBlockingReceive(Result<Output, Swift.Error>)
     }
 
     public init(
-        channel: Channel<DistributorState<Output>.Action>
+        channel: Channel<PromiseState<Output>.Action>
     ) {
-        self.distributorChannel = channel
+        self.promiseChannel = channel
     }
 
     static func create(
-        distributorChannel: Channel<DistributorState<Output>.Action>
-    ) -> (Channel<RepeatReceiveState<Output>.Action>) -> Self {
-        { channel in .init(channel: distributorChannel) }
+        promiseChannel: Channel<PromiseState<Output>.Action>
+    ) -> (Channel<PromiseReceiveState<Output>.Action>) -> Self {
+        { channel in .init(channel: promiseChannel) }
     }
 
     static func complete(state: inout Self, completion: Reducer<Self, Self.Action>.Completion) async -> Void { }
@@ -59,7 +58,7 @@ public struct RepeatReceiveState<Output: Sendable> {
     }
 
     mutating func reduce(action: Action) async throws -> Reducer<Self, Action>.Effect {
-        var result: AsyncStream<Output>.Result! = .none
+        var result: Result<Output, Swift.Error>! = .none
         var resumption: Resumption<Int>! = .none
         if case let .receive(r1, r3) = action  {
             result = r1
@@ -69,7 +68,7 @@ public struct RepeatReceiveState<Output: Sendable> {
         }
         do {
             let subscribers: Int = try await withResumption { innerResumption in
-                switch distributorChannel.yield(.receive(result, innerResumption)) {
+                switch promiseChannel.yield(.receive(result, innerResumption)) {
                     case .enqueued:
                         ()
                     case .dropped:

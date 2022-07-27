@@ -28,6 +28,7 @@
 * [Response to Fibers Under the Magnifying Glass](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2019/p0866r0.pdf)
 * [Response to the Response to Fibers Under the Magnifying Glass](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2019/p1520r0.pdf)
 * [Stackless Python](https://en.wikipedia.org/wiki/Stackless_Python)
+* [Wikipedia article on Green (Stackful) Threads in Java](https://en.wikipedia.org/wiki/Green_threads)
 
 ### Readings on Concurrency in other languages
 
@@ -79,6 +80,8 @@ NB FreeCombine takes the message/acknowledgement protocol approach as primitive 
 2. `StateTask` allows backpressure
 3. `actor` has syntactical support in the language
 
+* [The Producer/Consumer pattern in Java](https://www.baeldung.com/java-producer-consumer-problem))
+
 ### Theory of Streams
 
 * [A Brief History of Streams](https://shonan.nii.ac.jp/archives/seminar/136/wp-content/uploads/sites/172/2018/09/a-brief-history-of-streams.pdf) - see especially page 21 comparing push and pull strategies
@@ -88,6 +91,7 @@ NB FreeCombine takes the message/acknowledgement protocol approach as primitive 
 * [All Things Flow: A History of Streams](https://okmij.org/ftp/Computation/streams-hapoc2021.pdf)
 * [Exploiting Vector Instructions with Generalized Stream Fusion](https://cacm.acm.org/magazines/2017/5/216312-exploiting-vector-instructions-with-generalized-stream-fusion/fulltext)
 * [Functional Stream Libraries and Fusion: What's Next?](https://okmij.org/ftp/meta-programming/shonan-streams.pdf)
+* [Ziria - A DSL for wireless systems programming](http://ace.cs.ohio.edu/~gstewart/papers/ziria/ziria.pdf)
 
 ### Theory of State
 
@@ -115,7 +119,10 @@ NB FreeCombine takes the message/acknowledgement protocol approach as primitive 
 ### Odds and Ends
 
 * [Resource Acquisition is Initialization](https://en.wikipedia.org/wiki/Resource_acquisition_is_initialization)
-* [Actor-isolation and Executors](https://github.com/apple/swift-evolution/blob/main/proposals/0338-clarify-execution-non-actor-async.md)
 * [EventLoopPromise](https://github.com/apple/swift-nio/blob/e2c7fa4d4bda7cb7f4150b6a0bd69be2a54ef8c4/Sources/NIOCore/EventLoopFuture.swift#L159)
-* [EventLoopFuture deinit](https://github.com/apple/swift-nio/blob/e2c7fa4d4bda7cb7f4150b6a0bd69be2a54ef8c4/Sources/NIOCore/EventLoopFuture.swift#L428)
+* [Leaking an EventLoopPromise is an Error](https://github.com/apple/swift-nio/blob/e2c7fa4d4bda7cb7f4150b6a0bd69be2a54ef8c4/Sources/NIOCore/EventLoopFuture.swift#L428)
+* [Actor-isolation and Executors](https://github.com/apple/swift-evolution/blob/main/proposals/0338-clarify-execution-non-actor-async.md)
 * [Strema a functional language targeting the JSVM](https://gilmi.gitlab.io/strema/)
+* [Lazy Functional StateThreads](https://www.microsoft.com/en-us/research/wp-content/uploads/1994/06/lazy-functional-state-threads.pdf)
+* [RankN Types in Haskell (i.e What's used in the ST Monad)](http://sleepomeno.github.io/blog/2014/02/12/Explaining-Haskell-RankNTypes-for-all/))
+* [Lock Free Data Structures in Java](https://www.baeldung.com/lock-free-programming)

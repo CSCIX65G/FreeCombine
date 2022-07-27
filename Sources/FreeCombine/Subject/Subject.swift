@@ -6,7 +6,7 @@
 //
 public final class Subject<Output: Sendable> {
     private let stateTask: StateTask<DistributorState<Output>, DistributorState<Output>.Action>
-    private let receiveStateTask: StateTask<RepeatReceiveState<Output>, RepeatReceiveState<Output>.Action>
+    private let receiveStateTask: StateTask<DistributorReceiveState<Output>, DistributorReceiveState<Output>.Action>
 
     let file: StaticString
     let line: UInt
@@ -16,7 +16,7 @@ public final class Subject<Output: Sendable> {
         file: StaticString = #file,
         line: UInt = #line,
         deinitBehavior: DeinitBehavior = .assert,
-        buffering: AsyncStream<RepeatReceiveState<Output>.Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
+        buffering: AsyncStream<DistributorReceiveState<Output>.Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
         stateTask: StateTask<DistributorState<Output>, DistributorState<Output>.Action>
     ) async throws {
         self.file = file
@@ -27,11 +27,11 @@ public final class Subject<Output: Sendable> {
             file: file,
             line: line,
             deinitBehavior: deinitBehavior,
-            initialState: RepeatReceiveState<Output>.create(distributorChannel: stateTask.channel),
+            initialState: DistributorReceiveState<Output>.create(distributorChannel: stateTask.channel),
             reducer: .init(
-                onCompletion: RepeatReceiveState<Output>.complete,
-                disposer: RepeatReceiveState<Output>.dispose,
-                reducer: RepeatReceiveState<Output>.reduce
+                onCompletion: DistributorReceiveState<Output>.complete,
+                disposer: DistributorReceiveState<Output>.dispose,
+                reducer: DistributorReceiveState<Output>.reduce
             )
         )
     }
