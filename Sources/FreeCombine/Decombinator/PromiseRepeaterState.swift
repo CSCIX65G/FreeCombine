@@ -7,7 +7,7 @@
 
 public struct PromiseRepeaterState<ID: Hashable & Sendable, Output: Sendable>: Identifiable, Sendable {
     public enum Action {
-        case `repeat`(Result<Output, Swift.Error>, Semaphore<[ID], RepeatedAction<ID>>)
+        case complete(Result<Output, Swift.Error>, Semaphore<[ID], RepeatedAction<ID>>)
     }
 
     public let id: ID
@@ -42,7 +42,7 @@ public struct PromiseRepeaterState<ID: Hashable & Sendable, Output: Sendable>: I
 
     mutating func reduce(action: Self.Action) async throws -> Reducer<Self, Action>.Effect {
         switch action {
-            case let .repeat(output, semaphore):
+            case let .complete(output, semaphore):
                     try? await downstream(output)
                 await semaphore.decrement(with: .repeated(id, .done))
                 return .completion(.exit)

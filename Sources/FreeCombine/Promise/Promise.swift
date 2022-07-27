@@ -1,4 +1,3 @@
-// TODO: Implement a StateTask which acts as a distributor to Futures
 //
 //  Promise.swift
 //
@@ -6,8 +5,8 @@
 //  Created by Van Simmons on 6/28/22.
 //
 public final class Promise<Output: Sendable> {
-    private let stateTask: StateTask<DistributorState<Output>, DistributorState<Output>.Action>
-    private let receiveStateTask: StateTask<RepeatReceiveState<Output>, RepeatReceiveState<Output>.Action>
+    private let stateTask: StateTask<PromiseState<Output>, PromiseState<Output>.Action>
+    private let receiveStateTask: StateTask<PromiseReceiveState<Output>, PromiseReceiveState<Output>.Action>
 
     let file: StaticString
     let line: UInt
@@ -17,8 +16,8 @@ public final class Promise<Output: Sendable> {
         file: StaticString = #file,
         line: UInt = #line,
         deinitBehavior: DeinitBehavior = .assert,
-        buffering: AsyncStream<RepeatReceiveState<Output>.Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
-        stateTask: StateTask<DistributorState<Output>, DistributorState<Output>.Action>
+        buffering: AsyncStream<PromiseReceiveState<Output>.Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
+        stateTask: StateTask<PromiseState<Output>, PromiseState<Output>.Action>
     ) async throws {
         self.file = file
         self.line = line
@@ -28,11 +27,11 @@ public final class Promise<Output: Sendable> {
             file: file,
             line: line,
             deinitBehavior: deinitBehavior,
-            initialState: RepeatReceiveState<Output>.create(distributorChannel: stateTask.channel),
+            initialState: PromiseReceiveState<Output>.create(promiseChannel: stateTask.channel),
             reducer: .init(
-                onCompletion: RepeatReceiveState<Output>.complete,
-                disposer: RepeatReceiveState<Output>.dispose,
-                reducer: RepeatReceiveState<Output>.reduce
+                onCompletion: PromiseReceiveState<Output>.complete,
+                disposer: PromiseReceiveState<Output>.dispose,
+                reducer: PromiseReceiveState<Output>.reduce
             )
         )
     }
@@ -63,32 +62,23 @@ public final class Promise<Output: Sendable> {
             stateTask.isCompleting && receiveStateTask.isCompleting
         }
     }
-    public var value: DistributorState<Output> {
+    public var value: PromiseState<Output> {
         get async throws {
             _ = await receiveStateTask.result
             return try await stateTask.value
         }
     }
-    public var result: Result<DistributorState<Output>, Swift.Error> {
+    public var result: Result<PromiseState<Output>, Swift.Error> {
         get async {
             _ = await receiveStateTask.result
             return await stateTask.result
         }
     }
-    public func finish() async throws -> Void {
-        receiveStateTask.finish()
-        try await stateTask.finish()
-    }
-    public func finishAndAwaitResult() async throws -> Void {
-        receiveStateTask.finish()
-        try await stateTask.finish()
-        _ = await stateTask.result
-    }
     public func cancel() async throws -> Void {
         receiveStateTask.cancel()
         try await stateTask.cancel()
     }
-    public func cancelAndAwaitResult() async throws -> Result<DistributorState<Output>, Swift.Error> {
+    public func cancelAndAwaitResult() async throws -> Result<PromiseState<Output>, Swift.Error> {
         receiveStateTask.cancel()
         try await stateTask.cancel()
         return await stateTask.result
@@ -96,7 +86,7 @@ public final class Promise<Output: Sendable> {
     public func fail(_ error: Error) async throws -> Void {
         try await stateTask.fail(error)
     }
-    public func failAndAwaitResult(_ error: Error) async throws -> Result<DistributorState<Output>, Swift.Error> {
+    public func failAndAwaitResult(_ error: Error) async throws -> Result<PromiseState<Output>, Swift.Error> {
         try await stateTask.fail(error)
         return await stateTask.result
     }
@@ -104,8 +94,8 @@ public final class Promise<Output: Sendable> {
 
 extension Promise {
     func subscribe(
-        _ downstream: @Sendable @escaping (AsyncStream<Output>.Result) async throws -> Demand
-    ) async throws -> Cancellable<Demand> {
+        _ downstream: @Sendable @escaping (Result<Output, Swift.Error>) async throws -> Void
+    ) async throws -> Cancellable<Void> {
         try await withResumption { resumption in
             let queueStatus = stateTask.send(.subscribe(downstream, resumption))
             switch queueStatus {
@@ -123,20 +113,20 @@ extension Promise {
 }
 
 public extension Promise {
-    func publisher(
+    func future(
         file: StaticString = #file,
         line: UInt = #line,
         deinitBehavior: DeinitBehavior = .assert
-    ) -> Publisher<Output> {
+    ) -> Future<Output> {
         .init(file: file, line: line, deinitBehavior: deinitBehavior, stateTask: stateTask)
     }
 
-    var asyncPublisher: Publisher<Output> {
+    var future: Future<Output> {
         get { .init(file: file, line: line, deinitBehavior: deinitBehavior, stateTask: stateTask) }
     }
 
     func receive(
-        _ result: AsyncStream<Output>.Result
+        _ result: Result<Output, Swift.Error>
     ) async throws -> Int {
         let count: Int = try await withResumption { resumption in
             let queueStatus = receiveStateTask.send(.receive(result, resumption))
@@ -155,7 +145,7 @@ public extension Promise {
     }
 
     func receive(
-        _ result: AsyncStream<Output>.Result
+        _ result: Result<Output, Swift.Error>
     ) throws -> Void {
         let queueStatus = receiveStateTask.send(.nonBlockingReceive(result))
         switch queueStatus {
@@ -171,17 +161,17 @@ public extension Promise {
     }
 
     @discardableResult
-    @Sendable func send(_ result: AsyncStream<Output>.Result) async throws -> Int {
+    @Sendable func send(_ result: Result<Output, Swift.Error>) async throws -> Int {
         try await receive(result)
     }
     @discardableResult
     @Sendable func send(_ value: Output) async throws -> Int {
-        try await receive(.value(value))
+        try await receive(.success(value))
     }
-    @Sendable func send(_ result: AsyncStream<Output>.Result) throws -> Void {
+    @Sendable func send(_ result: Result<Output, Swift.Error>) throws -> Void {
         try receive(result)
     }
     @Sendable func send(_ value: Output) throws -> Void {
-        try receive(.value(value))
+        try receive(.success(value))
     }
 }

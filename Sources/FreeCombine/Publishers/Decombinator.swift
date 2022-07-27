@@ -103,3 +103,40 @@ public extension Publisher {
     }
 }
 
+public func Decombinator<Output>(
+    stateTask: StateTask<PromiseState<Output>, PromiseState<Output>.Action>
+) -> Future<Output> {
+    .init(stateTask: stateTask)
+}
+
+public extension Future {
+    init(
+        file: StaticString = #file,
+        line: UInt = #line,
+        deinitBehavior: DeinitBehavior = .assert,
+        stateTask: StateTask<PromiseState<Output>, PromiseState<Output>.Action>
+    ) {
+        self = .init { continuation, downstream in
+            Cancellable<Cancellable<Void>>.join(.init {
+                var enqueueStatus: AsyncStream<PromiseState<Output>.Action>.Continuation.YieldResult!
+                let c: Cancellable<Void> = try await withResumption(
+                    file: file,
+                    line: line,
+                    deinitBehavior: deinitBehavior
+                ) { voidResumption in
+                    enqueueStatus = stateTask.send(.subscribe(downstream, voidResumption))
+                    guard case .enqueued = enqueueStatus else {
+                        voidResumption.resume(throwing: PublisherError.enqueueError)
+                        return
+                    }
+                }
+                guard case .enqueued = enqueueStatus else {
+                    continuation.resume(throwing: PublisherError.enqueueError)
+                    return .init { try await downstream(.failure(PublisherError.enqueueError)) }
+                }
+                continuation.resume()
+                return c
+            } )
+        }
+    }
+}
