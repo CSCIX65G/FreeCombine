@@ -191,7 +191,9 @@ All streaming libraries are written in the [Continuation Passing Style (CPS)](ht
 Promise/Future systems are also written in CPS and as a result share many of the same operations.  FreeCombine incorporates NIO-style Promises and Futures almost by default as a result of FreeCombine's direct implemenation of CPS.  In FreeCombine's implementations of Publisher and Future, it is easy to read the relationship between the two directly from the type signatures. Futures can be thought of as "one-shot" streams, i.e. a stream which will only ever send exactly one element downstream, no more, no less.  In this paradigm, Promises can be seen to be the exact one-shot representation of Subject from the "normal" streaming world. If you find the concept of a "one-shot" stream odd, it is worth noting that the Swift Standard Library already has an exactly analogous notion in the type [CollectionOfOne](https://developer.apple.com/documentation/swift/collectionofone).
 
 ## What makes FreeCombine "Free"
-So what makes FreeCombine different from AsyncSequence (and its support in Apple's swift-async-algorithms package)? And what do we mean by _free_ anyway.  FreeCombine is "free" in the sense that it is:
+So what makes FreeCombine different from AsyncSequence (and its support in Apple's swift-async-algorithms package)? And what do you mean by _free_ anyway?  
+
+FreeCombine is "free" in the sense that it is:
 
 * Protocol-free.
   * No use of protocols, only concrete types
@@ -240,11 +242,14 @@ For a long time I've been exploring the idea of what Apple's Swift Combine frame
 
 Ideally, this material would become the core of an expanded course on Functional Concurrent Programming using Swift, but that course is still fairly far off.  
   
-Secondarily, this repo is my own feeble attempt to answer the following questions: 
+Secondarily, this repo is our own feeble attempt to answer the following questions: 
   
 1. Why does the use of protocols in things like Combine and AsyncSequence seem to produce much more complicated APIs than if the same APIs had been implemented with concrete types instead?
 1. Why does Swift Concurrency seem to avoid the use of functional constructs like `map`, `flatMap`, and `zip` when dealing with generic types like Tasks, but to embrance them fully when dealing with generic types like `AsyncStream`? (not to mention more run-of-the-mill types like `Optional`, `Result`, and `Sequence`)
-1. Which elements of Swift Concurrency should be regarded as `primitive` and which are `compositional`.
+1. Why does AsyncSequence in Swift Concurrency have so many methods in common with Combine, yet the required parts of their protocols seem so different? 
+1. Why is it that EventLoopFuture from Swift NIO shares so many methods with Publisher from Combine and AsyncSequence from the Swift standar library, but that Future in Combine looks so different from EventLoopFuture?
+1. Why does Swift Concurrency seem to avoid the notion of a Future and its accompanying methods altogether?
+1. Which elements of Swift Concurrency should be regarded as `primitive` and which are `compound`, (i.e. formed by composing the primitive elements)? And what does composition of these elements mean, anyway?
 1. If, in Swift, we decorate "effectful" functions with keywords like `throws` and `async`, does that mean we can expect other kinds of effects to introduce additional keywords on function declaration?
 1. Is there a general way of dealing with effects in Swift and what might such a mechanism look like?
 1. Why does Swift's Structured Concurrency not have a set of primitives similar to (say) Haskell or Java?  In particular, why does it seem so difficult to use Structured Concurrency to write constructs like Haskell's [ST monad](https://hackage.haskell.org/package/base-4.3.1.0/docs/Control-Monad-ST.html), [MVar](https://hackage.haskell.org/package/base-4.16.2.0/docs/Control-Concurrent-MVar.html), or [TVar](https://hackage.haskell.org/package/stm-2.5.0.2/docs/Control-Concurrent-STM-TVar.html) or to implement the [Producer/Consumer pattern](https://www.baeldung.com/java-producer-consumer-problem) seen ubiquitously in Java concurrency?

@@ -126,3 +126,10 @@ NB FreeCombine takes the message/acknowledgement protocol approach as primitive 
 * [Lazy Functional StateThreads](https://www.microsoft.com/en-us/research/wp-content/uploads/1994/06/lazy-functional-state-threads.pdf)
 * [RankN Types in Haskell (i.e What's used in the ST Monad)](http://sleepomeno.github.io/blog/2014/02/12/Explaining-Haskell-RankNTypes-for-all/))
 * [Lock Free Data Structures in Java](https://www.baeldung.com/lock-free-programming)
+* [Linear Types Make Performance More Predictable](https://www.tweag.io/blog/2017-03-13-linear-types/)
+
+> Linear types can make fusion predictable and guaranteed. Fusion is crucial to writing programs that are both modular and high-performance. But a common criticism, one that we’ve seen born out in practice, is that it’s often hard to know for sure whether the compiler seized the opportunity to fuse intermediate data structures to reduce allocations, or not. This is still future work, but we’re excited about the possibilities: since fusion leans heavily on inlining, and since linear functions are always safe to inline without duplicating work because they only use their argument once, it should be possible with a few extra tricks to get guaranteed fusion.
+
+Stream fusion should not be required in FreeCombine bc Swift optimization should be able to take advantage of annotated inlining.  FreeCombine needs to make more aggressive use of `@inlinable`.
+
+* [Retrofitting Linear Types](https://github.com/tweag/linear-types/releases/download/v1.0/hlt.pdf)
