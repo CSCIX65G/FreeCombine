@@ -1,10 +1,10 @@
 ### Analyze Push-based streams as normal streams _without_ Demand
 
-1. Demand isomorphic to void
+1. i.e. Push makes demand isomorphic to void
  
 ### Analyze Pull-based streams as normal streams _with_ Demand 
 
-1. Demand isomorphic to Bool
+1. i.e. Pull makes demand isomorphic to Bool
 
 ### Hybrid push/pull 
 
