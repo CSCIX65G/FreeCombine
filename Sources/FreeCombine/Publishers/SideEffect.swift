@@ -12,8 +12,8 @@ public func SideEffect<Element>(
 }
 
 public extension Publisher {
-    static func fireAndForget(_ f: @escaping () async throws -> Void) -> Self {
-        SideEffect(Output.self, operation: f)
+    static func fireAndForget(_ operation: @escaping () async throws -> Void) -> Self {
+        SideEffect(Output.self, operation: operation)
     }
 
     init(

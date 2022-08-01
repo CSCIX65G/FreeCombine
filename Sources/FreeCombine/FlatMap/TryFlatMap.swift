@@ -7,14 +7,14 @@
 
 public extension Publisher {
     func tryFlatMap<B>(
-        _ f: @escaping (Output) async throws -> Publisher<B>
+        _ transform: @escaping (Output) async throws -> Publisher<B>
     ) -> Publisher<B> {
         .init { continuation, downstream in
             self(onStartup: continuation) { r in
                 switch r {
                 case .value(let a):
                     var c: Publisher<B>!
-                    do { c = try await f(a) }
+                    do { c = try await transform(a) }
                     catch { return try await downstream(.completion(.failure(error))) }
                     return try await c(flattener(downstream)).value
                 case let .completion(value):

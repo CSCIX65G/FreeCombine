@@ -29,9 +29,9 @@ public extension Future {
     @discardableResult
     func sink(
         onStartup: Resumption<Void>,
-        _ f: @Sendable @escaping (Result<Output, Swift.Error>) async throws -> Void
+        _ downstream: @Sendable @escaping (Result<Output, Swift.Error>) async throws -> Void
     ) -> Cancellable<Void> {
-        self(onStartup: onStartup, f)
+        self(onStartup: onStartup, downstream)
     }
 
     @discardableResult
@@ -52,9 +52,9 @@ public extension Future {
         file: StaticString = #file,
         line: UInt = #line,
         deinitBehavior: DeinitBehavior = .assert,
-        _ f: @Sendable @escaping (Result<Output, Swift.Error>) async throws -> Void
+        _ downstream: @Sendable @escaping (Result<Output, Swift.Error>) async throws -> Void
     ) async -> Cancellable<Void> {
-        await self(file: file, line: line, deinitBehavior: deinitBehavior, f)
+        await self(file: file, line: line, deinitBehavior: deinitBehavior, downstream)
     }
 
     @discardableResult
@@ -62,11 +62,11 @@ public extension Future {
         file: StaticString = #file,
         line: UInt = #line,
         deinitBehavior: DeinitBehavior = .assert,
-        _ f: @Sendable @escaping (Result<Output, Swift.Error>) async throws -> Void
+        _ downstream: @Sendable @escaping (Result<Output, Swift.Error>) async throws -> Void
     ) async -> Cancellable<Void> {
         var cancellable: Cancellable<Void>!
         let _: Void = try! await withResumption(file: file, line: line, deinitBehavior: deinitBehavior) { continuation in
-            cancellable = self(onStartup: continuation, f)
+            cancellable = self(onStartup: continuation, downstream)
         }
         return cancellable
     }
@@ -116,7 +116,7 @@ extension Future {
 }
 
 func handleFutureCancellation<Output>(
-    of f: @Sendable @escaping (Result<Output, Swift.Error>) async throws -> Void
+    of downstream: @Sendable @escaping (Result<Output, Swift.Error>) async throws -> Void
 ) async throws -> Void {
-    _ = try await f(.failure(FutureError.cancelled))
+    _ = try await downstream(.failure(FutureError.cancelled))
 }

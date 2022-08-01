@@ -6,11 +6,11 @@
 //
 public extension Publisher {
     func flatMap<B>(
-        _ f: @escaping (Output) async -> Publisher<B>
+        _ transform: @escaping (Output) async -> Publisher<B>
     ) -> Publisher<B> {
         .init { continuation, downstream in self(onStartup: continuation) { r in switch r {
             case .value(let a):
-                return try await f(a)(flattener(downstream)).value
+                return try await transform(a)(flattener(downstream)).value
             case let .completion(value):
                 return try await downstream(.completion(value))
         } } }
