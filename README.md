@@ -172,21 +172,21 @@ FreeCombine received: z26
 ```
 # The Long Version
 
-## Like Combine. Only free. And concurrent.
+## Like Combine. Only free. And functionally concurrent.
 
 FreeCombine is a functional streaming library for the Swift language.  
 
 Functional streaming comes in two forms: push and pull.  FreeCombine is pull.  RxSwift and ReactiveSwift are push.  Combine is both, but primarily pull, in that the vast majority of use cases utilize only the push mode.  If you are curious about the differences between the two, a good introduction is this one on [the Akka Streams library](https://qconnewyork.com/ny2015/system/files/presentation-slides/AkkaStreamsQconNY.pdf) which is both push and pull and can change between the two dynamically (Pages 29-33 are especially informative).  
 
-As an aside, if you have ever wondered what a Subscription is in Combine, it's the implementation of pull semantics.  Any use of `sink` or `assign` puts the stream into push mode and ignores Demand.  If you've never used `AnySubscriber` and have never written your own `Subscriber` implementation, then you've only been using Combine in push mode.  My experience is that this is the vast majority of Combine users. 
+As an aside, if you have ever wondered what a Subscription is in Combine, it's the implementation of pull semantics.  Any use of `sink` or `assign` puts the stream into push mode and ignores Demand.  If you've never used `AnySubscriber` and have never written your own `Subscriber` implementation, then you've only been using Combine in push mode.  My experience is that this is the majority of Combine users. 
 
 AsyncStream in Apple's Swift standard library is a _pull_ stream. Accordingly several things that seem natural in Combine turn out to have different meanings in AsyncStream (and are much more difficult to implement). In particular, having several downstream subscribers to the same stream is very complicated when compared to doing the same thing in a push environment.  AsyncStream conforms to AsyncSequence and all of the other conforming types to AsyncSequence are also pull-mode streams and therefore share the same semantics.
 
 The difference between push and pull is really fundamental, yet in my experience, most users of Combine are surprised to learn that it exists.  It explains why, as of this writing in July '22, Swift Async Algorithms still lacks a `Subject`-like type. It's because `Subject`, `ConnectablePublisher` and operations like `throttle`, `delay` and `debounce` are really hard to get right in a pull system and they are much easier to implement in push systems.  OTOH, operations like `zip` are really hard to get right in a push system because they require the introduction of unbounded queues upstream. Unbounded queues are more than a little problematic if the user has not explicitly accounted for their presence.
 
-While there are exceptions (Combine for example), streams in synchronous systems tend to be push, in asynchronous systems they tend to be pull. Different applications are better suited to one form of streaming than the other. The main differences lie in how the two modes treat combinators like zip or decombinators like Combine's Subject. A good summary of the differences is found in this presentation: [A Brief History of Streams](https://shonan.nii.ac.jp/archives/seminar/136/wp-content/uploads/sites/172/2018/09/a-brief-history-of-streams.pdf) - especially the table on page 21.  One interesting area of future development for FreeCombine is at the interface between synchronous and asynchronous context, for example, you would like your SwiftUI code to be only synchronous - a button tap should not (and really cannot) hang the UI, but you would like your application state to be maintained in async context.  More on this below.
+While there are exceptions (Combine for example), streams in synchronous systems tend to be push, while in asynchronous systems they tend to be pull. Different applications are better suited to one form of streaming than the other. The main differences lie in how the two modes treat combinators like zip or decombinators like Combine's Subject. A good summary of the differences is found in this presentation: [A Brief History of Streams](https://shonan.nii.ac.jp/archives/seminar/136/wp-content/uploads/sites/172/2018/09/a-brief-history-of-streams.pdf) - especially the table on page 21.  One interesting area of future development for FreeCombine is at the interface between synchronous and asynchronous context, for example, you would like your SwiftUI code to be only synchronous - a button tap should not (and really cannot) hang the UI, but you would like your application state to be maintained in async context.  More on this below.
 
-All streaming libraries are written in the [Continuation Passing Style (CPS)](https://en.wikipedia.org/wiki/Continuation-passing_style).  Because of this they share certain operations for the Continuation type: map, flatMap, join, filter, reduce, et al.  (FWIW, everything you know Object-Oriented notation is also CPS just slightly disguised. This is shown Playground 2 in the Playgrounds directory).
+All streaming libraries are written in the [Continuation Passing Style (CPS)](https://en.wikipedia.org/wiki/Continuation-passing_style).  Because of this, they share certain operations for the Continuation type: map, flatMap, join, filter, reduce, et al.  (FWIW, everything you know Object-Oriented notation is also CPS just slightly disguised. This is shown Playground 2 in the Playgrounds directory).
 
 Promise/Future systems are also written in CPS and as a result share many of the same operations.  FreeCombine incorporates NIO-style Promises and Futures almost by default as a result of FreeCombine's direct implemenation of CPS.  In FreeCombine's implementations of Publisher and Future, it is easy to read the relationship between the two directly from the type signatures. Futures can be thought of as "one-shot" streams, i.e. a stream which will only ever send exactly one element downstream, no more, no less.  In this paradigm, Promises can be seen to be the exact one-shot representation of Subject from the "normal" streaming world. If you find the concept of a "one-shot" stream odd, it is worth noting that the Swift Standard Library already has an exactly analogous notion in the type [CollectionOfOne](https://developer.apple.com/documentation/swift/collectionofone).
 
@@ -198,11 +198,11 @@ FreeCombine is "free" in the sense that it is:
 * Protocol-free.
   * No use of protocols, only concrete types
   * Eager type erasure, no long nested types as seen in Combine.
-  * Explicit implemenation of the continuation-passing style via the Publisher and StateTask types.
+  * Explicit implemenation of the continuation-passing style via the Publisher and StateTask types which are _not_ protocols.
 * Race-free.
   * Yield-free.
   * Sleep-free.
-  * subscribeOn-free.  `subscribeOn`-like functionality is inherent in FreeCombine.  The race conditions it creates are prevented because continuations are only created after upstream continuations are guaranteed to exist and have started.  `subscribeOn` is guaranteed to be in the right async context.
+  * subscribeOn-free.  `subscribeOn`-like functionality is inherent in FreeCombine. `subscribeOn` is one of the Combine operators that has no exact analog in FreeCombine.  But `subscribeOn` is subject to race conditions. The race conditions it creates are prevented because all FreeCombine continuations are only created after their upstream continuations are guaranteed to exist and have started.  This means that `subscribeOn` is guaranteed to be in the right async context.
   * All tests must demonstrate race-free operation by executing successfully for 10,000 repetitions under Xcode's `Run [Tests] Repeatedly` option.
 * Leak-free.
   * ARC-like Task lifetimes

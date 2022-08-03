@@ -111,9 +111,7 @@ public struct PromiseState<Output: Sendable> {
                     resumption.resume(throwing: error)
                     throw error
                 }
-                return isComplete
-                    ? .completion(.exit)
-                    : .none
+                return isComplete ? .completion(.exit)  : .none
             case let .subscribe(downstream, resumption):
                 var repeater: Cancellable<Void>!
                 if let currentValue = currentValue {
@@ -170,9 +168,7 @@ public struct PromiseState<Output: Sendable> {
                 }
             }
         }
-        .forEach { key in
-            repeaters.removeValue(forKey: key)
-        }
+        .forEach { repeaters.removeValue(forKey: $0) }
     }
 
     mutating func process(
@@ -191,7 +187,7 @@ public struct PromiseState<Output: Sendable> {
             )
         )
         repeaters[nextKey] = repeater
-        return .init { try await repeater.value }
+        return .init { _ = try await repeater.value; return }
     }
 }
 
