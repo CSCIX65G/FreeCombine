@@ -36,6 +36,27 @@ public final class Promise<Output: Sendable> {
         )
     }
 
+    convenience init(
+        file: StaticString = #file,
+        line: UInt = #line,
+        deinitBehavior: DeinitBehavior = .assert
+    ) async throws {
+        try await self.init(
+            file: file,
+            line: line,
+            deinitBehavior: deinitBehavior,
+            buffering: .bufferingOldest(1),
+            stateTask: Channel.init(buffering: .unbounded) .stateTask(
+                initialState: { channel in .init(currentValue: .none, nextKey: 0, downstreams: [:]) },
+                reducer: Reducer(
+                    onCompletion: PromiseState<Output>.complete,
+                    disposer: PromiseState<Output>.dispose,
+                    reducer: PromiseState<Output>.reduce
+                )
+            )
+        )
+    }
+
     deinit {
         let shouldCancel = !(isCompleting || isCancelled)
         switch deinitBehavior {
@@ -132,7 +153,7 @@ public extension Promise {
             let queueStatus = receiveStateTask.send(.receive(result, resumption))
             switch queueStatus {
                 case .enqueued:
-                    ()
+                    receiveStateTask.finish()
                 case .terminated:
                     resumption.resume(throwing: PublisherError.completed)
                 case .dropped:

@@ -73,10 +73,10 @@ public func withResumption<Output>(
     file: StaticString = #file,
     line: UInt = #line,
     deinitBehavior: DeinitBehavior = .assert,
-    _ f: (Resumption<Output>) -> Void
+    _ resume: (Resumption<Output>) -> Void
 ) async throws -> Output {
     try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Output, Swift.Error>) -> Void in
-        f(.init(
+        resume(.init(
             file: file,
             line: line,
             deinitBehavior: deinitBehavior,

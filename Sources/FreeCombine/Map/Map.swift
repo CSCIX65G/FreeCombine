@@ -7,12 +7,12 @@
 
 public extension Publisher {
     func map<B>(
-        _ f: @escaping (Output) async -> B
+        _ transform: @escaping (Output) async -> B
     ) -> Publisher<B> {
         .init { continuation, downstream in
             self(onStartup: continuation) { r in switch r {
                 case .value(let a):
-                    return try await downstream(.value(f(a)))
+                    return try await downstream(.value(transform(a)))
                 case let .completion(value):
                     return try await downstream(.completion(value))
             } }

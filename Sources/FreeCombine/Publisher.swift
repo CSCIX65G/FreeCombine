@@ -50,9 +50,9 @@ public extension Publisher {
     @discardableResult
     func sink(
         onStartup: Resumption<Void>,
-        _ f: @Sendable @escaping (AsyncStream<Output>.Result) async throws -> Demand
+        _ downstream: @Sendable @escaping (AsyncStream<Output>.Result) async throws -> Demand
     ) -> Cancellable<Demand> {
-        self(onStartup: onStartup, f)
+        self(onStartup: onStartup, downstream)
     }
 
     @discardableResult
@@ -80,9 +80,9 @@ public extension Publisher {
         file: StaticString = #file,
         line: UInt = #line,
         deinitBehavior: DeinitBehavior = .assert,
-        _ f: @Sendable @escaping (AsyncStream<Output>.Result) async throws -> Demand
+        _ downstream: @Sendable @escaping (AsyncStream<Output>.Result) async throws -> Demand
     ) async -> Cancellable<Demand> {
-        await self(file: file, line: line, deinitBehavior: deinitBehavior, f)
+        await self(file: file, line: line, deinitBehavior: deinitBehavior, downstream)
     }
 
     @discardableResult
@@ -90,11 +90,11 @@ public extension Publisher {
         file: StaticString = #file,
         line: UInt = #line,
         deinitBehavior: DeinitBehavior = .assert,
-        _ f: @Sendable @escaping (AsyncStream<Output>.Result) async throws -> Demand
+        _ downstream: @Sendable @escaping (AsyncStream<Output>.Result) async throws -> Demand
     ) async -> Cancellable<Demand> {
         var cancellable: Cancellable<Demand>!
         let _: Void = try! await withResumption(file: file, line: line, deinitBehavior: deinitBehavior) { continuation in
-            cancellable = self(onStartup: continuation, f)
+            cancellable = self(onStartup: continuation, downstream)
         }
         return cancellable
     }
@@ -181,8 +181,8 @@ func errorFlattener<B>(
 }
 
 func handleCancellation<Output>(
-    of f: @Sendable @escaping (AsyncStream<Output>.Result) async throws -> Demand
+    of downstream: @Sendable @escaping (AsyncStream<Output>.Result) async throws -> Demand
 ) async throws -> Demand {
-    _ = try await f(.completion(.cancelled))
+    _ = try await downstream(.completion(.cancelled))
     return .done
 }

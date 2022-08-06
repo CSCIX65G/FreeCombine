@@ -116,12 +116,12 @@ public extension Cancellable {
     func map<B>(
         file: StaticString = #file,
         line: UInt = #line,
-        _ f: @escaping (Output) async -> B
+        _ transform: @escaping (Output) async -> B
     ) -> Cancellable<B> {
         let inner = self
         return .init(file: file, line: line) {
             try await withTaskCancellationHandler(handler: { Task { inner.cancel() } }) {
-                try await f(inner.value)
+                try await transform(inner.value)
             }
         }
     }
@@ -134,10 +134,10 @@ public extension Cancellable {
     }
 
     func flatMap<B>(
-        _ f: @escaping (Output) async -> Cancellable<B>,
+        _ transform: @escaping (Output) async -> Cancellable<B>,
         file: StaticString = #file,
         line: UInt = #line
     ) -> Cancellable<B> {
-        self.map(file: file, line: line, f).join(file: file, line: line)
+        self.map(file: file, line: line, transform).join(file: file, line: line)
     }
 }
