@@ -6,7 +6,7 @@
 
 * Sergei Winitzki's talk: [What I learned about functional programming while writing a book about it](https://youtu.be/T5oB8PZQNvY)
 
-* [Sergei Winitzki's AMAZING book](https://leanpub.com/sofp) From the books description:
+* [Sergei Winitzki's AMAZING book](https://leanpub.com/sofp) From the book's description:
 
 > After reading this book, you will understand everything in FP. Prove that your application's business logic satisfies the laws for free Tambara profunctor lens over a holographic co-product monoidal category (whatever that means), and implement the necessary code in Scala? Will be no problem for you.
 
@@ -80,6 +80,8 @@ NB FreeCombine takes the message/acknowledgement protocol approach as primitive 
 2. `StateTask` allows backpressure
 3. `actor` has syntactical support in the language
 
+* [PI Calculus](https://en.wikipedia.org/wiki/Π-calculus)
+
 * [The Producer/Consumer pattern in Java](https://www.baeldung.com/java-producer-consumer-problem))
 
 ### Theory of Streams
@@ -106,7 +108,12 @@ NB FreeCombine takes the message/acknowledgement protocol approach as primitive 
 * [Functional Reactive Programming from First Principles](https://github.com/bitemyapp/papers/blob/master/Functional%20Reactive%20Programming%20from%20First%20Principles.pdf)
 * [Functional Reactive Programming, Continued](https://github.com/bitemyapp/papers/blob/master/Functional%20Reactive%20Programming%2C%20Continued.pdf)
 * [Higher-order Functional Reactive Programming without Spacetime Leaks](https://github.com/bitemyapp/papers/blob/master/Higher-Order%20Functional%20Reactive%20Programming%20without%20Spacetime%20Leaks.pdf)
-* [Push-Pull Functional Reactive Programming](https://github.com/bitemyapp/papers/blob/master/Push-pull%20functional%20reactive%20programming.pdf)
+* [Push-Pull Functional Reactive Programming](http://conal.net/papers/push-pull-frp/push-pull-frp.pdf)
+
+> While FRP has simple, pure, and composable semantics, its efficient implementation has not been so simple. In particular, past implementations have used demand-driven (pull) sampling of reactive behaviors, in contrast to the data-driven (push) evaluation typically used for reactive systems, such as GUIs. There are at least two strong reasons for choosing pull over push for FRP:
+> • Behaviors may change continuously, so the usual tactic of idling until the next input change (and then computing consequences) doesn’t apply.
+> • Pull-based evaluation fits well with the common functional programming style of recursive traversal with parameters (time, in this case). Push-based evaluation appears at first to be an inherently imperative technique.
+
 * [Stream Fusion on Haskell Unicode Strings](https://github.com/bitemyapp/papers/blob/master/Stream%20Fusion%20on%20Haskell%20Unicode%20Strings.pdf)
 
 ### Stream Libraries
@@ -133,3 +140,7 @@ NB FreeCombine takes the message/acknowledgement protocol approach as primitive 
 Stream fusion should not be required in FreeCombine bc Swift optimization should be able to take advantage of annotated inlining.  FreeCombine needs to make more aggressive use of `@inlinable`.
 
 * [Retrofitting Linear Types](https://github.com/tweag/linear-types/releases/download/v1.0/hlt.pdf)
+
+* [Pi Calculus](https://en.wikipedia.org/wiki/Π-calculus)
+
+> The asynchronous π-calculus allows only outputs with no suffix, i.e. output atoms of the form  ̅x<y>, yielding a smaller calculus. However, any process in the original calculus can be represented by the smaller asynchronous π-calculus using an extra channel to simulate explicit acknowledgement from the receiving process. Since a continuation-free output can model a message-in-transit, this fragment shows that the original π-calculus, which is intuitively based on synchronous communication, has an expressive asynchronous communication model inside its syntax. However, the nondeterministic choice operator defined above cannot be expressed in this way, as an unguarded choice would be converted into a guarded one; this fact has been used to demonstrate that the asynchronous calculus is strictly less expressive than the synchronous one (with the choice operator).
