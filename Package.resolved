@@ -5,8 +5,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/CSCIX65G/swift-atomics.git",
       "state" : {
-        "branch" : "CSCIX65G/playgrounds",
-        "revision" : "3024f7a375583fea45220d39ed1700fb835d4154"
+        "branch" : "CSCIX65G/playgrounds-disabled",
+        "revision" : "785acf51f94be79090c064aedc48c1d8ef06e251"
       }
     }
   ],

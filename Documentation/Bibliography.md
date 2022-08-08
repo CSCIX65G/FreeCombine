@@ -94,6 +94,8 @@ NB FreeCombine takes the message/acknowledgement protocol approach as primitive 
 * [Exploiting Vector Instructions with Generalized Stream Fusion](https://cacm.acm.org/magazines/2017/5/216312-exploiting-vector-instructions-with-generalized-stream-fusion/fulltext)
 * [Functional Stream Libraries and Fusion: What's Next?](https://okmij.org/ftp/meta-programming/shonan-streams.pdf)
 * [Ziria - A DSL for wireless systems programming](http://ace.cs.ohio.edu/~gstewart/papers/ziria/ziria.pdf)
+* [Streaming Programs w/o Laziness: A Short Primer](https://www.tweag.io/blog/2017-07-27-streaming-programs/)
+* [Streaming with Linear Types](https://www.tweag.io/blog/2018-06-21-linear-streams/)
 
 ### Theory of State
 
@@ -126,6 +128,7 @@ NB FreeCombine takes the message/acknowledgement protocol approach as primitive 
 ### Odds and Ends
 
 * [Resource Acquisition is Initialization](https://en.wikipedia.org/wiki/Resource_acquisition_is_initialization)
+* [EventLoopFuture](https://github.com/apple/swift-nio/blob/e2c7fa4d4bda7cb7f4150b6a0bd69be2a54ef8c4/Sources/NIOCore/EventLoopFuture.swift#L385)
 * [EventLoopPromise](https://github.com/apple/swift-nio/blob/e2c7fa4d4bda7cb7f4150b6a0bd69be2a54ef8c4/Sources/NIOCore/EventLoopFuture.swift#L159)
 * [Leaking an EventLoopPromise is an Error](https://github.com/apple/swift-nio/blob/e2c7fa4d4bda7cb7f4150b6a0bd69be2a54ef8c4/Sources/NIOCore/EventLoopFuture.swift#L428)
 * [Actor-isolation and Executors](https://github.com/apple/swift-evolution/blob/main/proposals/0338-clarify-execution-non-actor-async.md)
@@ -140,6 +143,9 @@ NB FreeCombine takes the message/acknowledgement protocol approach as primitive 
 Stream fusion should not be required in FreeCombine bc Swift optimization should be able to take advantage of annotated inlining.  FreeCombine needs to make more aggressive use of `@inlinable`.
 
 * [Retrofitting Linear Types](https://github.com/tweag/linear-types/releases/download/v1.0/hlt.pdf)
+* [Retrofitting Linear Types v2](https://github.com/tweag/linear-types/releases/download/v2.0/hlt.pdf)
+* [Linear Types Blog Entries on Tweag](https://www.tweag.io/blog/tags/linear-types)
+* [Linear Haskell](https://www.tweag.io/blog/2021-02-10-linear-base/)
 
 * [Pi Calculus](https://en.wikipedia.org/wiki/Π-calculus)
 
