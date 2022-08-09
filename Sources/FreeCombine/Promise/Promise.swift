@@ -104,9 +104,7 @@ public final class Promise<Output: Sendable> {
         try await stateTask.cancel()
         return await stateTask.result
     }
-    public func fail(_ error: Error) async throws -> Void {
-        try await stateTask.fail(error)
-    }
+
     public func failAndAwaitResult(_ error: Error) async throws -> Result<PromiseState<Output>, Swift.Error> {
         try await stateTask.fail(error)
         return await stateTask.result
@@ -167,16 +165,15 @@ public extension Promise {
         try receive(result)
     }
 
-    @Sendable func send(_ value: Output) throws -> Void {
+    @Sendable func succeed(_ value: Output) throws -> Void {
         try receive(.success(value))
     }
 
-    @Sendable func send(_ error: Swift.Error) throws -> Void {
+    @Sendable func fail(_ error: Swift.Error) throws -> Void {
         try receive(.failure(error))
     }
 
     @Sendable func finish() -> Void {
         stateTask.finish()
     }
-
 }

@@ -72,49 +72,6 @@ public extension Future {
     }
 }
 
-extension Future {
-    @Sendable private func lift(
-        _ receiveFailure: @Sendable @escaping (Swift.Error) async throws -> Void,
-        _ receiveValue: @Sendable @escaping (Output) async throws -> Void
-    ) -> @Sendable (Result<Output, Swift.Error>) async throws -> Void {
-        { result in switch result {
-            case let .success(value):
-                return try await receiveValue(value)
-            case let .failure(error):
-                do { return try await receiveFailure(error) }
-                catch { throw error }
-        } }
-    }
-
-    func sink(
-        onStartup: Resumption<Void>,
-        receiveValue: @Sendable @escaping (Output) async throws -> Void
-    ) -> Cancellable<Void> {
-        sink(onStartup: onStartup, receiveCompletion: void, receiveValue: receiveValue)
-    }
-
-    func sink(
-        receiveValue: @Sendable @escaping (Output) async throws -> Void
-    ) async -> Cancellable<Void> {
-        await sink(receiveCompletion: void, receiveValue: receiveValue)
-    }
-
-    func sink(
-        onStartup: Resumption<Void>,
-        receiveCompletion: @Sendable @escaping (Swift.Error) async throws -> Void,
-        receiveValue: @Sendable @escaping (Output) async throws -> Void
-    ) -> Cancellable<Void> {
-        sink(onStartup: onStartup, lift(receiveCompletion, receiveValue))
-    }
-
-    func sink(
-        receiveCompletion: @Sendable @escaping (Swift.Error) async throws -> Void,
-        receiveValue: @Sendable @escaping (Output) async throws -> Void
-    ) async -> Cancellable<Void> {
-        await sink(lift(receiveCompletion, receiveValue))
-    }
-}
-
 func handleFutureCancellation<Output>(
     of downstream: @Sendable @escaping (Result<Output, Swift.Error>) async throws -> Void
 ) async throws -> Void {
