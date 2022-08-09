@@ -28,7 +28,7 @@ final class PromiseTests: XCTestCase {
                 }
             })
 
-        try await promise.send(13)
+        try promise.succeed(13)
 
         do {
             try await FreeCombine.wait(for: expectation, timeout: 1_000_000)
@@ -37,6 +37,41 @@ final class PromiseTests: XCTestCase {
         }
 
         _ = await cancellation.result
+        promise.finish()
+        _ = await promise.result
+    }
+
+    func testSimpleFailedPromise() async throws {
+        enum PromiseError: Error, Equatable {
+            case iFailed
+        }
+        let expectation = await Expectation<Void>()
+        let promise = try await Promise<Int>()
+        let cancellation = await promise.future()
+            .sink ({ result in
+                do { try await expectation.complete() }
+                catch { XCTFail("Failed to complete with error: \(error)") }
+                switch result {
+                    case .success(let value):
+                        XCTFail("Got a value \(value)")
+                    case .failure(let error):
+                        guard let e = error as? PromiseError, e == .iFailed else {
+                            XCTFail("Wrong error: \(error)")
+                            return
+                        }
+                }
+            })
+
+        try promise.fail(PromiseError.iFailed)
+
+        do {
+            try await FreeCombine.wait(for: expectation, timeout: 1_000_000)
+        } catch {
+            XCTFail("Timed out")
+        }
+
+        _ = await cancellation.result
+        promise.finish()
         _ = await promise.result
     }
 }

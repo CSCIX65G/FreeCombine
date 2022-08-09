@@ -46,4 +46,34 @@ class MapTests: XCTestCase {
         }
         _ = await m1.result
     }
+
+    func testSimpleFutureMap() async throws {
+        let expectation = await Expectation<Void>()
+
+        let promise = try await Promise<Int>()
+
+        let cancellation = await promise.future()
+            .map { $0 * 2 }
+            .sink { result in
+                try await expectation.complete()
+                switch result {
+                    case let .success(value):
+                        XCTAssert(value == 26, "wrong value sent: \(value)")
+                    case let .failure(error):
+                        XCTFail("Got an error? \(error)")
+                }
+            }
+
+        try promise.succeed(13)
+
+        do {
+            try await FreeCombine.wait(for: expectation, timeout: 1_000_000)
+        } catch {
+            XCTFail("Timed out")
+        }
+
+        _ = await cancellation.result
+        promise.finish()
+        _ = await promise.result
+    }
 }

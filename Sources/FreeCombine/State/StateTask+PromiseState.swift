@@ -52,6 +52,7 @@ public extension StateTask {
     func cancel<Output: Sendable>(
     ) async throws -> Void where State == PromiseState<Output>, Action == PromiseState<Output>.Action {
         try await send(.failure(PublisherError.cancelled))
+        cancellable.cancel()
     }
 
     @inlinable

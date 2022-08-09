@@ -104,9 +104,7 @@ public final class Promise<Output: Sendable> {
         try await stateTask.cancel()
         return await stateTask.result
     }
-    public func fail(_ error: Error) async throws -> Void {
-        try await stateTask.fail(error)
-    }
+
     public func failAndAwaitResult(_ error: Error) async throws -> Result<PromiseState<Output>, Swift.Error> {
         try await stateTask.fail(error)
         return await stateTask.result
@@ -148,27 +146,9 @@ public extension Promise {
 
     func receive(
         _ result: Result<Output, Swift.Error>
-    ) async throws -> Int {
-        let count: Int = try await withResumption { resumption in
-            let queueStatus = receiveStateTask.send(.receive(result, resumption))
-            switch queueStatus {
-                case .enqueued:
-                    receiveStateTask.finish()
-                case .terminated:
-                    resumption.resume(throwing: PublisherError.completed)
-                case .dropped:
-                    resumption.resume(throwing: PublisherError.enqueueError)
-                @unknown default:
-                    resumption.resume(throwing: PublisherError.enqueueError)
-            }
-        }
-        return count
-    }
-
-    func receive(
-        _ result: Result<Output, Swift.Error>
     ) throws -> Void {
         let queueStatus = receiveStateTask.send(.nonBlockingReceive(result))
+        receiveStateTask.finish()
         switch queueStatus {
             case .enqueued:
                 ()
@@ -181,18 +161,19 @@ public extension Promise {
         }
     }
 
-    @discardableResult
-    @Sendable func send(_ result: Result<Output, Swift.Error>) async throws -> Int {
-        try await receive(result)
-    }
-    @discardableResult
-    @Sendable func send(_ value: Output) async throws -> Int {
-        try await receive(.success(value))
-    }
     @Sendable func send(_ result: Result<Output, Swift.Error>) throws -> Void {
         try receive(result)
     }
-    @Sendable func send(_ value: Output) throws -> Void {
+
+    @Sendable func succeed(_ value: Output) throws -> Void {
         try receive(.success(value))
+    }
+
+    @Sendable func fail(_ error: Swift.Error) throws -> Void {
+        try receive(.failure(error))
+    }
+
+    @Sendable func finish() -> Void {
+        stateTask.finish()
     }
 }

@@ -25,14 +25,14 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/CSCIX65G/swift-atomics.git", branch: "CSCIX65G/playgrounds"),
+//        .package(url: "https://github.com/apple/swift-atomics.git", .upToNextMajor(from: "1.0.2")),
     ],
     targets: [
         .target(
             name: "FreeCombine",
             dependencies: [
                 .product(name: "Atomics", package: "swift-atomics")
-            ],
-            cSettings: [.define("DISABLE_SWIFT_RETAINRELEASE")]
+            ]
         ),
         .testTarget(
             name: "FreeCombineTests",
