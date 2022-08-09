@@ -113,7 +113,7 @@ public final class Promise<Output: Sendable> {
 
 extension Promise {
     func subscribe(
-        _ downstream: @Sendable @escaping (Result<Output, Swift.Error>) async throws -> Void
+        _ downstream: @escaping @Sendable (Result<Output, Swift.Error>) async throws -> Void
     ) async throws -> Cancellable<Void> {
         try await withResumption { resumption in
             let queueStatus = stateTask.send(.subscribe(downstream, resumption))

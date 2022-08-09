@@ -76,13 +76,13 @@ public enum PublisherError: Swift.Error, Sendable, CaseIterable {
 public struct Publisher<Output: Sendable>: Sendable {
     private let call: @Sendable (
         UnsafeContinuation<Void, Never>?,
-        @Sendable @escaping (AsyncStream<Output>.Result) async throws -> Demand
+        @escaping @Sendable (AsyncStream<Output>.Result) async throws -> Demand
     ) -> Cancellable<Demand>
 
     internal init(
-        _ call: @Sendable @escaping (
+        _ call: @escaping @Sendable (
             UnsafeContinuation<Void, Never>?,
-            @Sendable @escaping (AsyncStream<Output>.Result) async throws -> Demand
+            @escaping @Sendable (AsyncStream<Output>.Result) async throws -> Demand
         ) -> Cancellable<Demand>
     ) {
         self.call = call
@@ -91,7 +91,7 @@ public struct Publisher<Output: Sendable>: Sendable {
     @discardableResult
     func callAsFunction(
         onStartup: UnsafeContinuation<Void, Never>?,
-        _ f: @Sendable @escaping (AsyncStream<Output>.Result) async throws -> Demand
+        _ f: @escaping @Sendable (AsyncStream<Output>.Result) async throws -> Demand
     ) -> Cancellable<Demand> {
         call(onStartup, { result in
             guard !Task.isCancelled else {
@@ -111,7 +111,7 @@ public struct Publisher<Output: Sendable>: Sendable {
 }
 
 func flattener<B>(
-    _ downstream: @Sendable @escaping (AsyncStream<B>.Result) async throws -> Demand
+    _ downstream: @escaping @Sendable (AsyncStream<B>.Result) async throws -> Demand
 ) -> @Sendable (AsyncStream<B>.Result) async throws -> Demand {
     { b in switch b {
         case .completion(.finished):
@@ -148,4 +148,5 @@ public extension Publisher {
     }
 }
 
+Swift.print("C'est finis.")
 //: [Next](@next)

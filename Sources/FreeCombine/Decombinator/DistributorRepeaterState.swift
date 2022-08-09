@@ -20,7 +20,7 @@ public struct DistributorRepeaterState<ID: Hashable & Sendable, Output: Sendable
 
     public init(
         id: ID,
-        downstream: @Sendable @escaping (AsyncStream<Output>.Result) async throws -> Demand,
+        downstream: @escaping @Sendable (AsyncStream<Output>.Result) async throws -> Demand,
         mostRecentDemand: Demand = .more
     ) {
         self.id = id

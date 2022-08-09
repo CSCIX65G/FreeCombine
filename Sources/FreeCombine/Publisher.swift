@@ -31,16 +31,11 @@ public enum PublisherError: Swift.Error, Sendable, CaseIterable {
 }
 
 public struct Publisher<Output: Sendable>: Sendable {
-    private let call: @Sendable (
-        Resumption<Void>,
-        @Sendable @escaping (AsyncStream<Output>.Result) async throws -> Demand
-    ) -> Cancellable<Demand>
+    public typealias Downstream = @Sendable (AsyncStream<Output>.Result) async throws -> Demand
+    private let call: @Sendable (Resumption<Void>, @escaping Downstream) -> Cancellable<Demand>
 
     internal init(
-        _ call: @Sendable @escaping (
-            Resumption<Void>,
-            @Sendable @escaping (AsyncStream<Output>.Result) async throws -> Demand
-        ) -> Cancellable<Demand>
+        _ call: @escaping @Sendable (Resumption<Void>, @escaping Downstream) -> Cancellable<Demand>
     ) {
         self.call = call
     }
@@ -48,18 +43,12 @@ public struct Publisher<Output: Sendable>: Sendable {
 
 public extension Publisher {
     @discardableResult
-    func sink(
-        onStartup: Resumption<Void>,
-        _ downstream: @Sendable @escaping (AsyncStream<Output>.Result) async throws -> Demand
-    ) -> Cancellable<Demand> {
+    func sink(onStartup: Resumption<Void>, _ downstream: @escaping Downstream) -> Cancellable<Demand> {
         self(onStartup: onStartup, downstream)
     }
 
     @discardableResult
-    func callAsFunction(
-        onStartup: Resumption<Void>,
-        _ downstream: @Sendable @escaping (AsyncStream<Output>.Result) async throws -> Demand
-    ) -> Cancellable<Demand> {
+    func callAsFunction(onStartup: Resumption<Void>, _ downstream: @escaping Downstream) -> Cancellable<Demand> {
         call(onStartup, { result in
             guard !Task.isCancelled else {
                 return try await handleCancellation(of: downstream)
@@ -80,7 +69,7 @@ public extension Publisher {
         file: StaticString = #file,
         line: UInt = #line,
         deinitBehavior: DeinitBehavior = .assert,
-        _ downstream: @Sendable @escaping (AsyncStream<Output>.Result) async throws -> Demand
+        _ downstream: @escaping Downstream
     ) async -> Cancellable<Demand> {
         await self(file: file, line: line, deinitBehavior: deinitBehavior, downstream)
     }
@@ -90,7 +79,7 @@ public extension Publisher {
         file: StaticString = #file,
         line: UInt = #line,
         deinitBehavior: DeinitBehavior = .assert,
-        _ downstream: @Sendable @escaping (AsyncStream<Output>.Result) async throws -> Demand
+        _ downstream: @escaping Downstream
     ) async -> Cancellable<Demand> {
         var cancellable: Cancellable<Demand>!
         let _: Void = try! await withResumption(file: file, line: line, deinitBehavior: deinitBehavior) { continuation in
@@ -102,8 +91,8 @@ public extension Publisher {
 
 extension Publisher {
     @Sendable private func lift(
-        _ receiveCompletion: @Sendable @escaping (Completion) async throws -> Void,
-        _ receiveValue: @Sendable @escaping (Output) async throws -> Void
+        _ receiveCompletion: @escaping @Sendable (Completion) async throws -> Void,
+        _ receiveValue: @escaping @Sendable (Output) async throws -> Void
     ) -> @Sendable (AsyncStream<Output>.Result) async throws -> Demand {
         { result in switch result {
             case let .value(value):
@@ -123,36 +112,36 @@ extension Publisher {
 
     func sink(
         onStartup: Resumption<Void>,
-        receiveValue: @Sendable @escaping (Output) async throws -> Void
+        receiveValue: @escaping @Sendable (Output) async throws -> Void
     ) -> Cancellable<Demand> {
         sink(onStartup: onStartup, receiveCompletion: void, receiveValue: receiveValue)
     }
 
     func sink(
-        receiveValue: @Sendable @escaping (Output) async throws -> Void
+        receiveValue: @escaping @Sendable (Output) async throws -> Void
     ) async -> Cancellable<Demand> {
         await sink(receiveCompletion: void, receiveValue: receiveValue)
     }
 
     func sink(
         onStartup: Resumption<Void>,
-        receiveCompletion: @Sendable @escaping (Completion) async throws -> Void,
-        receiveValue: @Sendable @escaping (Output) async throws -> Void
+        receiveCompletion: @escaping @Sendable (Completion) async throws -> Void,
+        receiveValue: @escaping @Sendable (Output) async throws -> Void
     ) -> Cancellable<Demand> {
         sink(onStartup: onStartup, lift(receiveCompletion, receiveValue))
     }
 
     func sink(
-        receiveCompletion: @Sendable @escaping (Completion) async throws -> Void,
-        receiveValue: @Sendable @escaping (Output) async throws -> Void
+        receiveCompletion: @escaping @Sendable (Completion) async throws -> Void,
+        receiveValue: @escaping @Sendable (Output) async throws -> Void
     ) async -> Cancellable<Demand> {
         await sink(lift(receiveCompletion, receiveValue))
     }
 }
 
 func flattener<B>(
-    _ downstream: @Sendable @escaping (AsyncStream<B>.Result) async throws -> Demand
-) -> @Sendable (AsyncStream<B>.Result) async throws -> Demand {
+    _ downstream: @escaping Publisher<B>.Downstream
+) -> Publisher<B>.Downstream {
     { b in switch b {
         case .completion(.finished):
             return .more
@@ -166,8 +155,8 @@ func flattener<B>(
 }
 
 func errorFlattener<B>(
-    _ downstream: @Sendable @escaping (AsyncStream<B>.Result) async throws -> Demand
-) -> @Sendable (AsyncStream<B>.Result) async throws -> Demand {
+    _ downstream: @escaping Publisher<B>.Downstream
+) -> Publisher<B>.Downstream {
     { b in switch b {
         case .completion(.finished):
             return .more
@@ -181,7 +170,7 @@ func errorFlattener<B>(
 }
 
 func handleCancellation<Output>(
-    of downstream: @Sendable @escaping (AsyncStream<Output>.Result) async throws -> Demand
+    of downstream: @escaping Publisher<Output>.Downstream
 ) async throws -> Demand {
     _ = try await downstream(.completion(.cancelled))
     return .done

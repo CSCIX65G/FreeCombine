@@ -43,7 +43,7 @@ public final class Cancellable<Output: Sendable>: Sendable {
         file: StaticString = #file,
         line: UInt = #line,
         deinitBehavior: DeinitBehavior = .assert,
-        operation: @Sendable @escaping () async throws -> Output
+        operation: @escaping @Sendable () async throws -> Output
     ) {
         let atomic = ManagedAtomic<Bool>(false)
         self.deallocGuard = atomic

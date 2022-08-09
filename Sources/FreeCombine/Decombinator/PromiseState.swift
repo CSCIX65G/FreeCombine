@@ -4,8 +4,12 @@
 //
 //  Created by Van Simmons on 5/10/22.
 //
+import Atomics
+
 public struct PromiseState<Output: Sendable> {
+    public typealias Downstream = @Sendable (Result<Output, Swift.Error>) async throws -> Void
     public private(set) var currentValue: Output?
+    public private(set) var deallocGuard: ManagedAtomic<Bool> = .init(false)
     var nextKey: Int
     var repeaters: [Int: StateTask<PromiseRepeaterState<Int, Output>, PromiseRepeaterState<Int, Output>.Action>]
     var isComplete = false
@@ -18,10 +22,7 @@ public struct PromiseState<Output: Sendable> {
 
     public enum Action: Sendable {
         case receive(Result<Output, Swift.Error>, Resumption<Int>)
-        case subscribe(
-            @Sendable (Result<Output, Swift.Error>) async throws -> Void,
-            Resumption<Cancellable<Void>>
-        )
+        case subscribe(Downstream, Resumption<Cancellable<Void>>)
         case unsubscribe(Int)
     }
 
