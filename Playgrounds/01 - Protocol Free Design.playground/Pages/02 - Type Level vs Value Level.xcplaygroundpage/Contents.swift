@@ -1,3 +1,5 @@
+//: [Previous](@previous)
+
 func topLevelFunc(_ anInt: Int) -> String {
     .init(anInt)
 }
@@ -31,3 +33,5 @@ let array: [CustomStringConvertible] = [
 
 type(of: array[0])
 //let i = array[0] + 4
+
+//: [Next](@next)
