@@ -14,9 +14,12 @@
 
  Classes are a particular storage representation of Product types.  The manner in which a Product type is stored is orthogonal to it semantics as a Product type.
 
- Beef 0 - Classes Give Up:
-1. the isolation and atomicity of value semantics and
-1. the expressiveness of enums (Sum types) and funcs (Exponential types) as objects.
+ Beef 0 - Traditional Classes Give Up:
+
+ 1. the isolation and atomicity of value semantics and
+ 1. the expressiveness of enums (Sum types) as objects.
+
+ NB We can get some of this back using them as generic reference types.
 
  ![Types are Awesome](TypesAreAwesome.pdf)
 

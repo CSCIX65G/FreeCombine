@@ -5,6 +5,7 @@
 //  Created by Van Simmons on 5/10/22.
 //
 public struct DistributorState<Output: Sendable> {
+    public typealias Downstream = @Sendable (AsyncStream<Output>.Result) async throws -> Demand
     public private(set) var currentValue: Output?
     var nextKey: Int
     var repeaters: [Int: StateTask<DistributorRepeaterState<Int, Output>, DistributorRepeaterState<Int, Output>.Action>]
@@ -16,10 +17,7 @@ public struct DistributorState<Output: Sendable> {
 
     public enum Action: Sendable {
         case receive(AsyncStream<Output>.Result, Resumption<Int>)
-        case subscribe(
-            @Sendable (AsyncStream<Output>.Result) async throws -> Demand,
-            Resumption<Cancellable<Demand>>
-        )
+        case subscribe(Downstream, Resumption<Cancellable<Demand>>)
         case unsubscribe(Int)
     }
 

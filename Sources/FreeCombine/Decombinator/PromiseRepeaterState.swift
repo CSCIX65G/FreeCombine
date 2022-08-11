@@ -15,7 +15,7 @@ public struct PromiseRepeaterState<ID: Hashable & Sendable, Output: Sendable>: I
 
     public init(
         id: ID,
-        downstream: @Sendable @escaping (Result<Output, Swift.Error>) async throws -> Void
+        downstream: @escaping @Sendable (Result<Output, Swift.Error>) async throws -> Void
     ) {
         self.id = id
         self.downstream = downstream

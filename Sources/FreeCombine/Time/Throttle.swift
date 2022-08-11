@@ -22,7 +22,7 @@ extension Publisher {
         func activate (
             interval: Duration,
             latest: Bool = false,
-            downstream: @Sendable @escaping (AsyncStream<Output>.Result) async throws -> Demand
+            downstream: @escaping @Sendable (AsyncStream<Output>.Result) async throws -> Demand
         ) async throws -> Void {
             guard subject == nil else { return }
             subject = try await PassthroughSubject(buffering: .bufferingNewest(1))

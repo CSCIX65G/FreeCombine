@@ -103,7 +103,7 @@ public final class Subject<Output: Sendable> {
 
 extension Subject {
     func subscribe(
-        _ downstream: @Sendable @escaping (AsyncStream<Output>.Result) async throws -> Demand
+        _ downstream: @escaping @Sendable (AsyncStream<Output>.Result) async throws -> Demand
     ) async throws -> Cancellable<Demand> {
         try await withResumption { resumption in
             let queueStatus = stateTask.send(.subscribe(downstream, resumption))
