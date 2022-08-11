@@ -6,6 +6,9 @@
 //
 
 public actor ValueRef<Value> {
+    enum Error: Swift.Error {
+        case occupied
+    }
     public private(set) var value: Value
 
     public init(value: Value) { self.value = value }
@@ -31,3 +34,11 @@ extension ValueRef {
         value.next()
     }
 }
+
+extension ValueRef {
+    public func swapIfNone<T>(_ t: T) throws -> Void where Value == T? {
+        guard value == nil else { throw Error.occupied }
+        value = t
+    }
+}
+

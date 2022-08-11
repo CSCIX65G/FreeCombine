@@ -4,7 +4,10 @@
 //
 //  Created by Van Simmons on 6/28/22.
 //
+import Atomics
+
 public final class Promise<Output: Sendable> {
+    fileprivate let resolution: ValueRef<Result<Output, Swift.Error>?> = .init(value: .none)
     private let stateTask: StateTask<PromiseState<Output>, PromiseState<Output>.Action>
     private let receiveStateTask: StateTask<PromiseReceiveState<Output>, PromiseReceiveState<Output>.Action>
 
@@ -141,36 +144,41 @@ public extension Promise {
     }
 
     var future: Future<Output> {
-        get { .init(file: file, line: line, deinitBehavior: deinitBehavior, stateTask: stateTask) }
+        get {
+            .init(file: file, line: line, deinitBehavior: deinitBehavior, stateTask: stateTask)
+        }
     }
 
     func receive(
         _ result: Result<Output, Swift.Error>
-    ) throws -> Void {
+    ) async throws -> Void {
+        try await resolution.swapIfNone(result)
         let queueStatus = receiveStateTask.send(.nonBlockingReceive(result))
-        receiveStateTask.finish()
         switch queueStatus {
             case .enqueued:
-                ()
+                receiveStateTask.finish()
             case .terminated:
+                await resolution.set(value: .failure(PublisherError.completed))
                 throw PublisherError.completed
             case .dropped:
+                await resolution.set(value: .failure(PublisherError.enqueueError))
                 throw PublisherError.enqueueError
             @unknown default:
+                await resolution.set(value: .failure(PublisherError.enqueueError))
                 throw PublisherError.enqueueError
         }
     }
 
-    @Sendable func send(_ result: Result<Output, Swift.Error>) throws -> Void {
-        try receive(result)
+    @Sendable func send(_ result: Result<Output, Swift.Error>) async throws -> Void {
+        try await receive(result)
     }
 
-    @Sendable func succeed(_ value: Output) throws -> Void {
-        try receive(.success(value))
+    @Sendable func succeed(_ value: Output) async throws -> Void {
+        try await receive(.success(value))
     }
 
-    @Sendable func fail(_ error: Swift.Error) throws -> Void {
-        try receive(.failure(error))
+    @Sendable func fail(_ error: Swift.Error) async throws -> Void {
+        try await receive(.failure(error))
     }
 
     @Sendable func finish() -> Void {

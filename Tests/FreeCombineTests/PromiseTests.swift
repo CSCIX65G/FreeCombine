@@ -28,7 +28,7 @@ final class PromiseTests: XCTestCase {
                 }
             })
 
-        try promise.succeed(13)
+        try await promise.succeed(13)
 
         do {
             try await FreeCombine.wait(for: expectation, timeout: 1_000_000)
@@ -62,7 +62,7 @@ final class PromiseTests: XCTestCase {
                 }
             })
 
-        try promise.fail(PromiseError.iFailed)
+        try await promise.fail(PromiseError.iFailed)
 
         do {
             try await FreeCombine.wait(for: expectation, timeout: 1_000_000)
