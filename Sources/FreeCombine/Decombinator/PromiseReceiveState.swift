@@ -5,6 +5,7 @@
 //  Created by Van Simmons on 7/27/22.
 //
 public struct PromiseReceiveState<Output: Sendable> {
+    fileprivate let resolution: ValueRef<Result<Output, Swift.Error>?> = .init(value: .none)
     var promiseChannel: Channel<PromiseState<Output>.Action>
 
     public enum Error: Swift.Error {
@@ -28,7 +29,10 @@ public struct PromiseReceiveState<Output: Sendable> {
         { channel in .init(channel: promiseChannel) }
     }
 
-    static func complete(state: inout Self, completion: Reducer<Self, Self.Action>.Completion) async -> Void { }
+    static func complete(state: inout Self, completion: Reducer<Self, Self.Action>.Completion) async -> Void {
+        guard let _ = await state.resolution.get() else { return }
+        fatalError("Promise completed without resolution")
+    }
 
     static func dispose(action: Self.Action, completion: Reducer<Self, Self.Action>.Completion) async -> Void {
         switch action {
@@ -60,7 +64,7 @@ public struct PromiseReceiveState<Output: Sendable> {
     mutating func reduce(action: Action) async throws -> Reducer<Self, Action>.Effect {
         var result: Result<Output, Swift.Error>! = .none
         var resumption: Resumption<Int>! = .none
-        if case let .receive(r1, r3) = action  {
+        if case let .receive(r1, r3) = action {
             result = r1
             resumption = r3
         } else if case let .nonBlockingReceive(r2) = action {
