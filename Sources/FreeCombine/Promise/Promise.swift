@@ -118,7 +118,10 @@ extension Promise {
     func subscribe(
         _ downstream: @escaping @Sendable (Result<Output, Swift.Error>) async throws -> Void
     ) async throws -> Cancellable<Void> {
-        try await withResumption { resumption in
+        if let resolution = await resolution.get() {
+            return .init { try await downstream(resolution) }
+        }
+        return try await withResumption { resumption in
             let queueStatus = stateTask.send(.subscribe(downstream, resumption))
             switch queueStatus {
                 case .enqueued:
@@ -149,9 +152,7 @@ public extension Promise {
         }
     }
 
-    func receive(
-        _ result: Result<Output, Swift.Error>
-    ) async throws -> Void {
+    @Sendable func send(_ result: Result<Output, Swift.Error>) async throws -> Void {
         try await resolution.swapIfNone(result)
         let queueStatus = receiveStateTask.send(.nonBlockingReceive(result))
         switch queueStatus {
@@ -162,23 +163,21 @@ public extension Promise {
                 throw PublisherError.completed
             case .dropped:
                 await resolution.set(value: .failure(PublisherError.enqueueError))
+                receiveStateTask.finish()
                 throw PublisherError.enqueueError
             @unknown default:
                 await resolution.set(value: .failure(PublisherError.enqueueError))
+                stateTask.finish()
                 throw PublisherError.enqueueError
         }
     }
 
-    @Sendable func send(_ result: Result<Output, Swift.Error>) async throws -> Void {
-        try await receive(result)
-    }
-
     @Sendable func succeed(_ value: Output) async throws -> Void {
-        try await receive(.success(value))
+        try await send(.success(value))
     }
 
     @Sendable func fail(_ error: Swift.Error) async throws -> Void {
-        try await receive(.failure(error))
+        try await send(.failure(error))
     }
 
     @Sendable func finish() -> Void {
