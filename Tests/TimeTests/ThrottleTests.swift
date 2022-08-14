@@ -70,7 +70,7 @@ class ThrottleTests: XCTestCase {
             })
 
         for i in (0 ..< 15) {
-            try await subject.send(i)
+            try await subject.blockingSend(i)
             try await Task.sleep(nanoseconds: 9_000_000)
         }
         try await subject.finish()
@@ -119,7 +119,7 @@ class ThrottleTests: XCTestCase {
             })
 
         for i in (0 ..< 15) {
-            try await subject.send(i)
+            try await subject.blockingSend(i)
             try await Task.sleep(nanoseconds: 10_000_000)
         }
         try await subject.finish()

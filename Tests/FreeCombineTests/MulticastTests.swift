@@ -168,7 +168,7 @@ class MulticastTests: XCTestCase {
         try await connectable.connect()
 
         for i in (0 ..< 100) {
-            do { try await subj.send(i) }
+            do { try await subj.blockingSend(i) }
             catch { XCTFail("Failed to send on \(i) with error: \(error)") }
         }
 

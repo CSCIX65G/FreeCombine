@@ -39,7 +39,7 @@ class DebounceTests: XCTestCase {
             })
 
         for i in (0 ..< 15) {
-            try await subject.send(i)
+            try await subject.blockingSend(i)
             try await Task.sleep(nanoseconds: 50_000_000)
         }
         try await Task.sleep(nanoseconds: 100_000_000)
@@ -86,7 +86,7 @@ class DebounceTests: XCTestCase {
             })
 
         for i in (0 ..< 15) {
-            try await subject.send(i)
+            try await subject.blockingSend(i)
             try await Task.sleep(nanoseconds: i % 2 == 0 ? 50_000_000 : 110_000_000)
         }
         try await Task.sleep(nanoseconds: 100_000_000)

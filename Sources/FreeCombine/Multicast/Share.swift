@@ -19,13 +19,13 @@ public extension Publisher {
                         do {
                             switch result {
                                 case .value(let value):
-                                    try await subject.send(value)
+                                    try await subject.blockingSend(value)
                                     return .more
                                 case .completion(.finished), .completion(.cancelled):
-                                    try await subject.send(result)
+                                    try await subject.blockingSend(result)
                                     return .done
                                 case .completion(.failure(let error)):
-                                    try await subject.send(result)
+                                    try await subject.blockingSend(result)
                                     throw error
                             }
                         } catch {

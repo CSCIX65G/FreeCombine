@@ -347,7 +347,7 @@ class AutoconnectTests: XCTestCase {
         }
 
         for i in (0 ..< 100) {
-            do { try await subject.send(i) }
+            do { try await subject.blockingSend(i) }
             catch { XCTFail("Failed to send on \(i)") }
         }
 

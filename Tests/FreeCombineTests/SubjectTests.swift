@@ -44,10 +44,10 @@ class SubjectTests: XCTestCase {
             }
         }
         do {
-            try await subject.send(14)
-            try await subject.send(15)
-            try await subject.send(16)
-            try await subject.send(17)
+            try await subject.blockingSend(14)
+            try await subject.blockingSend(15)
+            try await subject.blockingSend(16)
+            try await subject.blockingSend(17)
             try await subject.finish()
         } catch {
             XCTFail("Caught error: \(error)")
@@ -121,10 +121,10 @@ class SubjectTests: XCTestCase {
         }
 
         do {
-            try await subject.send(14)
-            try await subject.send(15)
-            try await subject.send(16)
-            try await subject.send(17)
+            try await subject.blockingSend(14)
+            try await subject.blockingSend(15)
+            try await subject.blockingSend(16)
+            try await subject.blockingSend(17)
             try await subject.finish()
         } catch {
             XCTFail("Caught error: \(error)")
@@ -201,11 +201,11 @@ class SubjectTests: XCTestCase {
         })
 
         for i in 1 ... 7 {
-            do { try await subject.send(i) }
+            do { try await subject.blockingSend(i) }
             catch { XCTFail("Failed to enqueue") }
         }
 
-        do { try await subject.send(8) }
+        do { try await subject.blockingSend(8) }
         catch { XCTFail("Failed to enqueue") }
 
         do { try await FreeCombine.wait(for: expectation, timeout: 10_000_000) }
@@ -221,8 +221,8 @@ class SubjectTests: XCTestCase {
         }
 
         do {
-            try await subject.send(9)
-            try await subject.send(10)
+            try await subject.blockingSend(9)
+            try await subject.blockingSend(10)
         } catch {
             XCTFail("Failed to enqueue")
         }
@@ -259,7 +259,7 @@ class SubjectTests: XCTestCase {
         })
 
         for i in 1 ... 1000 {
-            do { try await subject.send(i) }
+            do { try await subject.blockingSend(i) }
             catch { XCTFail("Failed to enqueue") }
         }
         try await subject.finish()
@@ -303,7 +303,7 @@ class SubjectTests: XCTestCase {
         })
 
         for i in (1 ... 5) {
-            do { try await subject.send(i) }
+            do { try await subject.blockingSend(i) }
             catch { XCTFail("Failed to enqueue") }
         }
         try await subject.finish()
@@ -355,8 +355,8 @@ class SubjectTests: XCTestCase {
                 }
             })
 
-        try await fsubject1.send(14)
-        try await fsubject2.send("hello, combined world!")
+        try await fsubject1.blockingSend(14)
+        try await fsubject2.blockingSend("hello, combined world!")
 
         try await fsubject1.finish()
         try await fsubject2.finish()

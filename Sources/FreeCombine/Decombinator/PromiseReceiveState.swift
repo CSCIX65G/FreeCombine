@@ -13,7 +13,7 @@ public struct PromiseReceiveState<Output: Sendable> {
     }
 
     public enum Action: Sendable {
-        case receive(Result<Output, Swift.Error>, Resumption<Int>)
+        case blockingReceive(Result<Output, Swift.Error>, Resumption<Int>)
         case nonBlockingReceive(Result<Output, Swift.Error>)
     }
 
@@ -36,7 +36,7 @@ public struct PromiseReceiveState<Output: Sendable> {
 
     static func dispose(action: Self.Action, completion: Reducer<Self, Self.Action>.Completion) async -> Void {
         switch action {
-            case let .receive(_, continuation):
+            case let .blockingReceive(_, continuation):
                 switch completion {
                     case .failure(let error):
                         continuation.resume(throwing: error)
@@ -51,7 +51,7 @@ public struct PromiseReceiveState<Output: Sendable> {
     static func reduce(state: inout Self, action: Self.Action) async throws -> Reducer<Self, Action>.Effect {
         if Task.isCancelled {
             switch action {
-                case .receive(_, let resumption):
+                case .blockingReceive(_, let resumption):
                     resumption.resume(throwing: PublisherError.cancelled)
                 case .nonBlockingReceive(_):
                     ()
@@ -64,7 +64,7 @@ public struct PromiseReceiveState<Output: Sendable> {
     mutating func reduce(action: Action) async throws -> Reducer<Self, Action>.Effect {
         var result: Result<Output, Swift.Error>! = .none
         var resumption: Resumption<Int>! = .none
-        if case let .receive(r1, r3) = action {
+        if case let .blockingReceive(r1, r3) = action {
             result = r1
             resumption = r3
         } else if case let .nonBlockingReceive(r2) = action {
