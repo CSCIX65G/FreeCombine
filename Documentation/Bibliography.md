@@ -127,6 +127,14 @@ NB FreeCombine takes the message/acknowledgement protocol approach as primitive 
 
 ### Odds and Ends
 
+* [Y Combinator Discussion of FRP](https://news.ycombinator.com/item?id=32448772)
+
+> As someone who had to maintain two applications written entirely using the FRP Paradigm (Rx in Kotlin/Swift with a heavy focus on FRP principles), I am fascinated the idea but I absolutely hated the experience. Writing behaviour flows can end in beautiful blocks of easy to understand operations. However, as these get more complex and you need to combine multiple data streams, logic is scattered all over a module.
+
+```rvs
+Does creating a REPL to go from CPS back to Direct help?
+```
+
 * [The Crusty Talk](https://devstreaming-cdn.apple.com/videos/wwdc/2015/408509vyudbqvts/408/408_protocoloriented_programming_in_swift.pdf)
 * [Resource Acquisition is Initialization](https://en.wikipedia.org/wiki/Resource_acquisition_is_initialization)
 * [EventLoopFuture](https://github.com/apple/swift-nio/blob/e2c7fa4d4bda7cb7f4150b6a0bd69be2a54ef8c4/Sources/NIOCore/EventLoopFuture.swift#L385)
