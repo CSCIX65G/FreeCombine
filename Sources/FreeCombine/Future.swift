@@ -30,7 +30,7 @@ public extension Future {
         .init { resumption, downstream in
                 .init {
                     let demandRef: ValueRef<Result<Demand, Swift.Error>> = .init(value: .failure(PublisherError.internalError))
-                    await self.sink { result in
+                    let innerCancellable = await self.sink { result in
                         do {
                             switch result {
                                 case let .success(value):
@@ -54,6 +54,8 @@ public extension Future {
                             await demandRef.set(value: .failure(error))
                         }
                     }
+                    resumption.resume()
+                    _ = await innerCancellable.result
                     return try await demandRef.value.get()
                 }
         }

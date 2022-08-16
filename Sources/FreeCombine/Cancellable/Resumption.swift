@@ -38,7 +38,7 @@ public final class Resumption<Output: Sendable>: Sendable {
     deinit {
         switch deinitBehavior {
             case .assert:
-                assert(hasResumed, "ABORTING DUE TO LEAKED \(type(of: Self.self)) CREATED @ \(file): \(line)")
+                assert(hasResumed, "ABORTING DUE TO LEAKED \(type(of: Self.self)):\(self) CREATED @ \(file): \(line)")
             case .logAndCancel:
                 if !hasResumed { print("CANCELLING LEAKED \(type(of: Self.self)) CREATED @ \(file): \(line)") }
             case .silentCancel:
