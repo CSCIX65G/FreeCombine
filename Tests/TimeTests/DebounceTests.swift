@@ -18,14 +18,14 @@ class DebounceTests: XCTestCase {
         let counter = Counter()
         let subject = try await PassthroughSubject(Int.self)
         let t = await subject.asyncPublisher
-            .handleEvents(receiveOutput: { _ in await inputCounter.increment() })
+            .handleEvents(receiveOutput: { _ in inputCounter.increment() })
             .debounce(interval: .milliseconds(100))
             .sink({ value in
                 switch value {
                     case .value(let value):
                         let vals = await values.value
                         await values.set(value: vals + [value])
-                        await counter.increment()
+                        counter.increment()
                         return .more
                     case let .completion(.failure(error)):
                         XCTFail("Got unexpected failure: \(error)")
@@ -47,10 +47,10 @@ class DebounceTests: XCTestCase {
         try await subject.finish()
         _ = await subject.result
 
-        let count = await counter.count
+        let count = counter.count
         XCTAssert(count == 1, "Got wrong count = \(count)")
 
-        let inputCount = await inputCounter.count
+        let inputCount = inputCounter.count
         XCTAssert(inputCount == 15, "Got wrong count = \(inputCount)")
 
         let vals = await values.value
@@ -65,14 +65,14 @@ class DebounceTests: XCTestCase {
         let counter = Counter()
         let subject = try await PassthroughSubject(Int.self)
         let t = await subject.asyncPublisher
-            .handleEvents(receiveOutput: { _ in await inputCounter.increment() })
+            .handleEvents(receiveOutput: { _ in inputCounter.increment() })
             .debounce(interval: .milliseconds(100))
             .sink({ value in
                 switch value {
                     case .value(let value):
                         let vals = await values.value
                         await values.set(value: vals + [value])
-                        await counter.increment()
+                        counter.increment()
                         return .more
                     case let .completion(.failure(error)):
                         XCTFail("Got unexpected failure: \(error)")
@@ -94,10 +94,10 @@ class DebounceTests: XCTestCase {
         try await subject.finish()
         _ = await subject.result
 
-        let count = await counter.count
+        let count = counter.count
         XCTAssert(count == 8, "Got wrong count = \(count)")
 
-        let inputCount = await inputCounter.count
+        let inputCount = inputCounter.count
         XCTAssert(inputCount == 15, "Got wrong count = \(inputCount)")
 
         let vals = await values.value

@@ -20,11 +20,11 @@ class HeartbeatTests: XCTestCase {
         let counter = Counter()
         var t: Cancellable<Demand>!
         t = await Heartbeat(interval: .milliseconds(500))
-            .handleEvents(receiveOutput: { _ in await inputCounter.increment() })
+            .handleEvents(receiveOutput: { _ in inputCounter.increment() })
             .sink({ value in
                 switch value {
                     case .value:
-                        let count = await counter.increment()
+                        let count = counter.increment()
                         return count >= 10 ? .done : .more
                     case let .completion(.failure(error)):
                         XCTFail("Got unexpected failure: \(error)")
@@ -37,9 +37,9 @@ class HeartbeatTests: XCTestCase {
             })
 
         _ = await t.result
-        let count = await counter.count
+        let count = counter.count
         XCTAssert(count == 10, "Got wrong count = \(count)")
-        let inputCount = await inputCounter.count
+        let inputCount = inputCounter.count
         XCTAssert(inputCount == 10, "Got wrong input count = \(inputCount)")
     }
 }
