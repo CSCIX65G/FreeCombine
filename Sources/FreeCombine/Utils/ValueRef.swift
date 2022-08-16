@@ -29,10 +29,6 @@ extension ValueRef {
     public func append<T>(_ t: T) where Value == [T] {
         value.append(t)
     }
-
-    public func next<T>() -> T? where Value: IteratorProtocol, Value.Element == T {
-        value.next()
-    }
 }
 
 extension ValueRef {

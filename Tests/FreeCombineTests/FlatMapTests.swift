@@ -21,8 +21,7 @@ class FlatMapTests: XCTestCase {
         let c1 = await Unfolded(0 ... 3)
             .map { $0 * 2 }
             .flatMap { (value) -> Publisher<Int> in
-                let iterator = ValueRef(value: [Int].init(repeating: value, count: value).makeIterator())
-                return .init { await iterator.next() }
+                [Int].init(repeating: value, count: value).asyncPublisher
             }
             .sink({ result in
                 switch result {
