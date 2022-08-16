@@ -34,14 +34,14 @@ class AutoconnectTests: XCTestCase {
         let u1 = await autoconnected.sink({ result in
             switch result {
                 case let .value(value):
-                    await counter1.increment()
+                    counter1.increment()
                     await value1.set(value: value)
                     return .more
                 case let .completion(.failure(error)):
                     XCTFail("Got an error? \(error)")
                     return .done
                 case .completion(.finished):
-                    let count = await counter1.count
+                    let count = counter1.count
                     guard count == n else {
                         XCTFail("Incorrect count: \(count) in subscription 1")
                         return .done
@@ -60,7 +60,7 @@ class AutoconnectTests: XCTestCase {
         let u2 = await autoconnected.sink({ result in
             switch result {
                 case let .value(value):
-                    await counter2.increment()
+                    counter2.increment()
                     await value2.set(value: value)
                     return .more
                 case let .completion(.failure(error)):
@@ -71,13 +71,13 @@ class AutoconnectTests: XCTestCase {
                 case .completion(.finished):
                     // NB: the number of values received here is unpredictable
                     // and may be anything 0 ... n
-                    let count = await counter2.count
+                    let count = counter2.count
                     XCTAssert(count <= n, "How'd we get so many?")
                     do { try await expectation2.complete() }
                     catch { XCTFail("u2 Failed to complete with error: \(error)") }
                     return .done
                 case .completion(.cancelled):
-                    let count = await counter2.count
+                    let count = counter2.count
                     let last = await value2.value
                     XCTFail("u2 should not have cancelled, count = \(count), last = \(last)")
                     return .done
@@ -87,7 +87,7 @@ class AutoconnectTests: XCTestCase {
         do {
             try await FreeCombine.wait(for: expectation1, timeout: 10_000_000)
         } catch {
-            let count = await counter2.count
+            let count = counter2.count
             let last = await value2.value
             XCTFail("u1 Timed out count = \(count), last = \(last)")
         }
@@ -95,7 +95,7 @@ class AutoconnectTests: XCTestCase {
         do {
             try await FreeCombine.wait(for: expectation2, timeout: 10_000_000)
         } catch {
-            let count = await counter2.count
+            let count = counter2.count
             let last = await value2.value
             XCTFail("u2 Timed out count = \(count), last = \(last)")
         }
@@ -131,14 +131,14 @@ class AutoconnectTests: XCTestCase {
         let u1 = await autoconnected.sink({ result in
             switch result {
                 case let .value(value):
-                    await counter1.increment()
+                    counter1.increment()
                     await value1.set(value: value)
                     return .more
                 case let .completion(.failure(error)):
                     XCTFail("Got an error? \(error)")
                     return .done
                 case .completion(.finished):
-                    let count = await counter1.count
+                    let count = counter1.count
                     guard count == n else {
                         XCTFail("Incorrect count: \(count) in subscription 1")
                         return .done
@@ -157,7 +157,7 @@ class AutoconnectTests: XCTestCase {
         let u2 = await autoconnected.sink({ result in
             switch result {
                 case let .value(value):
-                    await counter2.increment()
+                    counter2.increment()
                     await value2.set(value: value)
                     return .more
                 case let .completion(.failure(error)):
@@ -171,7 +171,7 @@ class AutoconnectTests: XCTestCase {
                     catch { XCTFail("u2 Failed to complete with error: \(error)") }
                     return .done
                 case .completion(.cancelled):
-                    let count = await counter2.count
+                    let count = counter2.count
                     let last = await value2.value
                     XCTFail("u2 should not have cancelled, count = \(count), last = \(last)")
                     return .done
@@ -181,7 +181,7 @@ class AutoconnectTests: XCTestCase {
         do {
             try await FreeCombine.wait(for: expectation1, timeout: 10_000_000)
         } catch {
-            let count = await counter2.count
+            let count = counter2.count
             let last = await value2.value
             XCTFail("u1 Timed out count = \(count), last = \(last)")
         }
@@ -189,7 +189,7 @@ class AutoconnectTests: XCTestCase {
         do {
             try await FreeCombine.wait(for: expectation2, timeout: 10_000_000)
         } catch {
-            let count = await counter2.count
+            let count = counter2.count
             let last = await value2.value
             XCTFail("u2 Timed out count = \(count), last = \(last)")
         }
@@ -221,14 +221,14 @@ class AutoconnectTests: XCTestCase {
         let u1 = await autoconnected.sink({ result in
             switch result {
                 case let .value(value):
-                    await counter1.increment()
+                    counter1.increment()
                     await value1.set(value: value)
                     return .more
                 case let .completion(.failure(error)):
                     XCTFail("Got an error? \(error)")
                     return .done
                 case .completion(.finished):
-                    let count = await counter1.count
+                    let count = counter1.count
                     guard count == n else {
                         XCTFail("Incorrect count: \(count) in subscription 1")
                         return .done
@@ -247,7 +247,7 @@ class AutoconnectTests: XCTestCase {
         let u2 = await autoconnected.sink({ result in
             switch result {
                 case let .value(value):
-                    await counter2.increment()
+                    counter2.increment()
                     await value2.set(value: value)
                     return .more
                 case let .completion(.failure(error)):
@@ -261,7 +261,7 @@ class AutoconnectTests: XCTestCase {
                     catch { XCTFail("u2 Failed to complete with error: \(error)") }
                     return .done
                 case .completion(.cancelled):
-                    let count = await counter2.count
+                    let count = counter2.count
                     let last = await value2.value
                     XCTFail("u2 should not have cancelled, count = \(count), last = \(last)")
                     return .done
@@ -271,7 +271,7 @@ class AutoconnectTests: XCTestCase {
         do {
             try await FreeCombine.wait(for: expectation1, timeout: 10_000_000)
         } catch {
-            let count = await counter2.count
+            let count = counter2.count
             let last = await value2.value
             XCTFail("u1 Timed out count = \(count), last = \(last)")
         }
@@ -279,7 +279,7 @@ class AutoconnectTests: XCTestCase {
         do {
             try await FreeCombine.wait(for: expectation2, timeout: 10_000_000)
         } catch {
-            let count = await counter2.count
+            let count = counter2.count
             let last = await value2.value
             XCTFail("u2 Timed out count = \(count), last = \(last)")
         }
@@ -308,16 +308,14 @@ class AutoconnectTests: XCTestCase {
         let p1 = await publisher.sink( { result in
             switch result {
                 case .value:
-                    await counter1.increment()
+                    counter1.increment()
                     return .more
                 case let .completion(.failure(error)):
                     XCTFail("Got an error? \(error)")
                     return .done
                 case .completion(.finished):
-                    let count = await counter1.count
-                    if count != 100 {
-                        XCTFail("Incorrect count: \(count) in subscription 1")
-                    }
+                    let count = counter1.count
+                    XCTAssert(count == 100, "Incorrect count: \(count) in subscription 1")
                     return .done
                 case .completion(.cancelled):
                     XCTFail("Should not have cancelled")
@@ -329,16 +327,14 @@ class AutoconnectTests: XCTestCase {
         let p2 = await publisher.sink { (result: AsyncStream<Int>.Result) in
             switch result {
                 case .value:
-                    await counter2.increment()
+                    counter2.increment()
                     return .more
                 case let .completion(.failure(error)):
                     XCTFail("Got an error? \(error)")
                     return .done
                 case .completion(.finished):
-                    let count = await counter2.count
-                    if count != 100  {
-                        XCTFail("Incorrect count: \(count) in subscription 2")
-                    }
+                    let count = counter2.count
+                    XCTAssert(count == 100, "Incorrect count: \(count) in subscription 2")
                     return .done
                 case .completion(.cancelled):
                     XCTFail("Should not have cancelled")

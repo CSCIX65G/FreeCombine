@@ -27,11 +27,11 @@ class DeferTests: XCTestCase {
         let c1 = await d1.sink ({ result in
             switch result {
                 case .value:
-                    await count1.increment()
+                    count1.increment()
                 case let .completion(.failure(error)):
                     XCTFail("Got an error? \(error)")
                 case .completion(.finished):
-                    let count = await count1.count
+                    let count = count1.count
                     XCTAssert(count == 3, "wrong number of values sent: \(count)")
                     do {
                         try await expectation1.complete()
@@ -49,11 +49,11 @@ class DeferTests: XCTestCase {
         let c2 = await d2.sink({ result in
             switch result {
                 case .value:
-                    await count2.increment()
+                    count2.increment()
                 case let .completion(.failure(error)):
                     XCTFail("Got an error? \(error)")
                 case .completion(.finished):
-                    let count = await count2.count
+                    let count = count2.count
                     XCTAssert(count == 3, "wrong number of values sent: \(count)")
                     do {
                         try await expectation2.complete()
@@ -94,19 +94,16 @@ class DeferTests: XCTestCase {
         let c1 = await d1.sink ({ result in
             switch result {
                 case .value:
-                    await count1.increment()
+                    count1.increment()
                     return .more
                 case let .completion(.failure(error)):
                     XCTFail("Got an error? \(error)")
                     return .done
                 case .completion(.finished):
-                    let count = await count1.count
+                    let count = count1.count
                     XCTAssert(count == 3, "wrong number of values sent: \(count)")
-                    do {
-                        try await expectation1.complete()
-                    } catch {
-                        XCTFail("Failed to complete")
-                    }
+                    do { try await expectation1.complete() }
+                    catch { XCTFail("Failed to complete") }
                     return .done
                 case .completion(.cancelled):
                     XCTFail("Should not have cancelled")
@@ -118,19 +115,16 @@ class DeferTests: XCTestCase {
         let c2 = await d2.sink({ result in
             switch result {
                 case .value:
-                    await count2.increment()
+                    count2.increment()
                     return .more
                 case let .completion(.failure(error)):
                     XCTFail("Got an error? \(error)")
                     return .done
                 case .completion(.finished):
-                    let count = await count2.count
+                    let count = count2.count
                     XCTAssert(count == 3, "wrong number of values sent: \(count)")
-                    do {
-                        try await expectation2.complete()
-                    } catch {
-                        XCTFail("Failed to complete")
-                    }
+                    do { try await expectation2.complete() }
+                    catch { XCTFail("Failed to complete") }
                     return .done
                 case .completion(.cancelled):
                     XCTFail("Should not have cancelled")

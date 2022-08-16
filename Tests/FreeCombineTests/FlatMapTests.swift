@@ -26,13 +26,13 @@ class FlatMapTests: XCTestCase {
             .sink({ result in
                 switch result {
                     case let .value(value):
-                        await checksum.increment(by: value)
+                        checksum.increment(by: value)
                         return .more
                     case let .completion(.failure(error)):
                         XCTFail("Got an error? \(error)")
                         return .done
                     case .completion(.finished):
-                        let value = await checksum.count
+                        let value = checksum.count
                         XCTAssert(value == 56, "Did not get all values")
                         try! await expectation.complete()
                         return .done

@@ -25,15 +25,15 @@ class ScanTests: XCTestCase {
             .sink({ result in
                 switch result {
                     case let .value(value):
-                        let count = await counter.count
+                        let count = counter.count
                         XCTAssert(value == count, "Wrong value: \(value), count: \(count)")
-                        await counter.increment()
+                        counter.increment()
                         return .more
                     case let .completion(.failure(error)):
                         XCTFail("Got an error? \(error)")
                         return .done
                     case .completion(.finished):
-                        let count = await counter.count
+                        let count = counter.count
                         XCTAssert(count == 5, "wrong number of values sent: \(count)")
                         do { try await expectation.complete() }
                         catch { XCTFail("Failed to complete: \(error)") }
@@ -45,7 +45,7 @@ class ScanTests: XCTestCase {
             })
         do { try await FreeCombine.wait(for: expectation, timeout: 1_000_000) }
         catch {
-            let count = await counter.count
+            let count = counter.count
             XCTFail("Timed out, count = \(count)")
         }
         let _ = await c1.result

@@ -26,13 +26,13 @@ class ConcatTests: XCTestCase {
             .sink({ result in
                 switch result {
                     case .value:
-                        await count.increment()
+                        count.increment()
                         return .more
                     case let .completion(.failure(error)):
                         XCTFail("Got an error? \(error)")
                         return .done
                     case .completion(.finished):
-                        let n = await count.count
+                        let n = count.count
                         XCTAssert(n == 42, "wrong number of values sent: \(n)")
                         do {
                             try await expectation.complete()
@@ -70,13 +70,13 @@ class ConcatTests: XCTestCase {
             .sink({ result in
                 switch result {
                     case .value:
-                        await count1.increment()
+                        count1.increment()
                         return .more
                     case let .completion(.failure(error)):
                         XCTFail("Got an error? \(error)")
                         return .done
                     case .completion(.finished):
-                        let count = await count1.count
+                        let count = count1.count
                         XCTAssert(count == 42, "wrong number of values sent: \(count)")
                         do {
                             try await expectation1.complete()
@@ -95,13 +95,13 @@ class ConcatTests: XCTestCase {
             .sink({ result in
                 switch result {
                     case .value:
-                        await count2.increment()
+                        count2.increment()
                         return .more
                     case let .completion(.failure(error)):
                         XCTFail("Got an error? \(error)")
                         return .done
                     case .completion(.finished):
-                        let count = await count2.count
+                        let count = count2.count
                         XCTAssert(count == 42, "wrong number of values sent: \(count)")
                         do {
                             try await expectation2.complete()

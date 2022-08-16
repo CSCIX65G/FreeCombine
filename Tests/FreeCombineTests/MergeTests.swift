@@ -27,13 +27,13 @@ class MergeTests: XCTestCase {
             .sink({ result in
                 switch result {
                     case .value:
-                        await counter.increment()
+                        counter.increment()
                         return .more
                     case let .completion(.failure(error)):
                         XCTFail("Got an error? \(error)")
                         return .done
                     case .completion(.finished):
-                        let count = await counter.count
+                        let count = counter.count
                         XCTAssert(count == 66, "wrong number of values sent: \(count)")
                         do { try await expectation.complete() }
                         catch { XCTFail("Failed to complete with error: \(error)") }

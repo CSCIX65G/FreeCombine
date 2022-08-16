@@ -24,13 +24,13 @@ class UnfoldedTests: XCTestCase {
         let u1 = await unfolded.sink { (result: AsyncStream<Int>.Result) in
             switch result {
                 case .value:
-                    await counter1.increment()
+                    counter1.increment()
                     return .more
                 case let .completion(.failure(error)):
                     XCTFail("Got an error? \(error)")
                     return .done
                 case .completion(.finished):
-                    let count = await counter1.count
+                    let count = counter1.count
                     guard count == 10 else {
                         XCTFail("Incorrect count: \(count) in subscription 1")
                         return .done
@@ -48,13 +48,13 @@ class UnfoldedTests: XCTestCase {
         let u2 = await unfolded.sink { (result: AsyncStream<Int>.Result) in
             switch result {
                 case .value:
-                    await counter2.increment()
+                    counter2.increment()
                     return .more
                 case let .completion(.failure(error)):
                     XCTFail("Got an error? \(error)")
                     return .done
                 case .completion(.finished):
-                    let count = await counter2.count
+                    let count = counter2.count
                     guard count == 10 else {
                         XCTFail("Incorrect count: \(count) in subscription 1")
                         return .done
@@ -88,13 +88,13 @@ class UnfoldedTests: XCTestCase {
         let u1 = await unfolded.sink { (result: AsyncStream<Int>.Result) in
             switch result {
                 case .value:
-                    await counter1.increment()
+                    counter1.increment()
                     return .more
                 case let .completion(.failure(error)):
                     XCTFail("Got an error? \(error)")
                     return .done
                 case .completion(.finished):
-                    let count = await counter1.count
+                    let count = counter1.count
                     guard count == 10 else {
                         XCTFail("Incorrect count: \(count) in subscription 1")
                         return .done
@@ -112,13 +112,13 @@ class UnfoldedTests: XCTestCase {
         let u2 = await unfolded.sink { (result: AsyncStream<Int>.Result) in
             switch result {
                 case .value:
-                    await counter2.increment()
+                    counter2.increment()
                     return .more
                 case let .completion(.failure(error)):
                     XCTFail("Got an error? \(error)")
                     return .done
                 case .completion(.finished):
-                    let count = await counter2.count
+                    let count = counter2.count
                     guard count == 10 else {
                         XCTFail("Incorrect count: \(count) in subscription 1")
                         return .done

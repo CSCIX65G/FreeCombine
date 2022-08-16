@@ -27,13 +27,13 @@ class MakeConnectableTests: XCTestCase {
         let u1 = await p.sink { (result: AsyncStream<Int>.Result) in
             switch result {
                 case .value:
-                    await counter1.increment()
+                    counter1.increment()
                     return .more
                 case let .completion(.failure(error)):
                     XCTFail("Got an error? \(error)")
                     return .done
                 case .completion(.finished):
-                    let count = await counter1.count
+                    let count = counter1.count
                     guard count == 100 else {
                         XCTFail("Incorrect count: \(count) in subscription 1")
                         return .done
@@ -51,13 +51,13 @@ class MakeConnectableTests: XCTestCase {
         let u2 = await p.sink { (result: AsyncStream<Int>.Result) in
             switch result {
                 case .value:
-                    await counter2.increment()
+                    counter2.increment()
                     return .more
                 case let .completion(.failure(error)):
                     XCTFail("Got an error? \(error)")
                     return .done
                 case .completion(.finished):
-                    let count = await counter2.count
+                    let count = counter2.count
                     guard count == 100 else {
                         XCTFail("Incorrect count: \(count) in subscription 2")
                         return .done
@@ -105,13 +105,13 @@ class MakeConnectableTests: XCTestCase {
         let u1 = await connectable.publisher().sink({ result in
             switch result {
                 case .value:
-                    await counter1.increment()
+                    counter1.increment()
                     return .more
                 case let .completion(.failure(error)):
                     XCTFail("Got an error? \(error)")
                     return .done
                 case .completion(.finished):
-                    let count = await counter1.count
+                    let count = counter1.count
                     if count != 100 {
                         XCTFail("Incorrect count: \(count) in subscription 1")
                     }
@@ -126,13 +126,13 @@ class MakeConnectableTests: XCTestCase {
         let u2 = await connectable.publisher().sink { (result: AsyncStream<Int>.Result) in
             switch result {
                 case .value:
-                    await counter2.increment()
+                    counter2.increment()
                     return .more
                 case let .completion(.failure(error)):
                     XCTFail("Got an error? \(error)")
                     return .done
                 case .completion(.finished):
-                    let count = await counter2.count
+                    let count = counter2.count
                     if count != 100  {
                         XCTFail("Incorrect count: \(count) in subscription 2")
                     }
