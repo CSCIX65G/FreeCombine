@@ -24,7 +24,7 @@ class ThrottleDemandTests: XCTestCase {
             .sink({ value in
                 switch value {
                     case .value(_):
-                        await counter.increment()
+                        counter.increment()
                         return .more
                     case let .completion(.failure(error)):
                         XCTFail("Got unexpected failure: \(error)")
@@ -41,7 +41,7 @@ class ThrottleDemandTests: XCTestCase {
             try await FreeCombine.wait(for: expectation, timeout: 1_000_000_000)
         } catch {
             t.cancel()
-            let count = await counter.count
+            let count = counter.count
             XCTAssert(count == 10, "Got wrong count = \(count)")
         }
 

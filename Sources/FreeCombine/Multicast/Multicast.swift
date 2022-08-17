@@ -16,7 +16,7 @@ public extension Publisher {
                     case .completion(.finished):
                         try await subject.finish()
                     case .value(let value):
-                        try await subject.send(value)
+                        try await subject.blockingSend(value)
                 }
                 return try await downstream(result)
             })

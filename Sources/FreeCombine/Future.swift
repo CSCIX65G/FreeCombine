@@ -26,6 +26,43 @@ public struct Future<Output: Sendable>: Sendable {
 }
 
 public extension Future {
+    var publisher: Publisher<Output> {
+        .init { resumption, downstream in
+                .init {
+                    let demandRef: ValueRef<Result<Demand, Swift.Error>> = .init(value: .failure(PublisherError.internalError))
+                    let innerCancellable = await self.sink { result in
+                        do {
+                            switch result {
+                                case let .success(value):
+                                    guard try await downstream(.value(value)) == .more else {
+                                        await demandRef.set(value: .success(.done))
+                                        return
+                                    }
+                                    let demand = try await downstream(.completion(.finished))
+                                    await demandRef.set(value: .success(demand))
+                                case let .failure(error):
+                                    switch error {
+                                        case FutureError.cancelled:
+                                            _ = try await downstream(.completion(.cancelled))
+                                            await demandRef.set(value: .failure(PublisherError.cancelled))
+                                        default:
+                                            _ = try await downstream(.completion(.failure(error)))
+                                            await demandRef.set(value: .failure(error))
+                                    }
+                            }
+                        } catch {
+                            await demandRef.set(value: .failure(error))
+                        }
+                    }
+                    resumption.resume()
+                    _ = await innerCancellable.result
+                    return try await demandRef.value.get()
+                }
+        }
+    }
+}
+
+public extension Future {
     @discardableResult
     func sink(
         onStartup: Resumption<Void>,

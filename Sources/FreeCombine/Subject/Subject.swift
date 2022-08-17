@@ -103,6 +103,8 @@ public final class Subject<Output: Sendable> {
 
 extension Subject {
     func subscribe(
+        file: StaticString = #file,
+        line: UInt = #line,
         _ downstream: @escaping @Sendable (AsyncStream<Output>.Result) async throws -> Demand
     ) async throws -> Cancellable<Demand> {
         try await withResumption { resumption in
@@ -111,12 +113,59 @@ extension Subject {
                 case .enqueued:
                     ()
                 case .terminated:
+                    assert(false, "Sending subscription to terminated Subject", file: file, line: line)
                     resumption.resume(throwing: PublisherError.completed)
                 case .dropped:
+                    assert(false, "Dropped subscription to Subject", file: file, line: line)
                     resumption.resume(throwing: PublisherError.enqueueError)
                 @unknown default:
                     resumption.resume(throwing: PublisherError.enqueueError)
             }
+        }
+    }
+}
+
+extension Subject {
+    func blockingReceive(
+        file: StaticString = #file,
+        line: UInt = #line,
+        _ result: AsyncStream<Output>.Result
+    ) async throws -> Int {
+        let count: Int = try await withResumption { resumption in
+            let queueStatus = receiveStateTask.send(.blockingReceive(result, resumption))
+            switch queueStatus {
+                case .enqueued:
+                    ()
+                case .terminated:
+                    assert(false, "Sending \(result) to terminated Subject", file: file, line: line)
+                    resumption.resume(throwing: PublisherError.completed)
+                case .dropped:
+                    assert(false, "Dropped \(result) on blocking send to Subject", file: file, line: line)
+                    resumption.resume(throwing: PublisherError.enqueueError)
+                @unknown default:
+                    resumption.resume(throwing: PublisherError.enqueueError)
+            }
+        }
+        return count
+    }
+
+    func nonblockingReceive(
+        file: StaticString = #file,
+        line: UInt = #line,
+        _ result: AsyncStream<Output>.Result
+    ) throws -> Void {
+        let queueStatus = receiveStateTask.send(.nonBlockingReceive(result))
+        switch queueStatus {
+            case .enqueued:
+                ()
+            case .terminated:
+                assert(false, "Sending \(result) to terminated Subject", file: file, line: line)
+                throw PublisherError.completed
+            case .dropped:
+                assert(false, "Dropped \(result) on nonblocking send to Subject", file: file, line: line)
+                throw PublisherError.enqueueError
+            @unknown default:
+                throw PublisherError.enqueueError
         }
     }
 }
@@ -134,53 +183,35 @@ public extension Subject {
         get { .init(file: file, line: line, deinitBehavior: deinitBehavior, stateTask: stateTask) }
     }
 
-    func receive(
+    @discardableResult
+    @Sendable func blockingSend(
+        file: StaticString = #file,
+        line: UInt = #line,
         _ result: AsyncStream<Output>.Result
     ) async throws -> Int {
-        let count: Int = try await withResumption { resumption in
-            let queueStatus = receiveStateTask.send(.receive(result, resumption))
-            switch queueStatus {
-                case .enqueued:
-                    ()
-                case .terminated:
-                    resumption.resume(throwing: PublisherError.completed)
-                case .dropped:
-                    resumption.resume(throwing: PublisherError.enqueueError)
-                @unknown default:
-                    resumption.resume(throwing: PublisherError.enqueueError)
-            }
-        }
-        return count
+        try await blockingReceive(file: file, line: line, result)
+    }
+    @discardableResult
+    @Sendable func blockingSend(
+        file: StaticString = #file,
+        line: UInt = #line,
+        _ value: Output
+    ) async throws -> Int {
+        try await blockingReceive(file: file, line: line, .value(value))
     }
 
-    func receive(
+    @Sendable func nonblockingSend(
+        file: StaticString = #file,
+        line: UInt = #line,
         _ result: AsyncStream<Output>.Result
     ) throws -> Void {
-        let queueStatus = receiveStateTask.send(.nonBlockingReceive(result))
-        switch queueStatus {
-            case .enqueued:
-                ()
-            case .terminated:
-                throw PublisherError.completed
-            case .dropped:
-                throw PublisherError.enqueueError
-            @unknown default:
-                throw PublisherError.enqueueError
-        }
+        try nonblockingReceive(file: file, line: line, result)
     }
-
-    @discardableResult
-    @Sendable func send(_ result: AsyncStream<Output>.Result) async throws -> Int {
-        try await receive(result)
-    }
-    @discardableResult
-    @Sendable func send(_ value: Output) async throws -> Int {
-        try await receive(.value(value))
-    }
-    @Sendable func send(_ result: AsyncStream<Output>.Result) throws -> Void {
-        try receive(result)
-    }
-    @Sendable func send(_ value: Output) throws -> Void {
-        try receive(.value(value))
+    @Sendable func nonblockingSend(
+        file: StaticString = #file,
+        line: UInt = #line,
+        _ value: Output
+    ) throws -> Void {
+        try nonblockingReceive(file: file, line: line, .value(value))
     }
 }

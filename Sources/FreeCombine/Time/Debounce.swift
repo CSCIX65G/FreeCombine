@@ -52,7 +52,7 @@ extension Publisher {
                         throw PublisherError.internalError
                     }
                     try await Task.sleep(nanoseconds: interval.inNanoseconds)
-                    let _: Void = try subject.send(r)
+                    let _: Void = try subject.nonblockingSend(r)
                 })
                 switch r {
                     case .value:

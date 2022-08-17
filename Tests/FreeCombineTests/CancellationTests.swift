@@ -28,7 +28,7 @@ class CancellationTests: XCTestCase {
             .sink { (result: AsyncStream<(Int, String)>.Result) in
                 switch result {
                     case .value:
-                        let count = await counter.increment()
+                        let count = counter.increment()
                         if count > 9 {
                             try await startup.complete()
                             try await waiter.value
@@ -60,7 +60,7 @@ class CancellationTests: XCTestCase {
 
         do { try await FreeCombine.wait(for: expectation, timeout: 10_000_000) }
         catch {
-            XCTFail("Timed out with count: \(await counter.count)")
+            XCTFail("Timed out with count: \(counter.count)")
         }
     }
 
@@ -82,7 +82,7 @@ class CancellationTests: XCTestCase {
         let z1 = await zipped.sink({ result in
             switch result {
                 case .value:
-                    let count2 = await counter2.increment()
+                    let count2 = counter2.increment()
                     if (count2 == 1) {
                         try await startup1.complete()
                     }
@@ -91,7 +91,7 @@ class CancellationTests: XCTestCase {
                     XCTFail("Got an error? \(error)")
                     return .done
                 case .completion(.finished):
-                    let count2 = await counter2.count
+                    let count2 = counter2.count
                     XCTAssertTrue(count2 == 26, "Incorrect count: \(count2)")
                     do { try await expectation2.complete() }
                     catch { XCTFail("Multiple finishes sent: \(error)") }
@@ -107,7 +107,7 @@ class CancellationTests: XCTestCase {
             .sink({ result in
                 switch result {
                     case .value:
-                        let count1 = await counter1.increment()
+                        let count1 = counter1.increment()
                         if count1 == 10 {
                             try await startup2.complete()
                             try await waiter.value
@@ -139,7 +139,7 @@ class CancellationTests: XCTestCase {
         do {
             try await FreeCombine.wait(for: expectation, timeout: 10_000_000)
             try await FreeCombine.wait(for: expectation2, timeout: 10_000_000)
-            let count1 = await counter1.count
+            let count1 = counter1.count
             XCTAssert(count1 == 10, "Wrong number in z2: \(count1)")
         } catch {
             XCTFail("Timed out")
@@ -161,7 +161,7 @@ class CancellationTests: XCTestCase {
             .sink({ result in
                 switch result {
                     case .value:
-                        let count = await counter.increment()
+                        let count = counter.increment()
                         if count > 9 {
                             try await startup.complete()
                             try await waiter.value
@@ -181,7 +181,7 @@ class CancellationTests: XCTestCase {
                         catch { XCTFail("Failed to complete: \(error)") }
                         return .done
                     case .completion(.cancelled):
-                        let count = await counter.count
+                        let count = counter.count
                         XCTAssert(count == 10, "Incorrect count")
                         try await expectation.complete()
                         return .done
@@ -193,6 +193,6 @@ class CancellationTests: XCTestCase {
         try await waiter.complete()
 
         do { try await FreeCombine.wait(for: expectation, timeout: 10_000_000) }
-        catch { XCTFail("Timed out with count: \(await counter.count)") }
+        catch { XCTFail("Timed out with count: \(counter.count)") }
     }
 }

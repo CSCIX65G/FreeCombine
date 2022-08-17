@@ -146,15 +146,15 @@ final class PromiseTests: XCTestCase {
             )
             for _ in 0 ..< maxAttempts {
                 Task {
-                    do { try await promise.succeed(13); await succeedCounter.increment(); await semaphore.decrement(with: ()) }
-                    catch { await failureCounter.increment(); await semaphore.decrement(with: ()) }
+                    do { try await promise.succeed(13); succeedCounter.increment(); await semaphore.decrement(with: ()) }
+                    catch { failureCounter.increment(); await semaphore.decrement(with: ()) }
                 }
             }
         }
-        let successCount = await succeedCounter.count
+        let successCount = succeedCounter.count
         XCTAssert(successCount == 1, "Too many successes")
 
-        let failureCount = await failureCounter.count
+        let failureCount = failureCounter.count
         XCTAssert(failureCount == maxAttempts - 1, "Too few failures")
 
         do {

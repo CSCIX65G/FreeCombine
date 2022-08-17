@@ -21,10 +21,10 @@ class SubjectTests: XCTestCase {
 
         let counter = Counter()
         let c1 = await publisher.sink { (result: AsyncStream<Int>.Result) in
-            let count = await counter.count
+            let count = counter.count
             switch result {
                 case .value:
-                    _ = await counter.increment()
+                    _ = counter.increment()
                     return .more
                 case let .completion(.failure(error)):
                     XCTFail("Got an error? \(error)")
@@ -44,10 +44,10 @@ class SubjectTests: XCTestCase {
             }
         }
         do {
-            try await subject.send(14)
-            try await subject.send(15)
-            try await subject.send(16)
-            try await subject.send(17)
+            try await subject.blockingSend(14)
+            try await subject.blockingSend(15)
+            try await subject.blockingSend(16)
+            try await subject.blockingSend(17)
             try await subject.finish()
         } catch {
             XCTFail("Caught error: \(error)")
@@ -63,7 +63,7 @@ class SubjectTests: XCTestCase {
             try await FreeCombine.wait(for: expectation, timeout: 10_000_000)
         }
         catch {
-            let count = await counter.count
+            let count = counter.count
             XCTFail("Timed out, count = \(count)")
         }
 
@@ -80,10 +80,10 @@ class SubjectTests: XCTestCase {
 
         let counter1 = Counter()
         let c1 = await publisher.sink { (result: AsyncStream<Int>.Result) in
-            let count = await counter1.count
+            let count = counter1.count
             switch result {
                 case .value:
-                    _ = await counter1.increment()
+                    _ = counter1.increment()
                     return .more
                 case let .completion(.failure(error)):
                     XCTFail("Got an error? \(error)")
@@ -101,10 +101,10 @@ class SubjectTests: XCTestCase {
 
         let counter2 = Counter()
         let c2 = await publisher.sink { (result: AsyncStream<Int>.Result) in
-            let count = await counter2.count
+            let count = counter2.count
             switch result {
                 case .value:
-                    _ = await counter2.increment()
+                    _ = counter2.increment()
                     return .more
                 case let .completion(.failure(error)):
                     XCTFail("Got an error? \(error)")
@@ -121,10 +121,10 @@ class SubjectTests: XCTestCase {
         }
 
         do {
-            try await subject.send(14)
-            try await subject.send(15)
-            try await subject.send(16)
-            try await subject.send(17)
+            try await subject.blockingSend(14)
+            try await subject.blockingSend(15)
+            try await subject.blockingSend(16)
+            try await subject.blockingSend(17)
             try await subject.finish()
         } catch {
             XCTFail("Caught error: \(error)")
@@ -143,9 +143,7 @@ class SubjectTests: XCTestCase {
             try await FreeCombine.wait(for: expectation2, timeout: 10_000_000)
         }
         catch {
-            let count1 = await counter1.count
-            let count2 = await counter2.count
-            XCTFail("Timed out, count1 = \(count1), count2 = \(count2)")
+            XCTFail("Timed out, count1 = \(counter1.count), count2 = \(counter2.count)")
         }
         _ = await c1.result
         _ = await c2.result
@@ -164,7 +162,7 @@ class SubjectTests: XCTestCase {
         let can = await p.sink({ result in
             switch result {
                 case let .value(value):
-                    let count = await counter.increment()
+                    let count = counter.increment()
                     XCTAssertEqual(value, count, "Wrong value sent")
                     if count == 8 {
                         do {
@@ -201,11 +199,11 @@ class SubjectTests: XCTestCase {
         })
 
         for i in 1 ... 7 {
-            do { try await subject.send(i) }
+            do { try await subject.blockingSend(i) }
             catch { XCTFail("Failed to enqueue") }
         }
 
-        do { try await subject.send(8) }
+        do { try await subject.blockingSend(8) }
         catch { XCTFail("Failed to enqueue") }
 
         do { try await FreeCombine.wait(for: expectation, timeout: 10_000_000) }
@@ -221,8 +219,8 @@ class SubjectTests: XCTestCase {
         }
 
         do {
-            try await subject.send(9)
-            try await subject.send(10)
+            try await subject.blockingSend(9)
+            try await subject.blockingSend(10)
         } catch {
             XCTFail("Failed to enqueue")
         }
@@ -240,7 +238,7 @@ class SubjectTests: XCTestCase {
         let c1 = await p.sink( { result in
             switch result {
                 case let .value(value):
-                    let count = await counter.increment()
+                    let count = counter.increment()
                     XCTAssertEqual(value, count, "Wrong value sent")
                     return .more
                 case let .completion(.failure(error)):
@@ -249,7 +247,7 @@ class SubjectTests: XCTestCase {
                 case .completion(.finished):
                     do { try await expectation.complete() }
                     catch { XCTFail("Failed to complete expectation") }
-                    let count = await counter.count
+                    let count = counter.count
                     XCTAssert(count == 1000, "Received wrong number of invocations: \(count)")
                     return .done
                 case .completion(.cancelled):
@@ -259,7 +257,7 @@ class SubjectTests: XCTestCase {
         })
 
         for i in 1 ... 1000 {
-            do { try await subject.send(i) }
+            do { try await subject.blockingSend(i) }
             catch { XCTFail("Failed to enqueue") }
         }
         try await subject.finish()
@@ -267,7 +265,7 @@ class SubjectTests: XCTestCase {
         do {
             try await FreeCombine.wait(for: expectation, timeout: 50_000_000)
         } catch {
-            let count = await counter.count
+            let count = counter.count
             XCTFail("Timed out waiting for expectation.  processed: \(count)")
         }
         _ = await c1.result
@@ -284,7 +282,7 @@ class SubjectTests: XCTestCase {
         let c1 = await p.sink({ result in
             switch result {
                 case let .value(value):
-                    let count = await counter.increment()
+                    let count = counter.increment()
                     XCTAssertEqual(value, count, "Wrong value sent")
                     return .more
                 case let .completion(.failure(error)):
@@ -293,7 +291,7 @@ class SubjectTests: XCTestCase {
                 case .completion(.finished):
                     do { try await expectation.complete() }
                     catch { XCTFail("Could not complete, error: \(error)") }
-                    let count = await counter.count
+                    let count = counter.count
                     XCTAssert(count == 5, "Received wrong number of invocations: \(count)")
                     return .done
                 case .completion(.cancelled):
@@ -303,7 +301,7 @@ class SubjectTests: XCTestCase {
         })
 
         for i in (1 ... 5) {
-            do { try await subject.send(i) }
+            do { try await subject.blockingSend(i) }
             catch { XCTFail("Failed to enqueue") }
         }
         try await subject.finish()
@@ -311,7 +309,7 @@ class SubjectTests: XCTestCase {
         do {
             try await FreeCombine.wait(for: expectation, timeout: 10_000_000)
         } catch {
-            let count = await counter.count
+            let count = counter.count
             XCTFail("Timed out waiting for expectation.  processed: \(count)")
         }
         _ = await c1.result
@@ -339,13 +337,13 @@ class SubjectTests: XCTestCase {
             .sink({ value in
                 switch value {
                     case .value(_):
-                        await counter.increment()
+                        counter.increment()
                         return .more
                     case let .completion(.failure(error)):
                         XCTFail("Should not have received failure: \(error)")
                         return .done
                     case .completion(.finished):
-                        let count = await counter.count
+                        let count = counter.count
                         if count != 28  { XCTFail("Incorrect number of values") }
                         try await expectation.complete()
                         return .done
@@ -355,8 +353,8 @@ class SubjectTests: XCTestCase {
                 }
             })
 
-        try await fsubject1.send(14)
-        try await fsubject2.send("hello, combined world!")
+        try await fsubject1.blockingSend(14)
+        try await fsubject2.blockingSend("hello, combined world!")
 
         try await fsubject1.finish()
         try await fsubject2.finish()

@@ -29,11 +29,11 @@ extension Publisher {
             cancellable = await subject.asyncPublisher.sink(downstream)
             timerCancellable = await Heartbeat(interval: interval).sink { _ in
                 if let value = await self.value {
-                    try await self.subject.send(value)
+                    try await self.subject.blockingSend(value)
                     await self.set(value: .none)
                 }
                 if let completion = await self.completion {
-                    try await self.subject.send(completion)
+                    try await self.subject.blockingSend(completion)
                     try await self.cleanup()
                 }
             }

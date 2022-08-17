@@ -25,13 +25,13 @@ class DelayTests: XCTestCase {
             .sink({ value in
                 switch value {
                     case .value(_):
-                        await counter.increment()
+                        counter.increment()
                         return .more
                     case let .completion(.failure(error)):
                         XCTFail("Got unexpected failure: \(error)")
                         return .done
                     case .completion(.finished):
-                        let count = await counter.count
+                        let count = counter.count
                         do { try await expectation.complete() }
                         catch {
                             XCTFail("Failed to complete: \(error), count = \(count)")
@@ -48,7 +48,7 @@ class DelayTests: XCTestCase {
         } catch {
             t.cancel()
         }
-        let count = await counter.count
+        let count = counter.count
         XCTAssert(count == 100, "Got wrong count = \(count)")
         let diff = start.timeIntervalSinceNow
         XCTAssert(diff < -1.0, "Did not delay.  interval = \(diff)")

@@ -13,7 +13,7 @@ public struct DistributorReceiveState<Output: Sendable> {
     }
 
     public enum Action: Sendable {
-        case receive(AsyncStream<Output>.Result, Resumption<Int>)
+        case blockingReceive(AsyncStream<Output>.Result, Resumption<Int>)
         case nonBlockingReceive(AsyncStream<Output>.Result)
     }
 
@@ -33,7 +33,7 @@ public struct DistributorReceiveState<Output: Sendable> {
 
     static func dispose(action: Self.Action, completion: Reducer<Self, Self.Action>.Completion) async -> Void {
         switch action {
-            case let .receive(_, continuation):
+            case let .blockingReceive(_, continuation):
                 switch completion {
                     case .failure(let error):
                         continuation.resume(throwing: error)
@@ -48,7 +48,7 @@ public struct DistributorReceiveState<Output: Sendable> {
     static func reduce(state: inout Self, action: Self.Action) async throws -> Reducer<Self, Action>.Effect {
         if Task.isCancelled {
             switch action {
-                case .receive(_, let resumption):
+                case .blockingReceive(_, let resumption):
                     resumption.resume(throwing: PublisherError.cancelled)
                 case .nonBlockingReceive(_):
                     ()
@@ -61,7 +61,7 @@ public struct DistributorReceiveState<Output: Sendable> {
     mutating func reduce(action: Action) async throws -> Reducer<Self, Action>.Effect {
         var result: AsyncStream<Output>.Result! = .none
         var resumption: Resumption<Int>! = .none
-        if case let .receive(r1, r3) = action  {
+        if case let .blockingReceive(r1, r3) = action  {
             result = r1
             resumption = r3
         } else if case let .nonBlockingReceive(r2) = action {

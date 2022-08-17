@@ -23,10 +23,10 @@ class ZipTests: XCTestCase {
 
         let c1 = await zip(publisher1, publisher2)
             .sink { (result: AsyncStream<(Int, String)>.Result) in
-                let count = await counter.count
+                let count = counter.count
                 switch result {
                     case let .value(value):
-                        _ = await counter.increment()
+                        _ = counter.increment()
                         XCTAssertTrue(value.0 == 100, "Incorrect Int value")
                         XCTAssertTrue(value.1 == "abcdefghijklmnopqrstuvwxyz", "Incorrect String value")
                     case let .completion(.failure(error)):
@@ -45,8 +45,7 @@ class ZipTests: XCTestCase {
 
         do { try await FreeCombine.wait(for: expectation, timeout: 10_000_000) }
         catch {
-            let count = await counter.count
-            XCTFail("Timed out, count = \(count)")
+            XCTFail("Timed out, count = \(counter.count)")
         }
         _ = await c1.result
     }
@@ -61,10 +60,10 @@ class ZipTests: XCTestCase {
 
         let z1 = await zip(publisher1, publisher2)
             .sink { (result: AsyncStream<(Int, String)>.Result) in
-                let count = await counter.count
+                let count = counter.count
                 switch result {
                     case let .value(value):
-                        _ = await counter.increment()
+                        _ = counter.increment()
                         XCTFail("Should not have received a value: \(value)")
                     case let .completion(.failure(error)):
                         XCTFail("Got an error? \(error)")
@@ -82,7 +81,7 @@ class ZipTests: XCTestCase {
 
         do { try await FreeCombine.wait(for: expectation, timeout: 10_000_000) }
         catch {
-            let count = await counter.count
+            let count = counter.count
             XCTFail("Timed out, count = \(count)")
         }
         _ = await z1.result
@@ -97,10 +96,10 @@ class ZipTests: XCTestCase {
         let counter = Counter()
         let z1 = await zip(publisher1, publisher2)
             .sink { (result: AsyncStream<(Int, Character)>.Result) in
-                let count = await counter.count
+                let count = counter.count
                 switch result {
                     case .value:
-                        _ = await counter.increment()
+                        _ = counter.increment()
                         return .more
                     case let .completion(.failure(error)):
                         XCTFail("Got an error? \(error)")
@@ -117,10 +116,7 @@ class ZipTests: XCTestCase {
             }
 
         do { try await FreeCombine.wait(for: expectation, timeout: 10_000_000) }
-        catch {
-            let count = await counter.count
-            XCTFail("Timed out, count = \(count)")
-        }
+        catch { XCTFail("Timed out, count = \(counter.count)") }
         _ = await z1.result
     }
 
@@ -137,13 +133,13 @@ class ZipTests: XCTestCase {
             .sink({ result in
                 switch result {
                     case .value:
-                        await counter.increment()
+                        counter.increment()
                         return .more
                     case let .completion(.failure(error)):
                         XCTFail("Got an error? \(error)")
                         return .done
                     case .completion(.finished):
-                        let count = await counter.count
+                        let count = counter.count
                         XCTAssert(count == 26, "wrong number of values sent: \(count)")
                         do { try await expectation.complete() }
                         catch { XCTFail("Failed to complete: \(error)") }
@@ -155,10 +151,7 @@ class ZipTests: XCTestCase {
             })
 
         do { try await FreeCombine.wait(for: expectation, timeout: 10_000_000) }
-        catch {
-            let count = await counter.count
-            XCTFail("Timed out, count = \(count)")
-        }
+        catch { XCTFail("Timed out, count = \(counter.count)") }
         z1.cancel()
     }
 
@@ -182,13 +175,13 @@ class ZipTests: XCTestCase {
             .sink({ result in
                 switch result {
                     case .value:
-                        await counter.increment()
+                        counter.increment()
                         return .more
                     case let .completion(.failure(error)):
                         XCTFail("Got an error? \(error)")
                         return .done
                     case .completion(.finished):
-                        let count = await counter.count
+                        let count = counter.count
                         XCTAssert(count == 26, "wrong number of values sent: \(count)")
                         do { try await expectation.complete() }
                         catch { XCTFail("Multiple finishes sent: \(error)") }
@@ -200,10 +193,7 @@ class ZipTests: XCTestCase {
             })
 
         do { try await FreeCombine.wait(for: expectation, timeout: 10_000_000) }
-        catch {
-            let count = await counter.count
-            XCTFail("Timed out, count = \(count)")
-        }
+        catch { XCTFail("Timed out, count = \(counter.count)") }
         let _ = await z1.result
     }
 
@@ -230,13 +220,13 @@ class ZipTests: XCTestCase {
             .sink({ result in
                 switch result {
                     case .value:
-                        await count1.increment()
+                        count1.increment()
                         return .more
                     case let .completion(.failure(error)):
                         XCTFail("Got an error? \(error)")
                         return .done
                     case .completion(.finished):
-                        let count = await count1.count
+                        let count = count1.count
                         XCTAssert(count == 26, "wrong number of values sent: \(count1)")
                         try await expectation1.complete()
                         return .done
@@ -254,13 +244,13 @@ class ZipTests: XCTestCase {
             .sink({ result in
                 switch result {
                     case .value:
-                        await count2.increment()
+                        count2.increment()
                         return .more
                     case let .completion(.failure(error)):
                         XCTFail("Got an error? \(error)")
                         return .more
                     case .completion(.finished):
-                        let count = await count2.count
+                        let count = count2.count
                         XCTAssert(count == 26, "wrong number of values sent: \(count)")
                         try await expectation2.complete()
                         return .done

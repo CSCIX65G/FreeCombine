@@ -85,7 +85,7 @@ class DistributorTests: XCTestCase {
         let downstream1: @Sendable (AsyncStream<Int>.Result) async throws -> Demand = { result in
             switch result {
                 case .value:
-                    await counter.increment()
+                    counter.increment()
                     return .more
                 case let .completion(completion):
                     guard case Completion.finished = completion else {
@@ -101,7 +101,7 @@ class DistributorTests: XCTestCase {
         let downstream2: @Sendable (AsyncStream<Int>.Result) async throws -> Demand = { result in
             switch result {
                 case .value:
-                    await counter.increment()
+                    counter.increment()
                     return .more
                 case let .completion(completion):
                     guard case Completion.finished = completion else {
@@ -141,7 +141,7 @@ class DistributorTests: XCTestCase {
                             XCTAssert(distributor.repeaters.count == 1, "Incorrect number of repeaters = \(distributor.repeaters.count)")
                             _ = try await distributor.reduce(action: .subscribe(downstream2, taskC))
                             XCTAssert(distributor.repeaters.count == 2, "Incorrect number of repeaters = \(distributor.repeaters.count)")
-                            let count1 = await counter.count
+                            let count1 = counter.count
                             XCTAssert(count1 == 2, "Incorrect number of sends: \(count1)")
                             await distributorValue.set(value: distributor)
                             distributor = try await withResumption { distResumption in
@@ -155,7 +155,7 @@ class DistributorTests: XCTestCase {
                                     })
                                 }
                             }
-                            let count2 = await counter.count
+                            let count2 = counter.count
                             XCTAssert(count2 == 4, "Incorrect number of sends: \(count2)")
                             _ = try await distributor.reduce(action: .receive(.completion(.finished), c))
                             XCTAssert(distributor.repeaters.count == 0, "Incorrect number of repeaters = \(distributor.repeaters.count)")

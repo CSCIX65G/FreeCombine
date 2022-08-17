@@ -23,10 +23,10 @@ class CombineLatestTests: XCTestCase {
 
         let c1 = await combineLatest(publisher1, publisher2)
             .sink { (result: AsyncStream<(Int?, String?)>.Result) in
-                let count = await counter.count
+                let count = counter.count
                 switch result {
                     case .value:
-                        _ = await counter.increment()
+                        _ = counter.increment()
                     case let .completion(.failure(error)):
                         XCTFail("Got an error? \(error)")
                     case .completion(.finished):
@@ -43,7 +43,7 @@ class CombineLatestTests: XCTestCase {
 
         do { try await FreeCombine.wait(for: expectation, timeout: 10_000_000) }
         catch {
-            let count = await counter.count
+            let count = counter.count
             XCTFail("Timed out, count = \(count)")
         }
         let _ = await c1.result
@@ -59,10 +59,10 @@ class CombineLatestTests: XCTestCase {
 
         let z1 = await combineLatest(publisher1, publisher2)
             .sink { (result: AsyncStream<(Int?, String?)>.Result) in
-                let count = await counter.count
+                let count = counter.count
                 switch result {
                     case .value:
-                        _ = await counter.increment()
+                        _ = counter.increment()
                     case let .completion(.failure(error)):
                         XCTFail("Got an error? \(error)")
                     case .completion(.finished):
@@ -79,7 +79,7 @@ class CombineLatestTests: XCTestCase {
 
         do { try await FreeCombine.wait(for: expectation, timeout: 10_000_000) }
         catch {
-            let count = await counter.count
+            let count = counter.count
             XCTFail("Timed out, count = \(count)")
         }
         let _ = await z1.result
@@ -94,10 +94,10 @@ class CombineLatestTests: XCTestCase {
         let counter = Counter()
         let z1 = await combineLatest(publisher1, publisher2)
             .sink { (result: AsyncStream<(Int?, Character?)>.Result) in
-                let count = await counter.count
+                let count = counter.count
                 switch result {
                     case .value:
-                        _ = await counter.increment()
+                        _ = counter.increment()
                         return .more
                     case let .completion(.failure(error)):
                         XCTFail("Got an error? \(error)")
@@ -115,7 +115,7 @@ class CombineLatestTests: XCTestCase {
 
         do { try await FreeCombine.wait(for: expectation, timeout: 10_000_000) }
         catch {
-            let count = await counter.count
+            let count = counter.count
             XCTFail("Timed out, count = \(count)")
         }
         z1.cancel()
@@ -134,13 +134,13 @@ class CombineLatestTests: XCTestCase {
             .sink({ result in
                 switch result {
                     case .value:
-                        await counter.increment()
+                        counter.increment()
                         return .more
                     case let .completion(.failure(error)):
                         XCTFail("Got an error? \(error)")
                         return .done
                     case .completion(.finished):
-                        let count = await counter.count
+                        let count = counter.count
                         XCTAssert(count == 126, "wrong number of values sent: \(count)")
                         do { try await expectation.complete() }
                         catch { XCTFail("Failed to complete: \(error)") }
@@ -152,10 +152,7 @@ class CombineLatestTests: XCTestCase {
             })
 
         do { try await FreeCombine.wait(for: expectation, timeout: 10_000_000) }
-        catch {
-            let count = await counter.count
-            XCTFail("Timed out, count = \(count)")
-        }
+        catch { XCTFail("Timed out, count = \(counter.count)") }
         _ = await z1.result
     }
 
@@ -175,13 +172,13 @@ class CombineLatestTests: XCTestCase {
             .sink({ result in
                 switch result {
                     case .value:
-                        await counter.increment()
+                        counter.increment()
                         return .more
                     case let .completion(.failure(error)):
                         XCTFail("Got an error? \(error)")
                         return .done
                     case .completion(.finished):
-                        let count = await counter.count
+                        let count = counter.count
                         XCTAssert(count == 254, "wrong number of values sent: \(count)")
                         do { try await expectation.complete() }
                         catch { XCTFail("Multiple finishes sent: \(error)") }
@@ -193,10 +190,7 @@ class CombineLatestTests: XCTestCase {
             })
 
         do { try await FreeCombine.wait(for: expectation, timeout: 10_000_000) }
-        catch {
-            let count = await counter.count
-            XCTFail("Timed out, count = \(count)")
-        }
+        catch { XCTFail("Timed out, count = \(counter.count)") }
         _ = await z1.result
     }
 
@@ -219,13 +213,13 @@ class CombineLatestTests: XCTestCase {
             .sink({ result in
                 switch result {
                     case .value:
-                        await count1.increment()
+                        count1.increment()
                         return .more
                     case let .completion(.failure(error)):
                         XCTFail("Got an error? \(error)")
                         return .done
                     case .completion(.finished):
-                        let count = await count1.count
+                        let count = count1.count
                         XCTAssert(count == 252, "wrong number of values sent: \(count)")
                         try await expectation1.complete()
                         return .done
@@ -243,13 +237,13 @@ class CombineLatestTests: XCTestCase {
             .sink({ result in
                 switch result {
                     case .value:
-                        await count2.increment()
+                        count2.increment()
                         return .more
                     case let .completion(.failure(error)):
                         XCTFail("Got an error? \(error)")
                         return .more
                     case .completion(.finished):
-                        let count = await count2.count
+                        let count = count2.count
                         XCTAssert(count == 252, "wrong number of values sent: \(count)")
                         try await expectation2.complete()
                         return .done
