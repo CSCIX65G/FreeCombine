@@ -12,7 +12,7 @@ public extension Publisher {
             let currentValue: ValueRef<Int> = ValueRef(value: count + 1)
             return self(onStartup: continuation) { r in
                 let current = await currentValue.value - 1
-                await currentValue.set(value: max(0, current))
+                try await currentValue.set(value: max(0, current))
                 switch r {
                 case .value:
                     guard current <= 0 else { return .more }

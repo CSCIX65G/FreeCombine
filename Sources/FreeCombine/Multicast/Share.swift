@@ -39,9 +39,9 @@ public extension Publisher {
                         _ = await cancellable.result
                         _ = await subject.result;
                         _ = await i2.result;
-                        await cancellableRef.set(value: .none)
+                        try await cancellableRef.set(value: .none)
                     }
-                    await cancellableRef.set(value: i1)
+                    try await cancellableRef.set(value: i1)
                 }
                 continuation.resume()
                 return cancellable

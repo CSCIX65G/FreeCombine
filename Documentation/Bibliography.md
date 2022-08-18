@@ -12,6 +12,12 @@
 
 *_ NB This statement is true._*
 
+### Swift Atomics
+
+* [Tutorial on Memory Ordering](http://www.ai.mit.edu/projects/aries/papers/consistency/computer_29_12_dec1996_p66.pdf)
+* [Memory Ordering in Modern Microprocessors, Part I](https://www.linuxjournal.com/article/8211)
+* [Memory Ordering in Modern Microprocessors, Part II](https://www.linuxjournal.com/article/8211)
+
 ### Swift Concurrency
 
 * [SE-296 Async/Await](https://github.com/apple/swift-evolution/blob/main/proposals/0296-async-await.md)

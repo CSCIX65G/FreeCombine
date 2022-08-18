@@ -55,7 +55,7 @@ class ThrottleTests: XCTestCase {
                 switch value {
                     case .value(let value):
                         let vals = await values.value
-                        await values.set(value: vals + [value])
+                        try await values.set(value: vals + [value])
                         counter.increment()
                         return .more
                     case let .completion(.failure(error)):
@@ -104,7 +104,7 @@ class ThrottleTests: XCTestCase {
                 switch value {
                     case .value(let value):
                         let vals = await values.value
-                        await values.set(value: vals + [value])
+                        try await values.set(value: vals + [value])
                         counter.increment()
                         return .more
                     case let .completion(.failure(error)):

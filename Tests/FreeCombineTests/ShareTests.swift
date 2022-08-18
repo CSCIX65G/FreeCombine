@@ -38,12 +38,16 @@ final class ShareTests: XCTestCase {
                             XCTFail("Shared more than once")
                             return
                         }
-                        await upstreamShared.set(value: true)
+                        try await upstreamShared.set(value: true)
                     }
                 },
                 receiveOutput: { value in
                     upstreamCounter.increment()
-                    await upstreamValue.set(value: value)
+                    do {
+                        try await upstreamValue.set(value: value)
+                    } catch {
+                        XCTFail("Failed atomic set")
+                    }
                 },
                 receiveFinished: {
                     let count = upstreamCounter.count
@@ -64,7 +68,7 @@ final class ShareTests: XCTestCase {
             switch result {
                 case let .value(value):
                     counter1.increment()
-                    await value1.set(value: value)
+                    try await value1.set(value: value)
                     return .more
                 case let .completion(.failure(error)):
                     XCTFail("Got an error? \(error)")
@@ -90,7 +94,7 @@ final class ShareTests: XCTestCase {
             switch result {
                 case let .value(value):
                     counter2.increment()
-                    await value2.set(value: value)
+                    try await value2.set(value: value)
                     return .more
                 case let .completion(.failure(error)):
                     XCTFail("u2 completed with error: \(error)")

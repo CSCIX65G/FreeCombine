@@ -22,10 +22,10 @@ public extension Publisher {
                         Task {
                             _ = await connectable.result
                             _ = await cancellable.result
-                            await cancellableRef.set(value: .none)
+                            try await cancellableRef.set(value: .none)
                         }
                         try await connectable.connect()
-                        await cancellableRef.set(value: cancellable)
+                        try await cancellableRef.set(value: cancellable)
                     } catch {
 //                        _ = try? await downstream(.completion(.finished))
                         continuation.resume()

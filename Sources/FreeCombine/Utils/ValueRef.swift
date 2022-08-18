@@ -14,7 +14,7 @@ public actor ValueRef<Value> {
     public init(value: Value) { self.value = value }
 
     @discardableResult
-    public func set(value: Value) -> Value {
+    public func set(value: Value) throws -> Value {
         let tmp = self.value
         self.value = value
         return tmp

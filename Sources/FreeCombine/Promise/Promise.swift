@@ -159,14 +159,14 @@ public extension Promise {
             case .enqueued:
                 receiveStateTask.finish()
             case .terminated:
-                await resolution.set(value: .failure(PublisherError.completed))
+                try await resolution.set(value: .failure(PublisherError.completed))
                 throw PublisherError.completed
             case .dropped:
-                await resolution.set(value: .failure(PublisherError.enqueueError))
+                try await resolution.set(value: .failure(PublisherError.enqueueError))
                 receiveStateTask.finish()
                 throw PublisherError.enqueueError
             @unknown default:
-                await resolution.set(value: .failure(PublisherError.enqueueError))
+                try await resolution.set(value: .failure(PublisherError.enqueueError))
                 stateTask.finish()
                 throw PublisherError.enqueueError
         }
