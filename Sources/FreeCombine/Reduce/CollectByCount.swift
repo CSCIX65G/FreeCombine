@@ -17,7 +17,7 @@ public extension Publisher {
                 }
                 switch r {
                     case .value(let a):
-                        await currentValue.append(a)
+                        try await currentValue.append(a)
                         return await currentValue.value.count == count
                             ? try await downstream(.value(currentValue.set(value: [])))
                             : .more

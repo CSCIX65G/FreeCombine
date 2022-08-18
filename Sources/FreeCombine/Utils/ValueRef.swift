@@ -26,7 +26,7 @@ public actor ValueRef<Value> {
 }
 
 extension ValueRef {
-    public func append<T>(_ t: T) where Value == [T] {
+    public func append<T>(_ t: T) throws -> Void where Value == [T] {
         value.append(t)
     }
 }
