@@ -7,7 +7,7 @@
 import Atomics
 
 public final class Promise<Output: Sendable> {
-    fileprivate let resolution: ValueRef<Result<Output, Swift.Error>?> = .init(value: .none)
+    fileprivate let resolution: AtomicValueRef<Result<Output, Swift.Error>?> = .init(value: .none)
     private let stateTask: StateTask<PromiseState<Output>, PromiseState<Output>.Action>
     private let receiveStateTask: StateTask<PromiseReceiveState<Output>, PromiseReceiveState<Output>.Action>
 
@@ -118,7 +118,7 @@ extension Promise {
     func subscribe(
         _ downstream: @escaping @Sendable (Result<Output, Swift.Error>) async throws -> Void
     ) async throws -> Cancellable<Void> {
-        if let resolution = await resolution.get() {
+        if let resolution = resolution.get() {
             return .init { try await downstream(resolution) }
         }
         return try await withResumption { resumption in
@@ -153,20 +153,21 @@ public extension Promise {
     }
 
     @Sendable func send(_ result: Result<Output, Swift.Error>) async throws -> Void {
-        try await resolution.swapIfNone(result)
+        try resolution.swapIfNone(result)
+
         let queueStatus = receiveStateTask.send(.nonBlockingReceive(result))
         switch queueStatus {
             case .enqueued:
                 receiveStateTask.finish()
             case .terminated:
-                try await resolution.set(value: .failure(PublisherError.completed))
+                try resolution.set(value: .failure(PublisherError.completed))
                 throw PublisherError.completed
             case .dropped:
-                try await resolution.set(value: .failure(PublisherError.enqueueError))
+                try resolution.set(value: .failure(PublisherError.enqueueError))
                 receiveStateTask.finish()
                 throw PublisherError.enqueueError
             @unknown default:
-                try await resolution.set(value: .failure(PublisherError.enqueueError))
+                try resolution.set(value: .failure(PublisherError.enqueueError))
                 stateTask.finish()
                 throw PublisherError.enqueueError
         }

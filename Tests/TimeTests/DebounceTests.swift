@@ -23,8 +23,8 @@ class DebounceTests: XCTestCase {
             .sink({ value in
                 switch value {
                     case .value(let value):
-                        let vals = await values.value
-                        try await values.set(value: vals + [value])
+                        let vals = values.value
+                        try values.set(value: vals + [value])
                         counter.increment()
                         return .more
                     case let .completion(.failure(error)):
@@ -53,7 +53,7 @@ class DebounceTests: XCTestCase {
         let inputCount = inputCounter.count
         XCTAssert(inputCount == 15, "Got wrong count = \(inputCount)")
 
-        let vals = await values.value
+        let vals = values.value
         XCTAssert(vals == [14], "Incorrect values: \(vals)")
 
         _ = await t.result
@@ -70,8 +70,8 @@ class DebounceTests: XCTestCase {
             .sink({ value in
                 switch value {
                     case .value(let value):
-                        let vals = await values.value
-                        try await values.set(value: vals + [value])
+                        let vals = values.value
+                        try values.set(value: vals + [value])
                         counter.increment()
                         return .more
                     case let .completion(.failure(error)):
@@ -100,7 +100,7 @@ class DebounceTests: XCTestCase {
         let inputCount = inputCounter.count
         XCTAssert(inputCount == 15, "Got wrong count = \(inputCount)")
 
-        let vals = await values.value
+        let vals = values.value
         XCTAssert(vals == [1, 3, 5, 7, 9, 11, 13, 14], "Incorrect values: \(vals)")
 
         _ = await t.result

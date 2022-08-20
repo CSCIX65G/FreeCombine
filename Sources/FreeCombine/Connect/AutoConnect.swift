@@ -16,16 +16,16 @@ public extension Publisher {
         return .init { continuation, downstream in
             Cancellable<Cancellable<Demand>>.join(.init {
                 let cancellable = await connectable.publisher().sink(downstream)
-                let refValue: Cancellable<Demand>! = await cancellableRef.value
+                let refValue: Cancellable<Demand>! = cancellableRef.value
                 if refValue == nil {
                     do {
                         Task {
                             _ = await connectable.result
                             _ = await cancellable.result
-                            try await cancellableRef.set(value: .none)
+                            try cancellableRef.set(value: .none)
                         }
                         try await connectable.connect()
-                        try await cancellableRef.set(value: cancellable)
+                        try cancellableRef.set(value: cancellable)
                     } catch {
 //                        _ = try? await downstream(.completion(.finished))
                         continuation.resume()

@@ -34,17 +34,17 @@ final class ShareTests: XCTestCase {
             .handleEvents(
                 receiveDownstream: { _ in
                     Task<Void, Swift.Error> {
-                        guard await upstreamShared.value == false else {
+                        guard upstreamShared.value == false else {
                             XCTFail("Shared more than once")
                             return
                         }
-                        try await upstreamShared.set(value: true)
+                        try upstreamShared.set(value: true)
                     }
                 },
                 receiveOutput: { value in
                     upstreamCounter.increment()
                     do {
-                        try await upstreamValue.set(value: value)
+                        try upstreamValue.set(value: value)
                     } catch {
                         XCTFail("Failed atomic set")
                     }
@@ -68,7 +68,7 @@ final class ShareTests: XCTestCase {
             switch result {
                 case let .value(value):
                     counter1.increment()
-                    try await value1.set(value: value)
+                    try value1.set(value: value)
                     return .more
                 case let .completion(.failure(error)):
                     XCTFail("Got an error? \(error)")
@@ -94,7 +94,7 @@ final class ShareTests: XCTestCase {
             switch result {
                 case let .value(value):
                     counter2.increment()
-                    try await value2.set(value: value)
+                    try value2.set(value: value)
                     return .more
                 case let .completion(.failure(error)):
                     XCTFail("u2 completed with error: \(error)")
@@ -117,7 +117,7 @@ final class ShareTests: XCTestCase {
         do {
             try await FreeCombine.wait(for: expectation1, timeout: 200_000_000)
         } catch {
-            let last = await value1.value
+            let last = value1.value
             XCTFail("u1 Timed out count = \(counter1.count), last = \(last)")
         }
 
@@ -125,7 +125,7 @@ final class ShareTests: XCTestCase {
             try await FreeCombine.wait(for: expectation2, timeout: 10_000_000)
         } catch {
             let count = counter2.count
-            let last = await value2.value
+            let last = value2.value
             XCTFail("u2 Timed out count = \(count), last = \(last)")
         }
 

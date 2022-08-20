@@ -30,7 +30,7 @@ public struct PromiseReceiveState<Output: Sendable> {
     }
 
     static func complete(state: inout Self, completion: Reducer<Self, Self.Action>.Completion) async -> Void {
-        guard let _ = await state.resolution.get() else { return }
+        guard let _ = state.resolution.get() else { return }
         fatalError("Promise completed without resolution")
     }
 

@@ -13,7 +13,7 @@ public extension Publisher {
         return .init { continuation, downstream in
             Cancellable<Cancellable<Demand>>.join(.init {
                 let cancellable = await subject.publisher().sink(downstream)
-                var i1: Cancellable<Demand>! = await cancellableRef.value
+                var i1: Cancellable<Demand>! = cancellableRef.value
                 if i1 == nil {
                     i1 = await self.sink({ result in
                         do {
@@ -39,9 +39,9 @@ public extension Publisher {
                         _ = await cancellable.result
                         _ = await subject.result;
                         _ = await i2.result;
-                        try await cancellableRef.set(value: .none)
+                        try cancellableRef.set(value: .none)
                     }
-                    try await cancellableRef.set(value: i1)
+                    try cancellableRef.set(value: i1)
                 }
                 continuation.resume()
                 return cancellable

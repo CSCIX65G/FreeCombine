@@ -76,11 +76,11 @@ class MulticastTests: XCTestCase {
             .handleEvents(
                 receiveDownstream: { _ in
                     Task<Void, Swift.Error> {
-                        guard await upstreamShared.value == false else {
+                        guard upstreamShared.value == false else {
                             XCTFail("Shared more than once")
                             return
                         }
-                        try await upstreamShared.set(value: true)
+                        try upstreamShared.set(value: true)
                     }
                 },
                 receiveOutput: { _ in

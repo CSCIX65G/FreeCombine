@@ -54,8 +54,8 @@ class ThrottleTests: XCTestCase {
             .sink({ value in
                 switch value {
                     case .value(let value):
-                        let vals = await values.value
-                        try await values.set(value: vals + [value])
+                        let vals = values.value
+                        try values.set(value: vals + [value])
                         counter.increment()
                         return .more
                     case let .completion(.failure(error)):
@@ -84,7 +84,7 @@ class ThrottleTests: XCTestCase {
         let inputCount = inputCounter.count
         XCTAssert(inputCount == 15, "Got wrong count = \(inputCount)")
 
-        let vals = await values.value
+        let vals = values.value
         XCTAssert(
             vals == [0, 8] || vals == [0, 9] || vals == [0, 10] || vals == [0, 11],
             "Incorrect values: \(vals)"
@@ -103,8 +103,8 @@ class ThrottleTests: XCTestCase {
             .sink({ value in
                 switch value {
                     case .value(let value):
-                        let vals = await values.value
-                        try await values.set(value: vals + [value])
+                        let vals = values.value
+                        try values.set(value: vals + [value])
                         counter.increment()
                         return .more
                     case let .completion(.failure(error)):
@@ -133,7 +133,7 @@ class ThrottleTests: XCTestCase {
         let inputCount = inputCounter.count
         XCTAssert(inputCount == 15, "Got wrong count = \(inputCount)")
 
-        let vals = await values.value
+        let vals = values.value
         XCTAssert(vals == [8, 14] || vals == [7, 14] , "Incorrect values: \(vals)")
     }
 }
