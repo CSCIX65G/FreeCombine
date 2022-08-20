@@ -176,7 +176,7 @@ public struct PromiseState<Output: Sendable> {
                     case .enqueued:
                         ()
                     case .terminated:
-                        Task { await semaphore.decrement(with: .repeated(key, .done)) }
+                        semaphore.decrement(with: .repeated(key, .done))
                     case .dropped:
                         fatalError("Should never drop")
                     @unknown default:

@@ -1,17 +1,28 @@
-//===----------------------------------------------------------------------===//
 //
-// This source file is part of the Swift Atomics open source project
+//  Semaphore.swift
 //
-// Copyright (c) 2020-2021 Apple Inc. and the Swift project authors
-// Licensed under Apache License v2.0 with Runtime Library Exception
 //
-// See https://swift.org/LICENSE.txt for license information
-// See https://swift.org/CONTRIBUTORS.txt for the list of Swift project authors
+//  Created by Van Simmons on 4/24/22.
+//  Derived from: https://github.com/apple/swift-atomics/blob/main/Tests/AtomicsTests/LockFreeSingleConsumerStack.swift
+//  As per, the Apache license this is a derivative work.
 //
-//===----------------------------------------------------------------------===//
+//  Copyright 2022, ComputeCycles, LLC
+//
+//  Licensed under the Apache License, Version 2.0 (the "License");
+//  you may not use this file except in compliance with the License.
+//  You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the License is distributed on an "AS IS" BASIS,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the License for the specific language governing permissions and
+//  limitations under the License.
+//
 import Atomics
 
-class LockFreeSingleConsumerStack<Element> {
+class SingleConsumerStack<Element> {
     struct Node {
         let value: Element
         var next: UnsafeMutablePointer<Node>?
@@ -24,7 +35,7 @@ class LockFreeSingleConsumerStack<Element> {
 
     deinit {
         // Discard remaining nodes
-        while let _ = pop() {}
+        while let _ = pop() { }
         _last.destroy()
         _consumerCount.destroy()
     }
@@ -42,17 +53,17 @@ class LockFreeSingleConsumerStack<Element> {
             (done, current) = _last.compareExchange(
                 expected: current,
                 desired: new,
-                ordering: .releasing)
+                ordering: .releasing
+            )
         }
     }
 
     // Pop and return the topmost element from the stack.
     // This method does not support multiple overlapping concurrent calls.
     func pop() -> Element? {
-        precondition(
-            _consumerCount.loadThenWrappingIncrement(ordering: .acquiring) == 0,
-            "Multiple consumers detected"
-        )
+        guard _consumerCount.loadThenWrappingIncrement(ordering: .acquiring) == 0 else {
+            return .none
+        }
         defer { _consumerCount.wrappingDecrement(ordering: .releasing) }
         var done = false
         var current = _last.load(ordering: .acquiring)
