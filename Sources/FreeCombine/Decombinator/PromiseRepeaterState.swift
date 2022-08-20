@@ -57,7 +57,7 @@ public struct PromiseRepeaterState<ID: Hashable & Sendable, Output: Sendable>: I
         switch action {
             case let .complete(output, semaphore):
                     try? await downstream(output)
-                await semaphore.decrement(with: .repeated(id, .done))
+                semaphore.decrement(with: .repeated(id, .done))
                 return .completion(.exit)
         }
     }
