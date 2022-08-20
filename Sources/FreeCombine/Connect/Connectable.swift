@@ -4,21 +4,38 @@
 //
 //  Created by Van Simmons on 6/28/22.
 //
+//  Copyright 2022, ComputeCycles, LLC
+//
+//  Licensed under the Apache License, Version 2.0 (the "License");
+//  you may not use this file except in compliance with the License.
+//  You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the License is distributed on an "AS IS" BASIS,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the License for the specific language governing permissions and
+//  limitations under the License.
+//
 public final class Connectable<Output: Sendable> {
     private let stateTask: StateTask<ConnectableState<Output>, ConnectableState<Output>.Action>
     private let distributeStateTask: StateTask<ConnectableRepeaterState<Output>, ConnectableRepeaterState<Output>.Action>
-    
-    let file: StaticString
-    let line: UInt
-    let deinitBehavior: DeinitBehavior
+
+    public let function: StaticString
+    public let file: StaticString
+    public let line: UInt
+    public let deinitBehavior: DeinitBehavior
 
     init(
+        function: StaticString = #function,
         file: StaticString = #file,
         line: UInt = #line,
         deinitBehavior: DeinitBehavior = .assert,
         repeater: Channel<ConnectableRepeaterState<Output>.Action>,
         stateTask: StateTask<ConnectableState<Output>, ConnectableState<Output>.Action>
     ) async throws {
+        self.function = function
         self.file = file
         self.line = line
         self.deinitBehavior = deinitBehavior
@@ -39,9 +56,9 @@ public final class Connectable<Output: Sendable> {
         let shouldCancel = !(isCompleting || isCancelled)
         switch deinitBehavior {
             case .assert:
-                assert(!shouldCancel, "ABORTING DUE TO LEAKED \(type(of: Self.self)) CREATED @ \(file): \(line)")
+                assert(!shouldCancel, "ABORTING DUE TO LEAKED \(type(of: Self.self))  CREATED in \(function) @ \(file): \(line)")
             case .logAndCancel:
-                if shouldCancel { print("CANCELLING LEAKED \(type(of: Self.self)) CREATED @ \(file): \(line)") }
+                if shouldCancel { print("CANCELLING LEAKED \(type(of: Self.self))  CREATED in \(function) @ \(file): \(line)") }
             case .silentCancel:
                 ()
         }
@@ -113,6 +130,7 @@ public final class Connectable<Output: Sendable> {
 
 public extension Connectable {
     func publisher(
+        function: StaticString = #function,
         file: StaticString = #file,
         line: UInt = #line,
         deinitBehavior: DeinitBehavior = .assert

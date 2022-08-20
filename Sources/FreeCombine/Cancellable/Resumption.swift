@@ -4,6 +4,20 @@
 //
 //  Created by Van Simmons on 6/15/22.
 //
+//  Copyright 2022, ComputeCycles, LLC
+//
+//  Licensed under the Apache License, Version 2.0 (the "License");
+//  you may not use this file except in compliance with the License.
+//  You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the License is distributed on an "AS IS" BASIS,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the License for the specific language governing permissions and
+//  limitations under the License.
+//
 @preconcurrency import Atomics
 
 public final class Resumption<Output: Sendable>: Sendable {
@@ -13,18 +27,22 @@ public final class Resumption<Output: Sendable>: Sendable {
     }
 
     private let deallocGuard: ManagedAtomic<Bool>
-    private let file: StaticString
-    private let line: UInt
-    private let deinitBehavior: DeinitBehavior
     private let continuation: UnsafeContinuation<Output, Swift.Error>
 
+    public let function: StaticString
+    public let file: StaticString
+    public let line: UInt
+    public let deinitBehavior: DeinitBehavior
+
     init(
+        function: StaticString = #function,
         file: StaticString = #file,
         line: UInt = #line,
         deinitBehavior: DeinitBehavior = .assert,
         continuation: UnsafeContinuation<Output, Swift.Error>
     ) {
         self.deallocGuard = ManagedAtomic<Bool>(false)
+        self.function = function
         self.file = file
         self.line = line
         self.deinitBehavior = deinitBehavior
@@ -36,11 +54,11 @@ public final class Resumption<Output: Sendable>: Sendable {
             case .assert:
                 assert(
                     deallocGuard.load(ordering: .sequentiallyConsistent),
-                    "ABORTING DUE TO LEAKED \(type(of: Self.self)):\(self) CREATED @ \(file): \(line)"
+                    "ABORTING DUE TO LEAKED \(type(of: Self.self)):\(self)  CREATED in \(function) @ \(file): \(line)"
                 )
             case .logAndCancel:
                 if !deallocGuard.load(ordering: .sequentiallyConsistent) {
-                    print("RESUMING LEAKED \(type(of: Self.self)) CREATED @ \(file): \(line)")
+                    print("RESUMING LEAKED \(type(of: Self.self))  CREATED in \(function) @ \(file): \(line)")
                 }
             case .silentCancel:
                 ()
@@ -52,13 +70,13 @@ public final class Resumption<Output: Sendable>: Sendable {
 
     public func resume(returning output: Output) -> Void {
         let (success, _) = deallocGuard.compareExchange(expected: false, desired: true, ordering: .sequentiallyConsistent)
-        assert(success, "\(type(of: Self.self)) FAILED. ALREADY RESUMED \(type(of: Self.self)):\(self) CREATED @ \(file): \(line)")
+        assert(success, "\(type(of: Self.self)) FAILED. ALREADY RESUMED \(type(of: Self.self)):\(self)  CREATED in \(function) @ \(file): \(line)")
         continuation.resume(returning: output)
     }
 
     public func resume(throwing error: Swift.Error) -> Void {
         let (success, _) = deallocGuard.compareExchange(expected: false, desired: true, ordering: .sequentiallyConsistent)
-        assert(success, "\(type(of: Self.self)) FAILED. ALREADY RESUMED \(type(of: Self.self)):\(self) CREATED @ \(file): \(line)")
+        assert(success, "\(type(of: Self.self)) FAILED. ALREADY RESUMED \(type(of: Self.self)):\(self)  CREATED in \(function) @ \(file): \(line)")
         continuation.resume(throwing: error)
     }
 }
