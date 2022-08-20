@@ -13,6 +13,8 @@ public struct PromiseState<Output: Sendable> {
     var nextKey: Int
     var repeaters: [Int: StateTask<PromiseRepeaterState<Int, Output>, PromiseRepeaterState<Int, Output>.Action>]
     var isComplete = false
+
+    public let function: StaticString
     public let file: StaticString
     public let line: UInt
 
@@ -27,12 +29,14 @@ public struct PromiseState<Output: Sendable> {
     }
 
     public init(
+        function: StaticString = #function,
         file: StaticString = #file,
         line: UInt = #line,
         currentValue: Output?,
         nextKey: Int,
         downstreams: [Int: StateTask<PromiseRepeaterState<Int, Output>, PromiseRepeaterState<Int, Output>.Action>]
     ) {
+        self.function = function
         self.file = file
         self.line = line
         self.currentValue = currentValue
@@ -50,7 +54,7 @@ public struct PromiseState<Output: Sendable> {
             case .finished, .exit:
                 assert(
                     state.repeaters.count == 0,
-                    "ABORTING DUE TO LEAKED \(type(of: state)) CREATED @ \(state.file): \(state.line)"
+                    "ABORTING DUE TO LEAKED \(type(of: state)) CREATED in \(state.function) @ \(state.file): \(state.line)"
                 )
             case let .failure(error):
                 try! await state.process(currentRepeaters: state.repeaters, with: .failure(error))

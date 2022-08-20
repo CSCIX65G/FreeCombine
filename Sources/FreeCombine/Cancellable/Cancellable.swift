@@ -17,6 +17,7 @@ public final class Cancellable<Output: Sendable>: Sendable {
     private let task: Task<Output, Swift.Error>
     private let deallocGuard: ManagedAtomic<Bool>
 
+    public let function: StaticString
     public let file: StaticString
     public let line: UInt
     public let deinitBehavior: DeinitBehavior
@@ -40,6 +41,7 @@ public final class Cancellable<Output: Sendable>: Sendable {
     }
 
     init(
+        function: StaticString = #function,
         file: StaticString = #file,
         line: UInt = #line,
         deinitBehavior: DeinitBehavior = .assert,
@@ -47,6 +49,7 @@ public final class Cancellable<Output: Sendable>: Sendable {
     ) {
         let atomic = ManagedAtomic<Bool>(false)
         self.deallocGuard = atomic
+        self.function = function
         self.file = file
         self.line = line
         self.deinitBehavior = deinitBehavior
@@ -67,9 +70,9 @@ public final class Cancellable<Output: Sendable>: Sendable {
         let shouldCancel = !(isCompleting || task.isCancelled)
         switch deinitBehavior {
             case .assert:
-                assert(!shouldCancel, "ABORTING DUE TO LEAKED \(type(of: Self.self)) CREATED @ \(file): \(line)")
+                assert(!shouldCancel, "ABORTING DUE TO LEAKED \(type(of: Self.self))  CREATED in \(function) @ \(file): \(line)")
             case .logAndCancel:
-                if shouldCancel { print("CANCELLING LEAKED \(type(of: Self.self)) CREATED @ \(file): \(line)") }
+                if shouldCancel { print("CANCELLING LEAKED \(type(of: Self.self))  CREATED in \(function) @ \(file): \(line)") }
             case .silentCancel:
                 ()
         }
@@ -79,6 +82,7 @@ public final class Cancellable<Output: Sendable>: Sendable {
 
 public extension Cancellable {
     static func join<B>(
+        function: StaticString = #function,
         file: StaticString = #file,
         line: UInt = #line,
         _ outer: Cancellable<Cancellable<B>>
@@ -93,6 +97,7 @@ public extension Cancellable {
     }
 
     static func join(
+        function: StaticString = #function,
         file: StaticString = #file,
         line: UInt = #line,
         deinitBehavior: DeinitBehavior = .assert,
@@ -114,6 +119,7 @@ public extension Cancellable {
     }
 
     func map<B>(
+        function: StaticString = #function,
         file: StaticString = #file,
         line: UInt = #line,
         _ transform: @escaping (Output) async -> B
@@ -127,6 +133,7 @@ public extension Cancellable {
     }
 
     func join<B>(
+        function: StaticString = #function,
         file: StaticString = #file,
         line: UInt = #line
     ) -> Cancellable<B> where Output == Cancellable<B> {
@@ -134,9 +141,10 @@ public extension Cancellable {
     }
 
     func flatMap<B>(
-        _ transform: @escaping (Output) async -> Cancellable<B>,
+        function: StaticString = #function,
         file: StaticString = #file,
-        line: UInt = #line
+        line: UInt = #line,
+        _ transform: @escaping (Output) async -> Cancellable<B>
     ) -> Cancellable<B> {
         self.map(file: file, line: line, transform).join(file: file, line: line)
     }

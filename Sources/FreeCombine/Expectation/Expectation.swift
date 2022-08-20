@@ -26,16 +26,19 @@ public class Expectation<Arg> {
     private let atomic = ManagedAtomic<UInt8>(Status.waiting.rawValue)
     private(set) var resumption: Resumption<Arg>
     private let cancellable: Cancellable<Arg>
+    public let function: StaticString
     public let file: StaticString
     public let line: UInt
     public let deinitBehavior: DeinitBehavior
 
     public init(
+        function: StaticString = #function,
         file: StaticString = #file,
         line: UInt = #line,
         deinitBehavior: DeinitBehavior = .assert
     ) async {
         var localCancellable: Cancellable<Arg>!
+        self.function = function
         self.file = file
         self.line = line
         self.deinitBehavior = deinitBehavior
@@ -52,9 +55,9 @@ public class Expectation<Arg> {
         let shouldCancel = status == .waiting
         switch deinitBehavior {
             case .assert:
-                assert(!shouldCancel, "ABORTING DUE TO LEAKED \(type(of: Self.self)) CREATED @ \(file): \(line)")
+                assert(!shouldCancel, "ABORTING DUE TO LEAKED \(type(of: Self.self))  CREATED in \(function) @ \(file): \(line)")
             case .logAndCancel:
-                if shouldCancel { print("CANCELLING LEAKED \(type(of: Self.self)) CREATED @ \(file): \(line)") }
+                if shouldCancel { print("CANCELLING LEAKED \(type(of: Self.self))  CREATED in \(function) @ \(file): \(line)") }
             case .silentCancel:
                 ()
         }

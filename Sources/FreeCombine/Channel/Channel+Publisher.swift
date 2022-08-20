@@ -6,6 +6,7 @@
 //
 public extension Channel {
     func consume<Upstream>(
+        function: StaticString = #function,
         file: StaticString = #file,
         line: UInt = #line,
         deinitBehavior: DeinitBehavior = .assert,
@@ -15,6 +16,7 @@ public extension Channel {
     }
 
     func consume<Upstream>(
+        function: StaticString = #function,
         file: StaticString = #file,
         line: UInt = #line,
         deinitBehavior: DeinitBehavior = .assert,
@@ -42,6 +44,7 @@ public extension Channel {
     }
 
     func stateTask<State>(
+        function: StaticString = #function,
         file: StaticString = #file,
         line: UInt = #line,
         deinitBehavior: DeinitBehavior = .assert,
@@ -64,6 +67,7 @@ public extension Channel {
     }
 
     func stateTask<State>(
+        function: StaticString = #function,
         file: StaticString = #file,
         line: UInt = #line,
         deinitBehavior: DeinitBehavior = .assert,

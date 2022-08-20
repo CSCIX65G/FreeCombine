@@ -20,7 +20,11 @@ public struct Counter {
     @discardableResult
     public func increment(by: Int = 1) -> Int {
         var c = atomicValue.load(ordering: .sequentiallyConsistent)
-        while !atomicValue.compareExchange(expected: c, desired: c + by, ordering: .sequentiallyConsistent).0 {
+        while !atomicValue.compareExchange(
+            expected: c,
+            desired: c + by,
+            ordering: .sequentiallyConsistent
+        ).0 {
             c = atomicValue.load(ordering: .sequentiallyConsistent)
         }
         return c + by
@@ -29,7 +33,11 @@ public struct Counter {
     @discardableResult
     public func decrement(by: Int = -1) -> Int {
         var c = atomicValue.load(ordering: .sequentiallyConsistent)
-        while !atomicValue.compareExchange(expected: c, desired: c - by, ordering: .sequentiallyConsistent).0 {
+        while !atomicValue.compareExchange(
+            expected: c,
+            desired: c - by,
+            ordering: .sequentiallyConsistent
+        ).0 {
             c = atomicValue.load(ordering: .sequentiallyConsistent)
         }
         return c - by

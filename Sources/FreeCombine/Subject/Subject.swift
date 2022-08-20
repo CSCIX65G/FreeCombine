@@ -8,17 +8,20 @@ public final class Subject<Output: Sendable> {
     private let stateTask: StateTask<DistributorState<Output>, DistributorState<Output>.Action>
     private let receiveStateTask: StateTask<DistributorReceiveState<Output>, DistributorReceiveState<Output>.Action>
 
-    let file: StaticString
-    let line: UInt
-    let deinitBehavior: DeinitBehavior
+    public let function: StaticString
+    public let file: StaticString
+    public let line: UInt
+    public let deinitBehavior: DeinitBehavior
 
     init(
+        function: StaticString = #function,
         file: StaticString = #file,
         line: UInt = #line,
         deinitBehavior: DeinitBehavior = .assert,
         buffering: AsyncStream<DistributorReceiveState<Output>.Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
         stateTask: StateTask<DistributorState<Output>, DistributorState<Output>.Action>
     ) async throws {
+        self.function = function
         self.file = file
         self.line = line
         self.deinitBehavior = deinitBehavior
@@ -40,9 +43,9 @@ public final class Subject<Output: Sendable> {
         let shouldCancel = !(isCompleting || isCancelled)
         switch deinitBehavior {
             case .assert:
-                assert(!shouldCancel, "ABORTING DUE TO LEAKED \(type(of: Self.self)) CREATED @ \(file): \(line)")
+                assert(!shouldCancel, "ABORTING DUE TO LEAKED \(type(of: Self.self))  CREATED in \(function) @ \(file): \(line)")
             case .logAndCancel:
-                if shouldCancel { print("CANCELLING LEAKED \(type(of: Self.self)) CREATED @ \(file): \(line)") }
+                if shouldCancel { print("CANCELLING LEAKED \(type(of: Self.self))  CREATED in \(function) @ \(file): \(line)") }
             case .silentCancel:
                 ()
         }
@@ -103,6 +106,7 @@ public final class Subject<Output: Sendable> {
 
 extension Subject {
     func subscribe(
+        function: StaticString = #function,
         file: StaticString = #file,
         line: UInt = #line,
         _ downstream: @escaping @Sendable (AsyncStream<Output>.Result) async throws -> Demand
@@ -127,6 +131,7 @@ extension Subject {
 
 extension Subject {
     func blockingReceive(
+        function: StaticString = #function,
         file: StaticString = #file,
         line: UInt = #line,
         _ result: AsyncStream<Output>.Result
@@ -150,6 +155,7 @@ extension Subject {
     }
 
     func nonblockingReceive(
+        function: StaticString = #function,
         file: StaticString = #file,
         line: UInt = #line,
         _ result: AsyncStream<Output>.Result
@@ -172,6 +178,7 @@ extension Subject {
 
 public extension Subject {
     func publisher(
+        function: StaticString = #function,
         file: StaticString = #file,
         line: UInt = #line,
         deinitBehavior: DeinitBehavior = .assert
@@ -185,6 +192,7 @@ public extension Subject {
 
     @discardableResult
     @Sendable func blockingSend(
+        function: StaticString = #function,
         file: StaticString = #file,
         line: UInt = #line,
         _ result: AsyncStream<Output>.Result
@@ -193,6 +201,7 @@ public extension Subject {
     }
     @discardableResult
     @Sendable func blockingSend(
+        function: StaticString = #function,
         file: StaticString = #file,
         line: UInt = #line,
         _ value: Output
@@ -201,6 +210,7 @@ public extension Subject {
     }
 
     @Sendable func nonblockingSend(
+        function: StaticString = #function,
         file: StaticString = #file,
         line: UInt = #line,
         _ result: AsyncStream<Output>.Result
@@ -208,6 +218,7 @@ public extension Subject {
         try nonblockingReceive(file: file, line: line, result)
     }
     @Sendable func nonblockingSend(
+        function: StaticString = #function,
         file: StaticString = #file,
         line: UInt = #line,
         _ value: Output

@@ -66,6 +66,7 @@ public extension Publisher {
 
     @discardableResult
     func sink(
+        function: StaticString = #function,
         file: StaticString = #file,
         line: UInt = #line,
         deinitBehavior: DeinitBehavior = .assert,
@@ -76,6 +77,7 @@ public extension Publisher {
 
     @discardableResult
     func callAsFunction(
+        function: StaticString = #function,
         file: StaticString = #file,
         line: UInt = #line,
         deinitBehavior: DeinitBehavior = .assert,

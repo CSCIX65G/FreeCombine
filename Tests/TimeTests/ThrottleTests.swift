@@ -134,6 +134,6 @@ class ThrottleTests: XCTestCase {
         XCTAssert(inputCount == 15, "Got wrong count = \(inputCount)")
 
         let vals = values.value
-        XCTAssert(vals == [8, 14] || vals == [7, 14] , "Incorrect values: \(vals)")
+        XCTAssert(vals == [9, 14] || vals == [8, 14] || vals == [7, 14] , "Incorrect values: \(vals)")
     }
 }

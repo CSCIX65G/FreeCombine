@@ -7,18 +7,21 @@
 public final class Connectable<Output: Sendable> {
     private let stateTask: StateTask<ConnectableState<Output>, ConnectableState<Output>.Action>
     private let distributeStateTask: StateTask<ConnectableRepeaterState<Output>, ConnectableRepeaterState<Output>.Action>
-    
-    let file: StaticString
-    let line: UInt
-    let deinitBehavior: DeinitBehavior
+
+    public let function: StaticString
+    public let file: StaticString
+    public let line: UInt
+    public let deinitBehavior: DeinitBehavior
 
     init(
+        function: StaticString = #function,
         file: StaticString = #file,
         line: UInt = #line,
         deinitBehavior: DeinitBehavior = .assert,
         repeater: Channel<ConnectableRepeaterState<Output>.Action>,
         stateTask: StateTask<ConnectableState<Output>, ConnectableState<Output>.Action>
     ) async throws {
+        self.function = function
         self.file = file
         self.line = line
         self.deinitBehavior = deinitBehavior
@@ -39,9 +42,9 @@ public final class Connectable<Output: Sendable> {
         let shouldCancel = !(isCompleting || isCancelled)
         switch deinitBehavior {
             case .assert:
-                assert(!shouldCancel, "ABORTING DUE TO LEAKED \(type(of: Self.self)) CREATED @ \(file): \(line)")
+                assert(!shouldCancel, "ABORTING DUE TO LEAKED \(type(of: Self.self))  CREATED in \(function) @ \(file): \(line)")
             case .logAndCancel:
-                if shouldCancel { print("CANCELLING LEAKED \(type(of: Self.self)) CREATED @ \(file): \(line)") }
+                if shouldCancel { print("CANCELLING LEAKED \(type(of: Self.self))  CREATED in \(function) @ \(file): \(line)") }
             case .silentCancel:
                 ()
         }
@@ -113,6 +116,7 @@ public final class Connectable<Output: Sendable> {
 
 public extension Connectable {
     func publisher(
+        function: StaticString = #function,
         file: StaticString = #file,
         line: UInt = #line,
         deinitBehavior: DeinitBehavior = .assert

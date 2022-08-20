@@ -6,6 +6,7 @@
 //
 public extension Publisher {
     func makeConnectable(
+        function: StaticString = #function,
         file: StaticString = #file,
         line: UInt = #line,
         deinitBehavior: DeinitBehavior = .assert,

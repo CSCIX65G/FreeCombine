@@ -86,6 +86,7 @@ public extension Future {
 
     @discardableResult
     func sink(
+        function: StaticString = #function,
         file: StaticString = #file,
         line: UInt = #line,
         deinitBehavior: DeinitBehavior = .assert,
@@ -96,6 +97,7 @@ public extension Future {
 
     @discardableResult
     func callAsFunction(
+        function: StaticString = #function,
         file: StaticString = #file,
         line: UInt = #line,
         deinitBehavior: DeinitBehavior = .assert,

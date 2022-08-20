@@ -24,6 +24,7 @@ public func Decombinator<Output>(
 
 public extension Publisher {
     init(
+        function: StaticString = #function,
         file: StaticString = #file,
         line: UInt = #line,
         deinitBehavior: DeinitBehavior = .assert,
@@ -62,6 +63,7 @@ public func Decombinator<Output>(
 
 public extension Publisher {
     init(
+        function: StaticString = #function,
         file: StaticString = #file,
         line: UInt = #line,
         deinitBehavior: DeinitBehavior = .assert,
@@ -111,6 +113,7 @@ public func Decombinator<Output>(
 
 public extension Future {
     init(
+        function: StaticString = #function,
         file: StaticString = #file,
         line: UInt = #line,
         deinitBehavior: DeinitBehavior = .assert,

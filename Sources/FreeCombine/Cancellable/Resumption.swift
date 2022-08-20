@@ -13,18 +13,22 @@ public final class Resumption<Output: Sendable>: Sendable {
     }
 
     private let deallocGuard: ManagedAtomic<Bool>
-    private let file: StaticString
-    private let line: UInt
-    private let deinitBehavior: DeinitBehavior
     private let continuation: UnsafeContinuation<Output, Swift.Error>
 
+    public let function: StaticString
+    public let file: StaticString
+    public let line: UInt
+    public let deinitBehavior: DeinitBehavior
+
     init(
+        function: StaticString = #function,
         file: StaticString = #file,
         line: UInt = #line,
         deinitBehavior: DeinitBehavior = .assert,
         continuation: UnsafeContinuation<Output, Swift.Error>
     ) {
         self.deallocGuard = ManagedAtomic<Bool>(false)
+        self.function = function
         self.file = file
         self.line = line
         self.deinitBehavior = deinitBehavior
@@ -36,11 +40,11 @@ public final class Resumption<Output: Sendable>: Sendable {
             case .assert:
                 assert(
                     deallocGuard.load(ordering: .sequentiallyConsistent),
-                    "ABORTING DUE TO LEAKED \(type(of: Self.self)):\(self) CREATED @ \(file): \(line)"
+                    "ABORTING DUE TO LEAKED \(type(of: Self.self)):\(self)  CREATED in \(function) @ \(file): \(line)"
                 )
             case .logAndCancel:
                 if !deallocGuard.load(ordering: .sequentiallyConsistent) {
-                    print("RESUMING LEAKED \(type(of: Self.self)) CREATED @ \(file): \(line)")
+                    print("RESUMING LEAKED \(type(of: Self.self))  CREATED in \(function) @ \(file): \(line)")
                 }
             case .silentCancel:
                 ()
@@ -52,13 +56,13 @@ public final class Resumption<Output: Sendable>: Sendable {
 
     public func resume(returning output: Output) -> Void {
         let (success, _) = deallocGuard.compareExchange(expected: false, desired: true, ordering: .sequentiallyConsistent)
-        assert(success, "\(type(of: Self.self)) FAILED. ALREADY RESUMED \(type(of: Self.self)):\(self) CREATED @ \(file): \(line)")
+        assert(success, "\(type(of: Self.self)) FAILED. ALREADY RESUMED \(type(of: Self.self)):\(self)  CREATED in \(function) @ \(file): \(line)")
         continuation.resume(returning: output)
     }
 
     public func resume(throwing error: Swift.Error) -> Void {
         let (success, _) = deallocGuard.compareExchange(expected: false, desired: true, ordering: .sequentiallyConsistent)
-        assert(success, "\(type(of: Self.self)) FAILED. ALREADY RESUMED \(type(of: Self.self)):\(self) CREATED @ \(file): \(line)")
+        assert(success, "\(type(of: Self.self)) FAILED. ALREADY RESUMED \(type(of: Self.self)):\(self)  CREATED in \(function) @ \(file): \(line)")
         continuation.resume(throwing: error)
     }
 }

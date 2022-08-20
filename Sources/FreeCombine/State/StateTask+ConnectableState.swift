@@ -9,6 +9,7 @@
 public extension StateTask {
     @inlinable
     func send<Output: Sendable>(
+        function: StaticString = #function,
         file: StaticString = #file,
         line: UInt = #line,
         deinitBehavior: DeinitBehavior = .assert,
@@ -24,6 +25,7 @@ public extension StateTask {
 
     @discardableResult
     func send<Output: Sendable>(
+        function: StaticString = #function,
         file: StaticString = #file,
         line: UInt = #line,
         deinitBehavior: DeinitBehavior = .assert,

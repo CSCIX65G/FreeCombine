@@ -11,17 +11,20 @@ public final class Promise<Output: Sendable> {
     private let stateTask: StateTask<PromiseState<Output>, PromiseState<Output>.Action>
     private let receiveStateTask: StateTask<PromiseReceiveState<Output>, PromiseReceiveState<Output>.Action>
 
-    let file: StaticString
-    let line: UInt
-    let deinitBehavior: DeinitBehavior
+    public let function: StaticString
+    public let file: StaticString
+    public let line: UInt
+    public let deinitBehavior: DeinitBehavior
 
     init(
+        function: StaticString = #function,
         file: StaticString = #file,
         line: UInt = #line,
         deinitBehavior: DeinitBehavior = .assert,
         buffering: AsyncStream<PromiseReceiveState<Output>.Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
         stateTask: StateTask<PromiseState<Output>, PromiseState<Output>.Action>
     ) async throws {
+        self.function = function
         self.file = file
         self.line = line
         self.deinitBehavior = deinitBehavior
@@ -40,6 +43,7 @@ public final class Promise<Output: Sendable> {
     }
 
     convenience init(
+        function: StaticString = #function,
         file: StaticString = #file,
         line: UInt = #line,
         deinitBehavior: DeinitBehavior = .assert
@@ -64,9 +68,9 @@ public final class Promise<Output: Sendable> {
         let shouldCancel = !(isCompleting || isCancelled)
         switch deinitBehavior {
             case .assert:
-                assert(!shouldCancel, "ABORTING DUE TO LEAKED \(type(of: Self.self)) CREATED @ \(file): \(line)")
+                assert(!shouldCancel, "ABORTING DUE TO LEAKED \(type(of: Self.self))  CREATED in \(function) @ \(file): \(line)")
             case .logAndCancel:
-                if shouldCancel { print("CANCELLING LEAKED \(type(of: Self.self)) CREATED @ \(file): \(line)") }
+                if shouldCancel { print("CANCELLING LEAKED \(type(of: Self.self))  CREATED in \(function) @ \(file): \(line)") }
             case .silentCancel:
                 ()
         }
@@ -139,6 +143,7 @@ extension Promise {
 
 public extension Promise {
     func future(
+        function: StaticString = #function,
         file: StaticString = #file,
         line: UInt = #line,
         deinitBehavior: DeinitBehavior = .assert

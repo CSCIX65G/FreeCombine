@@ -6,9 +6,10 @@
 //
 public extension Publisher {
     func assertNoFailure(
-        _ prefix: String = "",
-           file: StaticString = #file,
-           line: UInt = #line
+        function: StaticString = #function,
+        file: StaticString = #file,
+        line: UInt = #line,
+        _ prefix: String = ""
     ) -> Self {
         .init { continuation, downstream in
             self(onStartup: continuation) { r in

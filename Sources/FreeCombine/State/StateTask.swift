@@ -33,19 +33,23 @@
  */
 
 public final class StateTask<State, Action: Sendable> {
-    let file: StaticString
-    let line: UInt
-    let deinitBehavior: DeinitBehavior
     let channel: Channel<Action>
     let cancellable: Cancellable<State>
 
+    public let function: StaticString
+    public let file: StaticString
+    public let line: UInt
+    public let deinitBehavior: DeinitBehavior
+
     fileprivate init(
+        function: StaticString = #function,
         file: StaticString = #file,
         line: UInt = #line,
         deinitBehavior: DeinitBehavior = .assert,
         channel: Channel<Action>,
         cancellable: Cancellable<State>
     ) {
+        self.function = function
         self.file = file
         self.line = line
         self.deinitBehavior = deinitBehavior
@@ -57,9 +61,9 @@ public final class StateTask<State, Action: Sendable> {
         let shouldCancel = !(cancellable.isCancelled || cancellable.isCompleting)
         switch deinitBehavior {
             case .assert:
-                assert(!shouldCancel, "ABORTING DUE TO LEAKED \(type(of: Self.self)) CREATED @ \(file): \(line)")
+                assert(!shouldCancel, "ABORTING DUE TO LEAKED \(type(of: Self.self))  CREATED in \(function) @ \(file): \(line)")
             case .logAndCancel:
-                if shouldCancel { print("CANCELLING LEAKED \(type(of: Self.self)) CREATED @ \(file): \(line)") }
+                if shouldCancel { print("CANCELLING LEAKED \(type(of: Self.self))  CREATED in \(function) @ \(file): \(line)") }
             case .silentCancel:
                 ()
         }
@@ -131,6 +135,7 @@ extension StateTask {
         case cancelled
     }
     public convenience init(
+        function: StaticString = #function,
         file: StaticString = #file,
         line: UInt = #line,
         deinitBehavior: DeinitBehavior = .assert,
@@ -198,6 +203,7 @@ extension StateTask {
 
 public extension StateTask {
     static func stateTask(
+        function: StaticString = #function,
         file: StaticString = #file,
         line: UInt = #line,
         deinitBehavior: DeinitBehavior = .assert,
