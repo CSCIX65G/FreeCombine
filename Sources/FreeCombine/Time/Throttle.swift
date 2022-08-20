@@ -9,7 +9,7 @@ extension Publisher {
     enum ThrottlerError: Error {
         case alreadyActivated
     }
-    actor Throttler {
+    class Throttler {
         private(set) var subject: Subject<Output>!
         private(set) var cancellable: Cancellable<Demand>!
         private(set) var timerCancellable: Cancellable<Demand>!
@@ -28,11 +28,11 @@ extension Publisher {
             subject = try await PassthroughSubject(buffering: .bufferingNewest(1))
             cancellable = await subject.asyncPublisher.sink(downstream)
             timerCancellable = await Heartbeat(interval: interval).sink { _ in
-                if let value = await self.value {
+                if let value = self.value {
                     try await self.subject.blockingSend(value)
-                    await self.set(value: .none)
+                    self.set(value: .none)
                 }
-                if let completion = await self.completion {
+                if let completion = self.completion {
                     try await self.subject.blockingSend(completion)
                     try await self.cleanup()
                 }
@@ -58,7 +58,7 @@ extension Publisher {
                 try await throttler.activate(interval: interval, latest: latest, downstream: downstream)
 
                 // Check for cancellation
-                let isCancelled = await throttler.cancellable.isCancelled
+                let isCancelled = throttler.cancellable.isCancelled
                 guard !Task.isCancelled && !isCancelled else {
                     try await throttler.cleanup()
                     return try await handleCancellation(of: downstream)
@@ -66,14 +66,14 @@ extension Publisher {
 
                 switch r {
                     case .value:
-                        let value = await throttler.value
-                        if value == nil || latest { await throttler.set(value: r); return .more }
+                        let value = throttler.value
+                        if value == nil || latest { throttler.set(value: r); return .more }
                         return .more
                     case .completion(.finished), .completion(.cancelled):
-                        _ = await throttler.set(completion: r)
+                        throttler.set(completion: r)
                         return try await throttler.cancellable.value
                     case .completion(.failure(let error)):
-                        _ = await throttler.set(completion: r)
+                        throttler.set(completion: r)
                         _ = try await throttler.cancellable.value
                         throw error
                 }
