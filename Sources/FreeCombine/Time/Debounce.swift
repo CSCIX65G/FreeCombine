@@ -12,14 +12,14 @@ extension Publisher {
         _ cancellableRef: ValueRef<Cancellable<Demand>?>,
         _ timerCancellableRef: ValueRef<Cancellable<Void>?>
     ) async throws  -> Void {
-        let timerCancellable = await timerCancellableRef.value
+        let timerCancellable = timerCancellableRef.value
         _ = await timerCancellable?.cancelAndAwaitResult()
-        await timerCancellableRef.set(value: .none)
+        try timerCancellableRef.set(value: .none)
         try await subject.finish()
         _ = await subject.result
-        await subjectRef.set(value: .none)
+        try subjectRef.set(value: .none)
         _ = await cancellable.result
-        await cancellableRef.set(value: .none)
+        try cancellableRef.set(value: .none)
     }
 
     func debounce(
@@ -30,25 +30,25 @@ extension Publisher {
             let cancellableRef = ValueRef<Cancellable<Demand>?>(value: .none)
             let timerCancellableRef = ValueRef<Cancellable<Void>?>(value: .none)
             return self(onStartup: continuation) { r in
-                var subject: Subject<Output>! = await subjectRef.value
-                var cancellable: Cancellable<Demand>! = await cancellableRef.value
+                var subject: Subject<Output>! = subjectRef.value
+                var cancellable: Cancellable<Demand>! = cancellableRef.value
                 if subject == nil {
                     subject = try await PassthroughSubject(buffering: .bufferingNewest(1))
-                    await subjectRef.set(value: subject)
+                    try subjectRef.set(value: subject)
                     cancellable = await subject.publisher().sink(downstream)
-                    await cancellableRef.set(value: cancellable)
+                    try cancellableRef.set(value: cancellable)
                 }
                 guard !Task.isCancelled && !cancellable.isCancelled else {
                     try await cleanup(subject, subjectRef, cancellable, cancellableRef, timerCancellableRef)
                     return try await handleCancellation(of: downstream)
                 }
-                if let timer = await timerCancellableRef.value {
+                if let timer = timerCancellableRef.value {
                     // FIXME: Need to check if value got sent anyway
                     _ = await timer.cancelAndAwaitResult()
-                    await timerCancellableRef.set(value: .none)
+                    try timerCancellableRef.set(value: .none)
                 }
-                await timerCancellableRef.set(value: .init {
-                    guard let subject = await subjectRef.value else {
+                try timerCancellableRef.set(value: .init {
+                    guard let subject = subjectRef.value else {
                         throw PublisherError.internalError
                     }
                     try await Task.sleep(nanoseconds: interval.inNanoseconds)

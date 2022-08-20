@@ -284,10 +284,12 @@ FreeCombine changes that restriction to be: every task must "owned" and may not 
 In November of 2021 [Phillipe Hausler observed](https://forums.swift.org/t/should-asyncsequence-replace-combine-in-the-future-or-should-they-coexist/53370/10) that there were several things that needed to be done to bring Combine functionality into the new world of Swift Concurrency. The list provided there was added to the requirements and the following are currently in the library:
 
 1. Combinators
-1.. Distributors (which I have termed Decombinators)
+1. Distributors (which I have termed Decombinators)
 1. Temporal Transformation
 1. Failure Transformation
 1. Getting the first result from N running tasks
+
+One big additional feature to be added would be a ResultBuilder-style declarative DSL describing concurrent operations.
 
 ### Design Philosophy
 

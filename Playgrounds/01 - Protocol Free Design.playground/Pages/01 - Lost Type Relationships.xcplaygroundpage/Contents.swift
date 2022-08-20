@@ -3,17 +3,17 @@
 /*:
  ## The "Crusty" Talk
 
- In 2015, one year after the introduction of Swift, Dave Abrahams gave the famouse "Crusty" talk as WWDC15.  Remember, this was shortly after the release of Swift 1.1
+ In 2015, one year after the introduction of Swift, Dave Abrahams gave the famous "Crusty" talk at WWDC15.  Remember, this was shortly after the release of Swift 1.1
 
 ![The Crusty Talk](POP-1.pdf)
 
  ## Classes are Awesome
 
- In that talk, Dave talks about the really useful stuff we have gotten from Classes in ObjC and bc Swift interoperates with Object, from Swift.
+ In that talk, Dave talks about the really useful stuff that we have gotten from Classes in ObjC and, because Swift interoperates with ObjectiveC, from Swift.
 
  ![Classes are Awesome](ClassesAreAwesome.pdf)
 
-Then Dave points out that in fact, its not just `classes` that can provide these features.
+Then Dave points out that in fact, its not just `classes` that can provide these features.  You can get the same features from value types, i.e. structs and enums.
 
  ## Types are Awesome
 
@@ -23,28 +23,33 @@ Then Dave points out that in fact, its not just `classes` that can provide these
 
  Dave is making the point in this presentation that classes provide a particular form of polymorphism known as inheritance and without giving too much of the rest of the presentation away, I can say that he will proceed to argue for using another form of polymorphism exclusively. Specifically that form is protocols (also known as "existentials") and the reasons for using it exclusively will be discussed below.
 
- But this entire argument has something else very odd about it as well.  Swift supports _three_ forms of polymorphism, not just two. And the "Crusty Talk" remains completely silent on the third.  John McCall is quite explicit in [this Swift Evolution post](https://forums.swift.org/t/pitch-2-light-weight-same-type-requirement-syntax/55081/153) about the 3 types of polymorephism (which he calls "generalization"):
+ But this entire argument has something else very odd about it as well.  Swift supports _three_ forms of polymorphism, not just two. And the "Crusty Talk" remains completely silent on the third.  John McCall is quite explicit in [this Swift Evolution post](https://forums.swift.org/t/pitch-2-light-weight-same-type-requirement-syntax/55081/153) about the 3 types of polymorephism (which he refers to as "generalization"):
 
  > Well, Swift has three ways to generalize over different types of values. One of them is subclassing, and that's inherently a limited form of generalization: it only works when you've got classes with a common superclass. The other two are generics and existential types.
 
  Note the almost off-handed dismissal of inheritance there.  He explicitly states that inheritance is a very limited form of polymorphism and then _never mentions it again for the rest of his post_.
 
- Ok, so its at this point in Dave's presentation that he gives his famous "3 Beefs".  We'll deal with those in just a minute, but I want to introduce what I call:
+ Ok, so its at this point in Dave's presentation that he gives his famous "3 Beefs".  We'll deal with those in just a minute, but first I want to introduce what I call:
 
  ## Beef Zero
 
- Classes are a particular storage representation of Product types. In Swift, the main Product type is `struct`, so classes and structs are deeply related.  But... the manner in which a Product type is stored is orthogonal to it semantics as a Product type.  You can store a product type by value or by reference.  Classes are reference product types, structs are value product type.
+ Classes are a particular storage representation of what in type theory are referred to as _"product"_ types. In Swift, the product type with "value semantics" is `struct`, the product type with "reference semantics" is class.  Value types are types where the storage for instances of the type is owned by something else, frequently the stack. Reference types are types where the storage is owned by reference, generally to a location in the heap.  It is this referential storage which enables classes to implement inheritance as a technique.
 
- So if they're both product types and the difference is that only reference storage semantics can do inheritance, why not just use the reference storage mechanism and get inheritance "for free", to use or not use as the programmer sees fit.  Well...
+ So classes and structs are deeply related.  But... the manner in which a type is stored is orthogonal to it semantics as a Product type.  You can store a product type by value or by reference.  Classes are the reference product type, structs are the value product type.
 
- Classes, because they are reference types, are forced to give up 2 really valuable features of value semantics:
+ So if they're both product types and the difference is that only reference storage semantics can do inheritance, why not just use the reference storage mechanism and get inheritance "for free" to use or not use as the programmer sees fit.  Well...
 
- 1. the isolation and atomicity and
+ Because, inheritance, as a feature of reference product types, forces us to give up 2 really valuable features:
+
+ 1. isolation and atomicity and
  1. the expressiveness of enums (Sum types) as objects.
 
- NB We can get some of this back using them as generic reference types.
+ NB We can get some of this back by using classes as generic reference types.
 
  ## The 3 Beefs
+
+ But in the Crusty talk, Dave laid out three problems beyond sacrificing value semantics.
+
 ![The Three Beefs](POP-2.pdf)
 
  ## Concurrency
@@ -97,7 +102,5 @@ Then Dave points out that in fact, its not just `classes` that can provide these
 ![Demand](Demand.png)
 
 */
-
-print("C'est finis.")
 
 //: [Next](@next)
