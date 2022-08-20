@@ -4,7 +4,7 @@
 //
 //  Created by Van Simmons on 5/23/22.
 //
-fileprivate actor Deduplicator<A> {
+fileprivate class Deduplicator<A> {
     let isEquivalent: (A, A) async -> Bool
     var currentValue: A!
 
