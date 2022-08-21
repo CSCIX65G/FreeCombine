@@ -148,12 +148,11 @@ public struct DistributorState<Output: Sendable> {
         with result: AsyncStream<Output>.Result
     ) async throws -> Void {
         guard currentRepeaters.count > 0 else { return }
-        var semaphore: Semaphore<[Int], RepeatedAction<Int>>!
         try await withResumption { (completedResumption: Resumption<[Int]>) in
             // Note that the semaphore's reducer constructs a list of repeaters
             // which have responded with .done and that the elements of that list
             // are removed at completion of the sends
-            semaphore = Semaphore<[Int], RepeatedAction<Int>>(
+            let semaphore = Semaphore<[Int], RepeatedAction<Int>>(
                 resumption: completedResumption,
                 reducer: { completedIds, action in
                     guard case let .repeated(id, .done) = action else { return }
@@ -169,7 +168,7 @@ public struct DistributorState<Output: Sendable> {
                     case .enqueued:
                         ()
                     case .terminated:
-                        semaphore.decrement(with: .repeated(key, .done))
+                        Task { await semaphore.decrement(with: .repeated(key, .done)) }
                     case .dropped:
                         fatalError("Should never drop")
                     @unknown default:
@@ -180,7 +179,6 @@ public struct DistributorState<Output: Sendable> {
         .forEach { key in
             repeaters.removeValue(forKey: key)
         }
-        assert(semaphore.count == 0, "Exiting with semaphore unresolved")
     }
 
     mutating func process(

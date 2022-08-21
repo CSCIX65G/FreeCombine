@@ -68,7 +68,7 @@ public struct DistributorRepeaterState<ID: Hashable & Sendable, Output: Sendable
                     if case .completion = output { mostRecentDemand = .done }
                 }
                 catch { mostRecentDemand = .done }
-                semaphore.decrement(with: .repeated(id, mostRecentDemand))
+                await semaphore.decrement(with: .repeated(id, mostRecentDemand))
                 return mostRecentDemand == .done ? .completion(.exit) : .none
         }
     }

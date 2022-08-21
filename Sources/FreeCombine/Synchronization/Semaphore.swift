@@ -18,7 +18,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 //
-public class Semaphore<State, Action> {
+public actor Semaphore<State, Action> {
     public enum Error: Swift.Error {
         case complete
     }
@@ -26,10 +26,7 @@ public class Semaphore<State, Action> {
     private let reducer: (inout State, Action) -> Void
 
     private var state: State
-    private var counter: Counter
-    private var actions: SingleConsumerStack<Action> = .init()
-
-    var count: Int { counter.count }
+    private var count: Int
 
     public init(
         resumption: Resumption<State>,
@@ -40,27 +37,26 @@ public class Semaphore<State, Action> {
         self.resumption = resumption
         self.reducer = reducer
         self.state = initialState
-        self.counter = .init(count: count)
+        self.count = count
         if count == 0 { resumption.resume(returning: initialState) }
     }
 
-    public func decrement(
-        function: String = #function,
-        file: String = #file,
-        line: Int = #line,
-        with action: Action
-    ) -> Void {
-        actions.push(action)
-        switch counter.decrement() {
-            case Int.min ..< 0:
-                fatalError("Semaphore decremented after complete in \(function) @\(file):\(line)")
-            case 1 ... Int.max:
-                return
-            default:
-                while let prevAction = actions.pop() {
-                    reducer(&state, prevAction)
-                }
+    public func decrement(with action: Action, function: String = #function, file: String = #file, line: Int = #line) -> Void {
+        guard count > 0 else {
+            fatalError("Semaphore decremented after complete in \(function) @\(file):\(line)")
         }
-        resumption.resume(returning: state)
+        count -= 1
+        reducer(&state, action)
+        if count == 0 {
+            resumption.resume(returning: state)
+        }
+    }
+
+    public func increment(with action: Action, function: String = #function, file: String = #file, line: Int = #line) -> Void {
+        guard count > 0 else {
+            fatalError("Semaphore incremented after complete in \(function) @\(file):\(line)")
+        }
+        count += 1
+        reducer(&state, action)
     }
 }
