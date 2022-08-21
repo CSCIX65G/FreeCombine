@@ -19,7 +19,7 @@
 //
 
 /*:
- #actor problems
+ # Actor Problems
 
  1. no oneway funcs (i.e. they can’t be called from synchronous code)
  2. can’t selectively block callers in order (i.e. passing a continuation to an actor requires spawning a task which gives up ordering guarantees)
@@ -28,23 +28,25 @@
  5. they execute on global actor queues (generally not needed or desirable to go off-Task for these things)
  6. No way to allow possible failure to enqueue on an overburdened actor, all requests enter an unbounded queue
 
- #actor solutions: StateTask - a swift implementation of the Haskell ST monad
+ # Actor Solutions: StateTask - a swift implementation of the Haskell ST monad
+
+ From: [Lazy Functional State Threads](https://www.microsoft.com/en-us/research/wp-content/uploads/1994/06/lazy-functional-state-threads.pdf)
 
  1. LOCK FREE CHANNELS
  2. Haskell translation: ∀s in Rank-N types becomes a Task
  3. Use explicit queues to process events
 
- # statetask action requirements:
+ # StateTask Action Requirements:
 
- 2. sendable funcs
- 3. routable
- 4. value types
- 5. some actions are blocking, these need special handling (think DO oneway keyword)
+ 1. Sendable funcs
+ 2. routable
+ 3. value types
+ 4. some actions are blocking, these need special handling (think DO oneway keyword)
 
  From: [SE-304 Structured Concurrency](https://github.com/apple/swift-evolution/blob/main/proposals/0304-structured-concurrency.md#structured-concurrency-1)
  > Systems that rely on queues are often susceptible to queue-flooding, where the queue accepts more work than it can actually handle. This is typically solved by introducing "back-pressure": a queue stops accepting new work, and the systems that are trying to enqueue work there respond by themselves stopping accepting new work. Actor systems often subvert this because it is difficult at the scheduler level to refuse to add work to an actor's queue, since doing so can permanently destabilize the system by leaking resources or otherwise preventing operations from completing. Structured concurrency offers a limited, cooperative solution by allowing systems to communicate up the task hierarchy that they are coming under distress, potentially allowing parent tasks to stop or slow the creation of presumably-similar new work.
 
- We address this by having the reducer explicitly dispose of any unprocessed queued items and notify dispose of State.
+ FreeCombines addresses this differently by allowing backpressure and explicit disposal of queued items.
  */
 public final class StateTask<State, Action: Sendable> {
     let channel: Channel<Action>
@@ -148,6 +150,64 @@ extension StateTask {
         case internalError
         case cancelled
     }
+
+    private static func reduce(
+        state: inout State,
+        action: Action,
+        reducer: Reducer<State, Action>
+    ) async throws -> Void {
+        switch try await reducer(&state, action) {
+            case .none: ()
+            case .completion(.exit): throw Error.completed
+            case .completion(let .failure(error)): throw error
+            case .completion(.finished): throw Error.internalError
+            case .completion(.cancel): throw Error.cancelled
+            case .published(let publisher):
+                await publisher.sink { action in
+
+                }
+        }
+    }
+
+    private static func dispose(
+        channel: Channel<Action>,
+        reducer: Reducer<State, Action>,
+        error: Swift.Error
+    ) async throws -> Void {
+        channel.finish()
+        for await action in channel {
+            switch error {
+                case Error.completed:
+                    await reducer(action, .finished); continue
+                case Error.cancelled:
+                    await reducer(action, .cancel); continue
+                default:
+                    await reducer(action, .failure(error)); continue
+            }
+        }
+    }
+
+    private static func finalize(
+        state: inout State,
+        reducer: Reducer<State, Action>,
+        error: Swift.Error
+    ) async throws -> Void {
+        guard let completion = error as? Error else {
+            await reducer(&state, .failure(error))
+            throw error
+        }
+        switch completion {
+            case .cancelled:
+                await reducer(&state, .cancel)
+                throw completion
+            case .completed:
+                await reducer(&state, .exit)
+            case .internalError:
+                await reducer(&state, .failure(PublisherError.internalError))
+                throw completion
+        }
+    }
+
     public convenience init(
         function: StaticString = #function,
         file: StaticString = #file,
@@ -167,47 +227,17 @@ extension StateTask {
                 var state = await initialState(channel)
                 onStartup.resume()
                 do { try await withTaskCancellationHandler(handler: channel.finish) {
+                    // Loop over the channel, reducing each action into state
                     for await action in channel {
-                        let effect = try await reducer(&state, action)
-                        switch effect {
-                            case .none: continue
-                            case .published(_):
-                                // FIXME: Need to handle the publisher, i.e. channel.consume(publisher: publisher)
-                                continue
-                            case .completion(.exit): throw Error.completed
-                            case let .completion(.failure(error)): throw error
-                            case .completion(.finished): throw Error.internalError
-                            case .completion(.cancel):
-                                throw Error.cancelled
-                        }
+                        try await Self.reduce(state: &state, action: action, reducer: reducer)
                     }
+                    // Finalize state given upstream finish
                     await reducer(&state, .finished)
                 } } catch {
-                    channel.finish()
-                    for await action in channel {
-                        switch error {
-                            case Error.completed:
-                                await reducer(action, .finished); continue
-                            case Error.cancelled:
-                                await reducer(action, .cancel); continue
-                            default:
-                                await reducer(action, .failure(error)); continue
-                        }
-                    }
-                    guard let completion = error as? Error else {
-                        await reducer(&state, .failure(error))
-                        throw error
-                    }
-                    switch completion {
-                        case .cancelled:
-                            await reducer(&state, .cancel)
-                            throw completion
-                        case .completed:
-                            await reducer(&state, .exit)
-                        case .internalError:
-                            await reducer(&state, .failure(PublisherError.internalError))
-                            throw completion
-                    }
+                    // Dispose of any pending actions since downstream has finished
+                    try await Self.dispose(channel: channel, reducer: reducer, error: error)
+                    // Finalize the state given downstream finish
+                    try await Self.finalize(state: &state, reducer: reducer, error: error)
                 }
                 return state
             }
