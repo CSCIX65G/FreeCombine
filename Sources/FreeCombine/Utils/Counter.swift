@@ -45,7 +45,7 @@ public struct Counter {
     }
 
     @discardableResult
-    public func decrement(by: Int = 1) -> Int {
+    public func decrement(by: Int = -1) -> Int {
         var c = atomicValue.load(ordering: .sequentiallyConsistent)
         while !atomicValue.compareExchange(
             expected: c,

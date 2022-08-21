@@ -160,8 +160,8 @@ final class PromiseTests: XCTestCase {
             )
             for _ in 0 ..< maxAttempts {
                 Task {
-                    do { try await promise.succeed(13); succeedCounter.increment(); semaphore.decrement(with: ()) }
-                    catch { failureCounter.increment(); semaphore.decrement(with: ()) }
+                    do { try await promise.succeed(13); succeedCounter.increment(); await semaphore.decrement(with: ()) }
+                    catch { failureCounter.increment(); await semaphore.decrement(with: ()) }
                 }
             }
         }
