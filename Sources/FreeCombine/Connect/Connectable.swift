@@ -168,7 +168,8 @@ public extension Connectable {
                     continuation.resume(throwing: PublisherError.enqueueError)
             }
         })
-        _ = await distributeStateTask.cancelAndAwaitResult()
+        distributeStateTask.cancel()
+        _ = await distributeStateTask.result
     }
 
     func pause() async throws -> Void {

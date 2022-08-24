@@ -102,11 +102,11 @@ public final class Subject<Output: Sendable> {
     }
     public func cancel() async throws -> Void {
         receiveStateTask.cancel()
-        try await stateTask.cancel()
+        stateTask.cancel()
     }
     public func cancelAndAwaitResult() async throws -> Result<DistributorState<Output>, Swift.Error> {
         receiveStateTask.cancel()
-        try await stateTask.cancel()
+        stateTask.cancel()
         return await stateTask.result
     }
     public func fail(_ error: Error) async throws -> Void {

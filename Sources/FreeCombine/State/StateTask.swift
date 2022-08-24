@@ -86,23 +86,9 @@ public final class StateTask<State, Action: Sendable> {
         if shouldCancel { cancellable.cancel() }
     }
 
-    public var isCancelled: Bool {
-        @Sendable get {
-            cancellable.isCancelled
-        }
-    }
-
-    public var isCompleting: Bool {
-        @Sendable get {
-            cancellable.isCompleting
-        }
-    }
-
-    public var canDeinit: Bool {
-        @Sendable get {
-            cancellable.isCompleting || cancellable.isCancelled
-        }
-    }
+    public var isCancelled: Bool { @Sendable get {  cancellable.isCancelled } }
+    public var isCompleting: Bool { @Sendable get { cancellable.isCompleting } }
+    public var canDeinit: Bool { @Sendable get { cancellable.isCompleting || cancellable.isCancelled } }
 
     public var value: State {
         get async throws {
@@ -117,7 +103,9 @@ public final class StateTask<State, Action: Sendable> {
         }
     }
 
-    @Sendable func send(_ element: Action) -> AsyncStream<Action>.Continuation.YieldResult {
+    @Sendable func send(
+        _ element: Action
+    ) -> AsyncStream<Action>.Continuation.YieldResult {
         channel.yield(element)
     }
 
@@ -125,28 +113,8 @@ public final class StateTask<State, Action: Sendable> {
         channel.finish()
     }
 
-    @Sendable func finishAndAwaitResult() async -> Result<State, Swift.Error> {
-        channel.finish()
-        return await cancellable.result
-    }
-
-    @Sendable func finishAndAwaitValue() async throws -> State {
-        channel.finish()
-        return try await cancellable.value
-    }
-
     @Sendable func cancel() -> Void {
         cancellable.cancel()
-    }
-
-    @Sendable func cancelAndAwaitResult() async -> Result<State, Swift.Error> {
-        cancellable.cancel()
-        return await cancellable.result
-    }
-
-    @Sendable func cancelAndAwaitValue() async throws -> State {
-        cancellable.cancel()
-        return try await cancellable.value
     }
 }
 
@@ -177,22 +145,19 @@ extension StateTask {
                 var effects: Set<Cancellable<Demand>> = .init()
                 var state = await initialState(channel)
                 onStartup.resume()
-                do { try await withTaskCancellationHandler(
-                    operation: {
-                        // Loop over the channel, reducing each action into state
-                        for await action in channel {
-                            try await reducer.reduce(
-                                state: &state,
-                                action: action,
-                                channel: channel,
-                                effects: &effects
-                            )
-                        }
-                        // Finalize state given upstream finish
-                        await reducer.finalize(&state, .finished)
-                    },
-                    onCancel: channel.finish
-                ) } catch {
+                do { try await withTaskCancellationHandler( operation: {
+                    // Loop over the channel, reducing each action into state
+                    for await action in channel {
+                        try await reducer.reduce(
+                            state: &state,
+                            action: action,
+                            channel: channel,
+                            effects: &effects
+                        )
+                    }
+                    // Finalize state given upstream finish
+                    await reducer.finalize(&state, .finished)
+                }, onCancel: channel.finish ) } catch {
                     // Dispose of any pending actions since downstream has finished
                     try await reducer.dispose(channel: channel, error: error)
                     // Finalize the state given downstream finish
