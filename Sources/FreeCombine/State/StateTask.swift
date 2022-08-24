@@ -226,14 +226,17 @@ extension StateTask {
             cancellable: .init(file: file, line: line, deinitBehavior: deinitBehavior) {
                 var state = await initialState(channel)
                 onStartup.resume()
-                do { try await withTaskCancellationHandler(handler: channel.finish) {
-                    // Loop over the channel, reducing each action into state
-                    for await action in channel {
-                        try await Self.reduce(state: &state, action: action, reducer: reducer)
-                    }
-                    // Finalize state given upstream finish
-                    await reducer(&state, .finished)
-                } } catch {
+                do { try await withTaskCancellationHandler(
+                    operation: {
+                        // Loop over the channel, reducing each action into state
+                        for await action in channel {
+                            try await Self.reduce(state: &state, action: action, reducer: reducer)
+                        }
+                        // Finalize state given upstream finish
+                        await reducer(&state, .finished)
+                    },
+                    onCancel: channel.finish
+                ) } catch {
                     // Dispose of any pending actions since downstream has finished
                     try await Self.dispose(channel: channel, reducer: reducer, error: error)
                     // Finalize the state given downstream finish

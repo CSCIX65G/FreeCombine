@@ -6,11 +6,21 @@
 
 * Sergei Winitzki's talk: [What I learned about functional programming while writing a book about it](https://youtu.be/T5oB8PZQNvY)
 
-* [Sergei Winitzki's AMAZING book](https://leanpub.com/sofp) From the book's description:
+* [The Science of Functional Programming, Sergei Winitzki](https://leanpub.com/sofp) Sergei Winitzki's AMAZING book. From the book's description:
 
 > After reading this book, you will understand everything in FP. Prove that your application's business logic satisfies the laws for free Tambara profunctor lens over a holographic co-product monoidal category (whatever that means), and implement the necessary code in Scala? Will be no problem for you.
 
-*_ NB This statement is true._*
+*_ NB This statement is true._* :)
+
+Seriously, the idea of adding parametricity to compositionality as a fundamental organizing principle in software engineering is critical to putting the discipline on a strong, usable theoretical foundation.  
+
+* [Programming Design by Calculation, J.N. Oliviera](https://www4.di.uminho.pt/~jno/ps/pdbc.pdf)   Another text explicitly discussing compositionality and parametricity.
+
+> ... the book invites software designers to raise standards and adopt mature development techniques found in other engineering disciplines, which (as a rule) are rooted on a sound mathematical basis. Compositionality and parametricity are central to the whole discipline, granting scalability from school desk exercises to large problems in an industry setting.
+
+and 
+
+> It is commonplace to say that today’s programmers write poorly concurrent code. This is actually worse: they still write poorly structured sequential code because they were not trained in the art of compositionality early enough in their background. And so they find it hard to design a piece of software in terms of collaborative, small units, each doing its own job. Let alone other forms of composition in which such components operate concurrently, in a parallel way.
 
 ### Swift Atomics
 
@@ -96,6 +106,9 @@ NB FreeCombine takes the message/acknowledgement protocol approach as primitive 
 * [History of Haskell](https://www.microsoft.com/en-us/research/wp-content/uploads/2016/07/history.pdf) - see in particular Section 7.1 on Stream and Continuation-based I/O
 * [Oleg Kiselyov's Stream Page](https://okmij.org/ftp/Streams.html)
 * [Stream Fusion: From Lists to Streams to Nothing At All](https://github.com/bitemyapp/papers/blob/master/Stream%20Fusion:%20From%20Lists%20to%20Streams%20to%20Nothing%20At%20All.pdf)
+
+> RVS - The equivalent to stream fusion under FreeCombine is to `@inline` everything possible.
+
 * [All Things Flow: A History of Streams](https://okmij.org/ftp/Computation/streams-hapoc2021.pdf)
 * [Exploiting Vector Instructions with Generalized Stream Fusion](https://cacm.acm.org/magazines/2017/5/216312-exploiting-vector-instructions-with-generalized-stream-fusion/fulltext)
 * [Functional Stream Libraries and Fusion: What's Next?](https://okmij.org/ftp/meta-programming/shonan-streams.pdf)
@@ -137,9 +150,7 @@ NB FreeCombine takes the message/acknowledgement protocol approach as primitive 
 
 > As someone who had to maintain two applications written entirely using the FRP Paradigm (Rx in Kotlin/Swift with a heavy focus on FRP principles), I am fascinated the idea but I absolutely hated the experience. Writing behaviour flows can end in beautiful blocks of easy to understand operations. However, as these get more complex and you need to combine multiple data streams, logic is scattered all over a module.
 
-```rvs
-Does creating a REPL to go from CPS back to Direct help?
-```
+> RVS - Does creating a REPL to go from CPS-style back to direct-style help to unify the two styles?
 
 * [The Crusty Talk](https://devstreaming-cdn.apple.com/videos/wwdc/2015/408509vyudbqvts/408/408_protocoloriented_programming_in_swift.pdf)
 * [Resource Acquisition is Initialization](https://en.wikipedia.org/wiki/Resource_acquisition_is_initialization)
@@ -155,7 +166,7 @@ Does creating a REPL to go from CPS back to Direct help?
 
 > Linear types can make fusion predictable and guaranteed. Fusion is crucial to writing programs that are both modular and high-performance. But a common criticism, one that we’ve seen born out in practice, is that it’s often hard to know for sure whether the compiler seized the opportunity to fuse intermediate data structures to reduce allocations, or not. This is still future work, but we’re excited about the possibilities: since fusion leans heavily on inlining, and since linear functions are always safe to inline without duplicating work because they only use their argument once, it should be possible with a few extra tricks to get guaranteed fusion.
 
-Stream fusion should not be required in FreeCombine bc Swift optimization should be able to take advantage of annotated inlining.  FreeCombine needs to make more aggressive use of `@inlinable`.
+> RVS: Stream fusion should not be required in FreeCombine bc Swift optimization should be able to take advantage of annotated inlining.  FreeCombine needs to make more aggressive use of `@inlinable`.
 
 * [Retrofitting Linear Types](https://github.com/tweag/linear-types/releases/download/v1.0/hlt.pdf)
 * [Retrofitting Linear Types v2](https://github.com/tweag/linear-types/releases/download/v2.0/hlt.pdf)

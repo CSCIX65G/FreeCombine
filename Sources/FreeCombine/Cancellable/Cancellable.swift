@@ -102,11 +102,14 @@ public extension Cancellable {
         _ outer: Cancellable<Cancellable<B>>
     ) -> Cancellable<B> {
         .init(file: file, line: line, operation: {
-            try await withTaskCancellationHandler(handler: {
-                Task<Void, Swift.Error> { try! await outer.value.cancel() }
-            }, operation: {
-                return try await outer.value.value
-            })
+            try await withTaskCancellationHandler(
+                operation: {
+                    return try await outer.value.value
+                },
+                onCancel: {
+                    Task { try! await outer.value.cancel() }
+                }
+            )
         })
     }
 
@@ -121,12 +124,15 @@ public extension Cancellable {
         let _: Void = try await withResumption(file: file, line: line, deinitBehavior: deinitBehavior) { resumption in
             returnValue = .init(file: file, line: line, operation: {
                 let outer = try await generator()
-                return try await withTaskCancellationHandler(handler: {
-                    Task<Void, Swift.Error> { outer.cancel() }
-                }, operation: {
-                    resumption.resume()
-                    return try await outer.value
-                })
+                return try await withTaskCancellationHandler(
+                    operation: {
+                        resumption.resume()
+                        return try await outer.value
+                    },
+                    onCancel: {
+                        outer.cancel()
+                    }
+                )
             })
         }
         return returnValue
@@ -140,9 +146,14 @@ public extension Cancellable {
     ) -> Cancellable<B> {
         let inner = self
         return .init(file: file, line: line) {
-            try await withTaskCancellationHandler(handler: { Task { inner.cancel() } }) {
-                try await transform(inner.value)
-            }
+            try await withTaskCancellationHandler(
+                operation: {
+                    try await transform(inner.value)
+                },
+                onCancel: {
+                    self.cancel()
+                }
+            )
         }
     }
 

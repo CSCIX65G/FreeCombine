@@ -198,9 +198,12 @@ public struct DistributorState<Output: Sendable> {
         )
         repeaters[nextKey] = repeater
         return .init {
-            try await withTaskCancellationHandler(handler: repeater.cancel) {
-                try await repeater.value.mostRecentDemand
-            }
+            try await withTaskCancellationHandler(
+                operation: {
+                    try await repeater.value.mostRecentDemand
+                },
+                onCancel: repeater.cancel
+            )
         }
     }
 }

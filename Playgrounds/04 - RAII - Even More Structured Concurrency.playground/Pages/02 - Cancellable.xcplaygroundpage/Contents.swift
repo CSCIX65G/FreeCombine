@@ -19,18 +19,19 @@ Task {
         try await Task.sleep(nanoseconds: 3_000_000_000)
         print("ending inner task 3")
     }
-    await withTaskCancellationHandler(handler: {
-        //        s1.cancel()
-        //        s2.cancel()
-        //        s3.cancel()
-    }, operation: {
-        do {
-            try await Task.sleep(nanoseconds: 1_000_000_000)
-        } catch {
-            print("Cancelled the sleep")
+    await withTaskCancellationHandler(
+        operation: {
+            do {
+                try await Task.sleep(nanoseconds: 1_000_000_000)
+            } catch {
+                print("Cancelled the sleep")
+            }
+            print("ending outer task")
+        },
+        onCancel: {
+            // Do stuff
         }
-        print("ending outer task")
-    } )
+    )
 }
 //t.cancel()
 
