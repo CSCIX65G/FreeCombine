@@ -38,16 +38,16 @@ public struct Reducer<State, Action> {
         case cancelled
     }
 
-    let disposer: (Action, Completion) async -> Void
     let reducer: (inout State, Action) async throws -> Effect
-    let onCompletion: (inout State,Completion) async -> Void
+    let disposer: (Action, Completion) async -> Void
+    let finalizer: (inout State,Completion) async -> Void
 
     public init(
-        onCompletion: @escaping (inout State, Completion) async -> Void = { _, _ in },
+        reducer: @escaping (inout State, Action) async throws -> Effect,
         disposer: @escaping (Action, Completion) async -> Void = { _, _ in },
-        reducer: @escaping (inout State, Action) async throws -> Effect
+        finalizer: @escaping (inout State, Completion) async -> Void = { _, _ in }
     ) {
-        self.onCompletion = onCompletion
+        self.finalizer = finalizer
         self.disposer = disposer
         self.reducer = reducer
     }
@@ -61,7 +61,7 @@ public struct Reducer<State, Action> {
     }
 
     public func callAsFunction(_ state: inout State, _ completion: Completion) async -> Void {
-        await onCompletion(&state, completion)
+        await finalizer(&state, completion)
     }
 }
 
@@ -123,7 +123,7 @@ extension Reducer {
     }
 
     func finalize(_ state: inout State, _ completion: Completion) async -> Void {
-        await onCompletion(&state, completion)
+        await finalizer(&state, completion)
     }
 }
 
@@ -133,8 +133,8 @@ extension Reducer where State == Void {
         reducer: @escaping (Action) async throws -> Effect
     ) {
         self.init(
-            disposer: disposer,
-            reducer: { _, action in try await reducer(action) }
+            reducer: { _, action in try await reducer(action) },
+            disposer: disposer
         )
     }
 }

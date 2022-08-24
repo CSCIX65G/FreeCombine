@@ -46,9 +46,9 @@ public final class Subject<Output: Sendable> {
             deinitBehavior: deinitBehavior,
             initialState: DistributorReceiveState<Output>.create(distributorChannel: stateTask.channel),
             reducer: .init(
-                onCompletion: DistributorReceiveState<Output>.complete,
+                reducer: DistributorReceiveState<Output>.reduce,
                 disposer: DistributorReceiveState<Output>.dispose,
-                reducer: DistributorReceiveState<Output>.reduce
+                finalizer: DistributorReceiveState<Output>.complete
             )
         )
     }

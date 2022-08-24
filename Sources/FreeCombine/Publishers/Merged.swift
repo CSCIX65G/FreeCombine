@@ -60,9 +60,9 @@ public func merge<Output>(
         initialState: MergeState<Output>.create(upstreams: upstream1, upstream2, otherUpstreams),
         buffering: .bufferingOldest(2 + otherUpstreams.count),
         reducer: Reducer(
-            onCompletion: MergeState<Output>.complete,
+            reducer: MergeState<Output>.reduce,
             disposer: MergeState<Output>.dispose,
-            reducer: MergeState<Output>.reduce
+            finalizer: MergeState<Output>.complete
         ),
         extractor: \.mostRecentDemand
     )

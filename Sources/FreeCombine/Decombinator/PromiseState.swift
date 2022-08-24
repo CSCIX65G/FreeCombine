@@ -198,8 +198,8 @@ public struct PromiseState<Output: Sendable> {
             initialState: { _ in repeaterState },
             onStartup: resumption,
             reducer: Reducer(
-                onCompletion: PromiseRepeaterState.complete,
-                reducer: PromiseRepeaterState.reduce
+                reducer: PromiseRepeaterState.reduce,
+                finalizer: PromiseRepeaterState.complete
             )
         )
         repeaters[nextKey] = repeater

@@ -49,9 +49,9 @@ public final class Promise<Output: Sendable> {
             deinitBehavior: deinitBehavior,
             initialState: PromiseReceiveState<Output>.create(promiseChannel: stateTask.channel),
             reducer: .init(
-                onCompletion: PromiseReceiveState<Output>.complete,
+                reducer: PromiseReceiveState<Output>.reduce,
                 disposer: PromiseReceiveState<Output>.dispose,
-                reducer: PromiseReceiveState<Output>.reduce
+                finalizer: PromiseReceiveState<Output>.complete
             )
         )
     }
@@ -70,9 +70,9 @@ public final class Promise<Output: Sendable> {
             stateTask: Channel.init(buffering: .unbounded) .stateTask(
                 initialState: { channel in .init(currentValue: .none, nextKey: 0, downstreams: [:]) },
                 reducer: Reducer(
-                    onCompletion: PromiseState<Output>.complete,
+                    reducer: PromiseState<Output>.reduce,
                     disposer: PromiseState<Output>.dispose,
-                    reducer: PromiseState<Output>.reduce
+                    finalizer: PromiseState<Output>.complete
                 )
             )
         )

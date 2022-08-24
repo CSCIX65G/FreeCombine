@@ -192,8 +192,8 @@ public struct DistributorState<Output: Sendable> {
             initialState: { _ in repeaterState },
             onStartup: resumption,
             reducer: Reducer(
-                onCompletion: DistributorRepeaterState.complete,
-                reducer: DistributorRepeaterState.reduce
+                reducer: DistributorRepeaterState.reduce,
+                finalizer: DistributorRepeaterState.complete
             )
         )
         repeaters[nextKey] = repeater
