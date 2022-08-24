@@ -98,6 +98,12 @@ public final class StateTask<State, Action: Sendable> {
         }
     }
 
+    public var canDeinit: Bool {
+        @Sendable get {
+            cancellable.isCompleting || cancellable.isCancelled
+        }
+    }
+
     public var value: State {
         get async throws {
             try await cancellable.value
@@ -151,63 +157,6 @@ extension StateTask {
         case cancelled
     }
 
-    private static func reduce(
-        state: inout State,
-        action: Action,
-        reducer: Reducer<State, Action>
-    ) async throws -> Void {
-        switch try await reducer(&state, action) {
-            case .none: ()
-            case .completion(.exit): throw Error.completed
-            case .completion(let .failure(error)): throw error
-            case .completion(.finished): throw Error.internalError
-            case .completion(.cancel): throw Error.cancelled
-            case .published(let publisher):
-                await publisher.sink { action in
-
-                }
-        }
-    }
-
-    private static func dispose(
-        channel: Channel<Action>,
-        reducer: Reducer<State, Action>,
-        error: Swift.Error
-    ) async throws -> Void {
-        channel.finish()
-        for await action in channel {
-            switch error {
-                case Error.completed:
-                    await reducer(action, .finished); continue
-                case Error.cancelled:
-                    await reducer(action, .cancel); continue
-                default:
-                    await reducer(action, .failure(error)); continue
-            }
-        }
-    }
-
-    private static func finalize(
-        state: inout State,
-        reducer: Reducer<State, Action>,
-        error: Swift.Error
-    ) async throws -> Void {
-        guard let completion = error as? Error else {
-            await reducer(&state, .failure(error))
-            throw error
-        }
-        switch completion {
-            case .cancelled:
-                await reducer(&state, .cancel)
-                throw completion
-            case .completed:
-                await reducer(&state, .exit)
-            case .internalError:
-                await reducer(&state, .failure(PublisherError.internalError))
-                throw completion
-        }
-    }
-
     public convenience init(
         function: StaticString = #function,
         file: StaticString = #file,
@@ -224,23 +173,30 @@ extension StateTask {
             deinitBehavior: deinitBehavior,
             channel: channel,
             cancellable: .init(file: file, line: line, deinitBehavior: deinitBehavior) {
+                // This is the runloop for the StateTask
+                var effects: Set<Cancellable<Demand>> = .init()
                 var state = await initialState(channel)
                 onStartup.resume()
                 do { try await withTaskCancellationHandler(
                     operation: {
                         // Loop over the channel, reducing each action into state
                         for await action in channel {
-                            try await Self.reduce(state: &state, action: action, reducer: reducer)
+                            try await reducer.reduce(
+                                state: &state,
+                                action: action,
+                                channel: channel,
+                                effects: &effects
+                            )
                         }
                         // Finalize state given upstream finish
-                        await reducer(&state, .finished)
+                        await reducer.finalize(&state, .finished)
                     },
                     onCancel: channel.finish
                 ) } catch {
                     // Dispose of any pending actions since downstream has finished
-                    try await Self.dispose(channel: channel, reducer: reducer, error: error)
+                    try await reducer.dispose(channel: channel, error: error)
                     // Finalize the state given downstream finish
-                    try await Self.finalize(state: &state, reducer: reducer, error: error)
+                    try await reducer.finalize(state: &state, error: error)
                 }
                 return state
             }

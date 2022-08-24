@@ -94,6 +94,21 @@ public final class Cancellable<Output: Sendable>: Sendable {
     }
 }
 
+extension Cancellable {
+    func store(in cancellables: inout Set<Cancellable<Output>>) {
+        cancellables.insert(self)
+    }
+}
+
+extension Cancellable: Hashable {
+    public static func == (lhs: Cancellable<Output>, rhs: Cancellable<Output>) -> Bool {
+        lhs.task == rhs.task
+    }
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(self)
+    }
+}
+
 public extension Cancellable {
     static func join<B>(
         function: StaticString = #function,

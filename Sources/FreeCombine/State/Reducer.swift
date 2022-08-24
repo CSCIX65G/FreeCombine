@@ -32,6 +32,12 @@ public struct Reducer<State, Action> {
         case cancel
     }
 
+    public enum Error: Swift.Error {
+        case completed
+        case internalError
+        case cancelled
+    }
+
     let disposer: (Action, Completion) async -> Void
     let reducer: (inout State, Action) async throws -> Effect
     let onCompletion: (inout State,Completion) async -> Void
@@ -55,6 +61,68 @@ public struct Reducer<State, Action> {
     }
 
     public func callAsFunction(_ state: inout State, _ completion: Completion) async -> Void {
+        await onCompletion(&state, completion)
+    }
+}
+
+extension Reducer {
+    func reduce(
+        state: inout State,
+        action: Action,
+        channel: Channel<Action>,
+        effects: inout Set<Cancellable<Demand>>
+    ) async throws -> Void {
+        switch try await reducer(&state, action) {
+            case .none: ()
+            case .completion(.exit): throw Error.completed
+            case .completion(let .failure(error)): throw error
+            case .completion(.finished): throw Error.internalError
+            case .completion(.cancel): throw Error.cancelled
+            case .published(let publisher):
+                await publisher.sink { action in
+                    channel.yield(action)
+                }.store(in: &effects)
+        }
+    }
+
+    func dispose(
+        channel: Channel<Action>,
+        error: Swift.Error
+    ) async throws -> Void {
+        channel.finish()
+        for await action in channel {
+            switch error {
+                case Error.completed:
+                    await self(action, .finished); continue
+                case Error.cancelled:
+                    await self(action, .cancel); continue
+                default:
+                    await self(action, .failure(error)); continue
+            }
+        }
+    }
+
+    func finalize(
+        state: inout State,
+        error: Swift.Error
+    ) async throws -> Void {
+        guard let completion = error as? Error else {
+            await self(&state, .failure(error))
+            throw error
+        }
+        switch completion {
+            case .cancelled:
+                await self(&state, .cancel)
+                throw completion
+            case .completed:
+                await self(&state, .exit)
+            case .internalError:
+                await self(&state, .failure(PublisherError.internalError))
+                throw completion
+        }
+    }
+
+    func finalize(_ state: inout State, _ completion: Completion) async -> Void {
         await onCompletion(&state, completion)
     }
 }
