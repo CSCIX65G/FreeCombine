@@ -6,11 +6,40 @@ Note that this README is still under construction. The places herein where we re
 
 ## TL;DR
 
-FreeCombine is a streaming library designed to implement every Publisher operator in Apple's Combine framework - only it does it in `async` context and allows `async` functions to be passed in whereever Combine accepts a function as an argument.  
+FreeCombine is a streaming library designed to implement every Publisher operator in Apple's Combine framework and every Future and Promise operation in NIO - only doing it in `async` context and allowing `async` functions to be passed in whereever Combine or NIO accepts a function as an argument.  
 
-NB this does _NOT_ mean that the semantics or syntax of each operator will stay exactly the same.  Implementing a streaming library using Swift Concurrency means that some things _must_ change semantically to prevent data races and task leaks.
+Other points of interest:
 
-Additionally, FreeCombine takes a different stance on how Publishers are constructed - we don't use protocols, instead we use concrete types.  This also leads to code that looks and feels almost the same as Combine, but which is slightly different.  To facilitate the use of FreeCombine, several liberties have been taken with Swift syntax to make FreeCombine appear as much as possible like Combine.
+ 1. FreeCombine takes a different stance on how Publishers are constructed - we don't use protocols, instead we use concrete types.  This also leads to code that looks and feels almost the same as Combine, but which is slightly different.  To facilitate the use of FreeCombine, several liberties have been taken with Swift syntax to make FreeCombine appear as much as possible like Combine.
+ 
+ 1. FreeCombine operators are carefully constructed to make inadvertant introduction of data races and deadlock impossible.  If you base your design on on FreeCombine you can't express a data race.
+ 
+ 1. In the manner of NIO (and _NOT_ in the manner of Combine or Structured Concurrency), FreeCombine requires that no Task or Continuation can leak.  Tasks or Continuations which are neither cancelled nor demonstrably completed when their last reference is lost are treated as programmer error.
+ 
+ 1. FreeCombine uses only lock-free algorithms built on Swift Atomics and AsyncStream for synchronization.
+ 
+In short, you will find none of the following used in this library: 
+
+* `protocol`
+* `TaskGroup` 
+* `async let`
+* `actor`
+* `AsyncSequence`
+* `os_unfair_lock`
+* `Task.yield`, or 
+* `Task.sleep` (ok, Task.sleep is used to explicitly implement operators like `throttle` and `debounce`, but never as a synchronization primitive in types unrelated to temporality).  
+
+FreeCombine's approach to concurrency is purely functional and considers the following to be the appropriate concurrency primitives: 
+
+* `Task`
+* `UnsafeContinuation`
+* `AsyncStream`
+* `AsyncStream.Continuation`
+* `ManagedAtomic`.  
+
+Essentially FreeCombine, is a coroutine library built on types in common use by the functional programming community.  Everything in FreeCombine is a composition of those elements and no others.
+
+The above means that the semantics or syntax of each Combine operator cannot stay exactly the same in all cases.  Implementing a streaming or futures library using Swift Concurrency means that some things _must_ change semantically to prevent data races and task leaks.
 
 An example of the change in syntax is `map`.  Here's the Combine definition of `map` on a Publisher:
 ```
