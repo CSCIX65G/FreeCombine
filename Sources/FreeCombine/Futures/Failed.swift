@@ -18,25 +18,31 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 //
-public func Failed<Output>(_ e: Swift.Error) -> Future<Output> {
-    .init(e)
+public func Failed<Output>(_ type: Output.Type = Output.self, error: Swift.Error) -> Future<Output> {
+    .init(type, error: error)
 }
 
 public extension Future {
-    init(_ e: Swift.Error) {
+    init(_ type: Output.Type = Output.self, error: Swift.Error) {
         self = .init { continuation, downstream in .init {
             continuation.resume()
-            return try await downstream(.failure(e))
+            return try await downstream(.failure(error))
         } }
     }
 }
 
-public func Fail<Output>(_ generator: @escaping () async -> Swift.Error) -> Future<Output> {
-    .init(generator)
+public func Fail<Output>(
+    _ type: Output.Type = Output.self,
+    generator: @escaping () async -> Swift.Error
+) -> Future<Output> {
+    .init(type, generator: generator)
 }
 
 public extension Future {
-    init(_ generator: @escaping () async -> Swift.Error) {
+    init(
+         _ type: Output.Type = Output.self,
+         generator: @escaping () async -> Swift.Error
+    ) {
         self = .init { continuation, downstream in  .init {
             continuation.resume()
             return try await downstream(.failure(generator()))

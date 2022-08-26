@@ -35,9 +35,9 @@ public extension Publisher {
             stateTask: Channel(buffering: .unbounded).stateTask(
                 initialState: ConnectableState<Output>.create(upstream: self, repeater: repeater),
                 reducer: Reducer(
-                    onCompletion: ConnectableState<Output>.complete,
+                    reducer: ConnectableState<Output>.reduce,
                     disposer: ConnectableState<Output>.dispose,
-                    reducer: ConnectableState<Output>.reduce
+                    finalizer: ConnectableState<Output>.complete
                 )
             )
         )

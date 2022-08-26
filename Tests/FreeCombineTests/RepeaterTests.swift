@@ -60,9 +60,10 @@ class RepeaterTests: XCTestCase {
                     )
                     let queueStatus = repeater.send(.repeat(.value(14), semaphore))
                     guard case .enqueued = queueStatus else {
-                        fatalError("Internal failure in Repeater reducer processing key, queueStatus: \(queueStatus)")
+                        XCTFail("Internal failure in Repeater reducer processing key, queueStatus: \(queueStatus)")
+                        return
                     }
-                }.forEach { key in fatalError("should not have key") }
+                }.forEach { key in XCTFail("should not have key") }
 
                 try await withResumption { (completedResumption: Resumption<[Int]>) in
                     let semaphore = Semaphore.init(
@@ -76,9 +77,10 @@ class RepeaterTests: XCTestCase {
                     )
                     let queueStatus = repeater.send(.repeat(.value(15), semaphore))
                     guard case .enqueued = queueStatus else {
-                        fatalError("Internal failure in Repeater reducer processing key, queueStatus: \(queueStatus)")
+                        XCTFail("Internal failure in Repeater reducer processing key, queueStatus: \(queueStatus)")
+                        return
                     }
-                }.forEach { key in fatalError("should not have key") }
+                }.forEach { key in  XCTFail("should not have key") }
 
                 try await withResumption { (completedResumption: Resumption<[Int]>) in
                     let semaphore = Semaphore.init(
@@ -93,7 +95,8 @@ class RepeaterTests: XCTestCase {
 
                     let queueStatus = repeater.send(.repeat(.completion(.finished), semaphore))
                     guard case .enqueued = queueStatus else {
-                        fatalError("Internal failure in Repeater reducer processing key, queueStatus: \(queueStatus)")
+                        XCTFail("Internal failure in Repeater reducer processing key, queueStatus: \(queueStatus)")
+                        return
                     }
                 }.forEach { _ in () }
                 _ = await repeater.cancellable.cancelAndAwaitResult()

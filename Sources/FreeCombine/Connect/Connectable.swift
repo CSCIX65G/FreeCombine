@@ -46,9 +46,9 @@ public final class Connectable<Output: Sendable> {
             deinitBehavior: deinitBehavior,
             initialState: ConnectableRepeaterState<Output>.create(distributorChannel: stateTask.channel),
             reducer: .init(
-                onCompletion: ConnectableRepeaterState<Output>.complete,
+                reducer: ConnectableRepeaterState<Output>.reduce,
                 disposer: ConnectableRepeaterState<Output>.dispose,
-                reducer: ConnectableRepeaterState<Output>.reduce
+                finalizer: ConnectableRepeaterState<Output>.complete
             )
         )
     }
@@ -168,7 +168,8 @@ public extension Connectable {
                     continuation.resume(throwing: PublisherError.enqueueError)
             }
         })
-        _ = await distributeStateTask.cancelAndAwaitResult()
+        distributeStateTask.cancel()
+        _ = await distributeStateTask.result
     }
 
     func pause() async throws -> Void {

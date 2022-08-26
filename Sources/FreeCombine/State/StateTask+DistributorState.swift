@@ -57,16 +57,6 @@ public extension StateTask {
         return subscribers
     }
 
-    func finish<Output: Sendable>(
-    ) async throws -> Void where State == DistributorState<Output>, Action == DistributorState<Output>.Action {
-        try await send(.completion(.finished))
-    }
-
-    func cancel<Output: Sendable>(
-    ) async throws -> Void where State == DistributorState<Output>, Action == DistributorState<Output>.Action {
-        try await send(.completion(.cancelled))
-    }
-
     @inlinable
     func fail<Output: Sendable>(
         _ error: Error

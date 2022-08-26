@@ -32,16 +32,22 @@ public struct Reducer<State, Action> {
         case cancel
     }
 
-    let disposer: (Action, Completion) async -> Void
+    public enum Error: Swift.Error {
+        case completed
+        case internalError
+        case cancelled
+    }
+
     let reducer: (inout State, Action) async throws -> Effect
-    let onCompletion: (inout State,Completion) async -> Void
+    let disposer: (Action, Completion) async -> Void
+    let finalizer: (inout State,Completion) async -> Void
 
     public init(
-        onCompletion: @escaping (inout State, Completion) async -> Void = { _, _ in },
+        reducer: @escaping (inout State, Action) async throws -> Effect,
         disposer: @escaping (Action, Completion) async -> Void = { _, _ in },
-        reducer: @escaping (inout State, Action) async throws -> Effect
+        finalizer: @escaping (inout State, Completion) async -> Void = { _, _ in }
     ) {
-        self.onCompletion = onCompletion
+        self.finalizer = finalizer
         self.disposer = disposer
         self.reducer = reducer
     }
@@ -55,7 +61,69 @@ public struct Reducer<State, Action> {
     }
 
     public func callAsFunction(_ state: inout State, _ completion: Completion) async -> Void {
-        await onCompletion(&state, completion)
+        await finalizer(&state, completion)
+    }
+}
+
+extension Reducer {
+    func reduce(
+        state: inout State,
+        action: Action,
+        channel: Channel<Action>,
+        effects: inout Set<Cancellable<Demand>>
+    ) async throws -> Void {
+        switch try await reducer(&state, action) {
+            case .none: ()
+            case .completion(.exit): throw Error.completed
+            case .completion(let .failure(error)): throw error
+            case .completion(.finished): throw Error.internalError
+            case .completion(.cancel): throw Error.cancelled
+            case .published(let publisher):
+                await publisher.sink { action in
+                    channel.yield(action)
+                }.store(in: &effects)
+        }
+    }
+
+    func dispose(
+        channel: Channel<Action>,
+        error: Swift.Error
+    ) async throws -> Void {
+        channel.finish()
+        for await action in channel {
+            switch error {
+                case Error.completed:
+                    await self(action, .finished); continue
+                case Error.cancelled:
+                    await self(action, .cancel); continue
+                default:
+                    await self(action, .failure(error)); continue
+            }
+        }
+    }
+
+    func finalize(
+        state: inout State,
+        error: Swift.Error
+    ) async throws -> Void {
+        guard let completion = error as? Error else {
+            await self(&state, .failure(error))
+            throw error
+        }
+        switch completion {
+            case .cancelled:
+                await self(&state, .cancel)
+                throw completion
+            case .completed:
+                await self(&state, .exit)
+            case .internalError:
+                await self(&state, .failure(PublisherError.internalError))
+                throw completion
+        }
+    }
+
+    func finalize(_ state: inout State, _ completion: Completion) async -> Void {
+        await finalizer(&state, completion)
     }
 }
 
@@ -65,8 +133,8 @@ extension Reducer where State == Void {
         reducer: @escaping (Action) async throws -> Effect
     ) {
         self.init(
-            disposer: disposer,
-            reducer: { _, action in try await reducer(action) }
+            reducer: { _, action in try await reducer(action) },
+            disposer: disposer
         )
     }
 }

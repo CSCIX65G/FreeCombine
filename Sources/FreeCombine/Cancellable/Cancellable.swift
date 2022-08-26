@@ -94,6 +94,21 @@ public final class Cancellable<Output: Sendable>: Sendable {
     }
 }
 
+extension Cancellable {
+    func store(in cancellables: inout Set<Cancellable<Output>>) {
+        cancellables.insert(self)
+    }
+}
+
+extension Cancellable: Hashable {
+    public static func == (lhs: Cancellable<Output>, rhs: Cancellable<Output>) -> Bool {
+        lhs.task == rhs.task
+    }
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(self)
+    }
+}
+
 public extension Cancellable {
     static func join<B>(
         function: StaticString = #function,
@@ -102,11 +117,14 @@ public extension Cancellable {
         _ outer: Cancellable<Cancellable<B>>
     ) -> Cancellable<B> {
         .init(file: file, line: line, operation: {
-            try await withTaskCancellationHandler(handler: {
-                Task<Void, Swift.Error> { try! await outer.value.cancel() }
-            }, operation: {
-                return try await outer.value.value
-            })
+            try await withTaskCancellationHandler(
+                operation: {
+                    return try await outer.value.value
+                },
+                onCancel: {
+                    Task { try! await outer.value.cancel() }
+                }
+            )
         })
     }
 
@@ -121,12 +139,15 @@ public extension Cancellable {
         let _: Void = try await withResumption(file: file, line: line, deinitBehavior: deinitBehavior) { resumption in
             returnValue = .init(file: file, line: line, operation: {
                 let outer = try await generator()
-                return try await withTaskCancellationHandler(handler: {
-                    Task<Void, Swift.Error> { outer.cancel() }
-                }, operation: {
-                    resumption.resume()
-                    return try await outer.value
-                })
+                return try await withTaskCancellationHandler(
+                    operation: {
+                        resumption.resume()
+                        return try await outer.value
+                    },
+                    onCancel: {
+                        outer.cancel()
+                    }
+                )
             })
         }
         return returnValue
@@ -140,9 +161,14 @@ public extension Cancellable {
     ) -> Cancellable<B> {
         let inner = self
         return .init(file: file, line: line) {
-            try await withTaskCancellationHandler(handler: { Task { inner.cancel() } }) {
-                try await transform(inner.value)
-            }
+            try await withTaskCancellationHandler(
+                operation: {
+                    try await transform(inner.value)
+                },
+                onCancel: {
+                    self.cancel()
+                }
+            )
         }
     }
 
@@ -161,5 +187,73 @@ public extension Cancellable {
         _ transform: @escaping (Output) async -> Cancellable<B>
     ) -> Cancellable<B> {
         self.map(file: file, line: line, transform).join(file: file, line: line)
+    }
+}
+
+public extension Cancellable {
+    static func zip<Left, Right>(
+        _ left: Cancellable<Left>,
+        _ right: Cancellable<Right>
+    ) async throws -> Cancellable<(Left, Right)> {
+        .init {
+            guard !left.isCancelled, !right.isCancelled else {
+                throw PublisherError.cancelled
+            }
+            let left = try await left.value
+            guard !right.isCancelled else {
+                throw PublisherError.cancelled
+            }
+            let right = try await right.value
+            return (left, right)
+        }
+    }
+
+    static func zip<One, Two, Three>(
+        _ one: Cancellable<One>,
+        _ two: Cancellable<Two>,
+        _ three: Cancellable<Three>
+    ) async throws -> Cancellable<(One, Two, Three)> {
+        .init {
+            guard !one.isCancelled, !two.isCancelled, !three.isCancelled else {
+                throw PublisherError.cancelled
+            }
+            let one = try await one.value
+            guard !two.isCancelled, !three.isCancelled else {
+                throw PublisherError.cancelled
+            }
+            let two = try await two.value
+            guard !three.isCancelled else {
+                throw PublisherError.cancelled
+            }
+            let three = try await three.value
+            return (one, two, three)
+        }
+    }
+
+    static func zip<One, Two, Three, Four>(
+        _ one: Cancellable<One>,
+        _ two: Cancellable<Two>,
+        _ three: Cancellable<Three>,
+        _ four: Cancellable<Four>
+    ) async throws -> Cancellable<(One, Two, Three, Four)> {
+        .init {
+            guard !one.isCancelled, !two.isCancelled, !three.isCancelled, !four.isCancelled else {
+                throw PublisherError.cancelled
+            }
+            let one = try await one.value
+            guard !two.isCancelled, !three.isCancelled, !four.isCancelled else {
+                throw PublisherError.cancelled
+            }
+            let two = try await two.value
+            guard !three.isCancelled, !four.isCancelled else {
+                throw PublisherError.cancelled
+            }
+            let three = try await three.value
+            guard !four.isCancelled else {
+                throw PublisherError.cancelled
+            }
+            let four = try await four.value
+            return (one, two, three, four)
+        }
     }
 }

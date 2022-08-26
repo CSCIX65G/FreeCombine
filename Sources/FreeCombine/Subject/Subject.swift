@@ -46,9 +46,9 @@ public final class Subject<Output: Sendable> {
             deinitBehavior: deinitBehavior,
             initialState: DistributorReceiveState<Output>.create(distributorChannel: stateTask.channel),
             reducer: .init(
-                onCompletion: DistributorReceiveState<Output>.complete,
+                reducer: DistributorReceiveState<Output>.reduce,
                 disposer: DistributorReceiveState<Output>.dispose,
-                reducer: DistributorReceiveState<Output>.reduce
+                finalizer: DistributorReceiveState<Output>.complete
             )
         )
     }
@@ -93,20 +93,20 @@ public final class Subject<Output: Sendable> {
     }
     public func finish() async throws -> Void {
         receiveStateTask.finish()
-        try await stateTask.finish()
+        stateTask.finish()
     }
     public func finishAndAwaitResult() async throws -> Void {
         receiveStateTask.finish()
-        try await stateTask.finish()
+        stateTask.finish()
         _ = await stateTask.result
     }
     public func cancel() async throws -> Void {
         receiveStateTask.cancel()
-        try await stateTask.cancel()
+        stateTask.cancel()
     }
     public func cancelAndAwaitResult() async throws -> Result<DistributorState<Output>, Swift.Error> {
         receiveStateTask.cancel()
-        try await stateTask.cancel()
+        stateTask.cancel()
         return await stateTask.result
     }
     public func fail(_ error: Error) async throws -> Void {

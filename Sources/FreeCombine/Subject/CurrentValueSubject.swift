@@ -35,10 +35,9 @@ public func CurrentValueSubject<Output>(
             initialState: { channel in .init(currentValue: currentValue, nextKey: 0, downstreams: [:]) },
             onStartup: onStartup,
             reducer: Reducer(
-                onCompletion: DistributorState<Output>.complete,
+                reducer: DistributorState<Output>.reduce,
                 disposer: DistributorState<Output>.dispose,
-                reducer: DistributorState<Output>.reduce
-            )
+                finalizer: DistributorState<Output>.complete            )
         )
     )
 }
@@ -58,9 +57,9 @@ public func CurrentValueSubject<Output>(
             deinitBehavior: deinitBehavior,
             initialState: { channel in .init(currentValue: currentValue, nextKey: 0, downstreams: [:]) },
             reducer: Reducer(
-                onCompletion: DistributorState<Output>.complete,
+                reducer: DistributorState<Output>.reduce,
                 disposer: DistributorState<Output>.dispose,
-                reducer: DistributorState<Output>.reduce
+                finalizer: DistributorState<Output>.complete
             )
         )
     )
