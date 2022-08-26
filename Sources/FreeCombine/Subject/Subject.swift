@@ -93,11 +93,11 @@ public final class Subject<Output: Sendable> {
     }
     public func finish() async throws -> Void {
         receiveStateTask.finish()
-        try await stateTask.finish()
+        stateTask.finish()
     }
     public func finishAndAwaitResult() async throws -> Void {
         receiveStateTask.finish()
-        try await stateTask.finish()
+        stateTask.finish()
         _ = await stateTask.result
     }
     public func cancel() async throws -> Void {

@@ -22,6 +22,8 @@ and
 
 > It is commonplace to say that today’s programmers write poorly concurrent code. This is actually worse: they still write poorly structured sequential code because they were not trained in the art of compositionality early enough in their background. And so they find it hard to design a piece of software in terms of collaborative, small units, each doing its own job. Let alone other forms of composition in which such components operate concurrently, in a parallel way.
 
+* [Interesting post on Monads in Swift](https://broomburgo.github.io/fun-ios/post/why-monads/)
+
 ### Swift Atomics
 
 * [Tutorial on Memory Ordering](http://www.ai.mit.edu/projects/aries/papers/consistency/computer_29_12_dec1996_p66.pdf)
