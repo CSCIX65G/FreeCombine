@@ -68,9 +68,12 @@ public func wait<FinalResult, PartialResult, S: Sequence>(
     reducing initialValue: FinalResult,
     with reducer: @escaping (inout FinalResult, PartialResult) throws -> Void
 ) async throws -> FinalResult where S.Element == Expectation<PartialResult> {
+    typealias State = WaitState<FinalResult, PartialResult>
+    typealias Action = WaitState<FinalResult, PartialResult>.Action
     let reducingTask = Task<FinalResult, Error>.init {
-        let stateTask = await StateTask<WaitState<FinalResult, PartialResult>, WaitState<FinalResult, PartialResult>.Action>.stateTask(
-            channel: .init(buffering: .bufferingOldest(expectations.underestimatedCount * 2 + 1)),
+        let stateTask: StateTask<State, Action> = try await Channel(
+            buffering: .bufferingOldest(expectations.underestimatedCount * 2 + 1)
+        ).stateTask(
             initialState: { channel in
                 .init(with: channel, for: expectations, timeout: timeout, reducer: reducer, initialValue: initialValue)
             },

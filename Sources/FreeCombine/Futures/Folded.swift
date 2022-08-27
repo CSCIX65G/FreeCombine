@@ -48,6 +48,41 @@
 //}
 import Atomics
 
+public enum Either<Left, Right> {
+    case left(Left)
+    case right(Right)
+}
+
+//public func first<Left, Right>(
+//    of left: Future<Left>,
+//    _ right: Future<Right>
+//) async throws -> (Either<Left, Right>, Either<Cancellable<Left>, Cancellable<Right>>) {
+//    let first: ManagedAtomic<Int> = .init(0)
+//    var buffer: (Either<Left, Right>, Either<Cancellable<Left>, Cancellable<Right>>)!
+//    do {
+//        let _: Void = try await withResumption { resumption in
+//            leftCancellable = Cancellable<Cancellable<Void>> { await left { leftResult in
+//                do {
+//
+//                    let (success, _) = first.compareExchange(expected: 0, desired: 1, ordering: .sequentiallyConsistent)
+//                    guard success else { return }
+//                    resumption.resume()
+//                } catch { }
+//            } }.join()
+//            rightCancellable = Cancellable<Cancellable<Void>> { await right { rightResult in
+//                do {
+//                    try rightResultRef.set(value: rightResult)
+//                    let (success, _) = first.compareExchange(expected: 0, desired: 2, ordering: .sequentiallyConsistent)
+//                    guard success else { return }
+//                    resumption.resume()
+//                } catch { }
+//            } }.join()
+//        }
+//    } catch {
+//
+//    }
+//}
+
 public func and<Left,Right>(
     _ left: Future<Left>,
     _ right: Future<Right>
@@ -59,6 +94,7 @@ public func and<Left,Right>(
             let rightResultRef: ValueRef<Result<Right, Swift.Error>> = .init(value: .failure(FutureError.internalError))
             var leftCancellable: Cancellable<Void>!
             var rightCancellable: Cancellable<Void>!
+            continuation.resume()
             do {
                 let _: Void = try await withResumption { resumption in
                     leftCancellable = Cancellable<Cancellable<Void>> { await left { leftResult in

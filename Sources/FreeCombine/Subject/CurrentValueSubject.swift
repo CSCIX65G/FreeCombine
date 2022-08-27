@@ -19,9 +19,9 @@
 //  limitations under the License.
 //
 public func CurrentValueSubject<Output>(
+    function: StaticString = #function,
     file: StaticString = #file,
     line: UInt = #line,
-    deinitBehavior: DeinitBehavior = .assert,
     currentValue: Output,
     buffering: AsyncStream<DistributorReceiveState<Output>.Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
     onStartup: Resumption<Void>
@@ -29,11 +29,11 @@ public func CurrentValueSubject<Output>(
     try await .init(
         buffering: buffering,
         stateTask: Channel.init(buffering: .unbounded) .stateTask(
+            function: function,
             file: file,
             line: line,
-            deinitBehavior: deinitBehavior,
-            initialState: { channel in .init(currentValue: currentValue, nextKey: 0, downstreams: [:]) },
             onStartup: onStartup,
+            initialState: { channel in .init(currentValue: currentValue, nextKey: 0, downstreams: [:]) },
             reducer: Reducer(
                 reducer: DistributorState<Output>.reduce,
                 disposer: DistributorState<Output>.dispose,
@@ -43,18 +43,18 @@ public func CurrentValueSubject<Output>(
 }
 
 public func CurrentValueSubject<Output>(
+    function: StaticString = #function,
     file: StaticString = #file,
     line: UInt = #line,
-    deinitBehavior: DeinitBehavior = .assert,
     currentValue: Output,
     buffering: AsyncStream<DistributorReceiveState<Output>.Action>.Continuation.BufferingPolicy = .bufferingOldest(1)
 ) async throws -> Subject<Output> {
     try await .init(
         buffering: buffering,
         stateTask: try await Channel(buffering: .unbounded).stateTask(
+            function: function,
             file: file,
             line: line,
-            deinitBehavior: deinitBehavior,
             initialState: { channel in .init(currentValue: currentValue, nextKey: 0, downstreams: [:]) },
             reducer: Reducer(
                 reducer: DistributorState<Output>.reduce,

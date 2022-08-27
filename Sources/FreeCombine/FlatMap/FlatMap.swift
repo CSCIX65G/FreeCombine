@@ -34,7 +34,7 @@ public extension Publisher {
 public extension Future {
     func flatMap<B>(
         _ transform: @escaping (Output) async -> Future<B>
-    ) -> Future<B> {
+    ) -> FreeCombine.Future<B> {
         .init { continuation, downstream in
             self(onStartup: continuation) { r in switch r {
             case .success(let a):

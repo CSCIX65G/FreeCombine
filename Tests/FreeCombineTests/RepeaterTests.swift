@@ -44,8 +44,8 @@ class RepeaterTests: XCTestCase {
                 let repeaterState = DistributorRepeaterState(id: nextKey, downstream: downstream)
                 let repeater: StateTask<DistributorRepeaterState<Int, Int>, DistributorRepeaterState<Int, Int>.Action> = .init(
                     channel: .init(buffering: .bufferingOldest(1)),
-                    initialState: {_ in repeaterState },
                     onStartup: resumption,
+                    initialState: {_ in repeaterState },
                     reducer: Reducer(reducer: DistributorRepeaterState.reduce)
                 )
                 try await withResumption { (completedResumption: Resumption<[Int]>) in

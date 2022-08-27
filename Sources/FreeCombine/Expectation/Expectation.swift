@@ -38,27 +38,34 @@ public class Expectation<Arg> {
     }
 
     private let atomic = ManagedAtomic<UInt8>(Status.waiting.rawValue)
-    private(set) var resumption: Resumption<Arg>
+    private let resumption: Resumption<Arg>
     private let cancellable: Cancellable<Arg>
+    
     public let function: StaticString
     public let file: StaticString
     public let line: UInt
-    public let deinitBehavior: DeinitBehavior
 
     public init(
         function: StaticString = #function,
         file: StaticString = #file,
-        line: UInt = #line,
-        deinitBehavior: DeinitBehavior = .assert
+        line: UInt = #line
     ) async {
         var localCancellable: Cancellable<Arg>!
         self.function = function
         self.file = file
         self.line = line
-        self.deinitBehavior = deinitBehavior
-        self.resumption = try! await withResumption(file: file, line: line, deinitBehavior: deinitBehavior) { outer in
+        self.resumption = try! await withResumption(
+            function: function,
+            file: file,
+            line: line
+        ) { outer in
             localCancellable = .init {
-                do { return try await withResumption(file: file, line: line, deinitBehavior: deinitBehavior, outer.resume) }
+                do { return try await withResumption(
+                    function: function,
+                    file: file,
+                    line: line,
+                    outer.resume
+                ) }
                 catch { throw error }
             }
         }
@@ -67,14 +74,7 @@ public class Expectation<Arg> {
 
     deinit {
         let shouldCancel = status == .waiting
-        switch deinitBehavior {
-            case .assert:
-                assert(!shouldCancel, "ABORTING DUE TO LEAKED \(type(of: Self.self))  CREATED in \(function) @ \(file): \(line)")
-            case .logAndCancel:
-                if shouldCancel { print("CANCELLING LEAKED \(type(of: Self.self))  CREATED in \(function) @ \(file): \(line)") }
-            case .silentCancel:
-                ()
-        }
+        assert(!shouldCancel, "ABORTING DUE TO LEAKED \(type(of: Self.self))  CREATED in \(function) @ \(file): \(line)")
         if shouldCancel { try? cancel() }
     }
 

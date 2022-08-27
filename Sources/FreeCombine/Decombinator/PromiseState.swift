@@ -195,8 +195,8 @@ public struct PromiseState<Output: Sendable> {
         let repeaterState = PromiseRepeaterState(id: nextKey, downstream: downstream)
         let repeater: StateTask<PromiseRepeaterState<Int, Output>, PromiseRepeaterState<Int, Output>.Action> = .init(
             channel: .init(buffering: .bufferingOldest(1)),
-            initialState: { _ in repeaterState },
             onStartup: resumption,
+            initialState: { _ in repeaterState },
             reducer: Reducer(
                 reducer: PromiseRepeaterState.reduce,
                 finalizer: PromiseRepeaterState.complete

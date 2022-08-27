@@ -103,10 +103,9 @@ public extension Future {
         function: StaticString = #function,
         file: StaticString = #file,
         line: UInt = #line,
-        deinitBehavior: DeinitBehavior = .assert,
         _ downstream: @escaping @Sendable (Result<Output, Swift.Error>) async throws -> Void
     ) async -> Cancellable<Void> {
-        await self(file: file, line: line, deinitBehavior: deinitBehavior, downstream)
+        await self(function: function, file: file, line: line, downstream)
     }
 
     @discardableResult
@@ -114,11 +113,10 @@ public extension Future {
         function: StaticString = #function,
         file: StaticString = #file,
         line: UInt = #line,
-        deinitBehavior: DeinitBehavior = .assert,
         _ downstream: @escaping @Sendable (Result<Output, Swift.Error>) async throws -> Void
     ) async -> Cancellable<Void> {
         var cancellable: Cancellable<Void>!
-        let _: Void = try! await withResumption(file: file, line: line, deinitBehavior: deinitBehavior) { continuation in
+        let _: Void = try! await withResumption(function: function, file: file, line: line) { continuation in
             cancellable = self(onStartup: continuation, downstream)
         }
         return cancellable

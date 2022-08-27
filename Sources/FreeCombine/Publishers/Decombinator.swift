@@ -41,7 +41,6 @@ public extension Publisher {
         function: StaticString = #function,
         file: StaticString = #file,
         line: UInt = #line,
-        deinitBehavior: DeinitBehavior = .assert,
         stateTask: StateTask<DistributorState<Output>, DistributorState<Output>.Action>
     ) {
         self = .init { continuation, downstream in
@@ -49,8 +48,7 @@ public extension Publisher {
                 var enqueueStatus: AsyncStream<DistributorState<Output>.Action>.Continuation.YieldResult!
                 let c: Cancellable<Demand> = try await withResumption(
                     file: file,
-                    line: line,
-                    deinitBehavior: deinitBehavior
+                    line: line
                 ) { demandResumption in
                     enqueueStatus = stateTask.send(.subscribe(downstream, demandResumption))
                     guard case .enqueued = enqueueStatus else {
@@ -80,15 +78,14 @@ public extension Publisher {
         function: StaticString = #function,
         file: StaticString = #file,
         line: UInt = #line,
-        deinitBehavior: DeinitBehavior = .assert,
         stateTask: StateTask<ConnectableState<Output>, ConnectableState<Output>.Action>
     ) {
         self = .init { continuation, downstream in Cancellable<Cancellable<Demand>>.join(.init {
             do {
                 let c: Cancellable<Demand> = try await withResumption(
+                    function: function,
                     file: file,
-                    line: line,
-                    deinitBehavior: deinitBehavior
+                    line: line
                 ) { demandResumption in
                     let enqueueStatus = stateTask.send(.distribute(.subscribe(downstream, demandResumption)))
                     guard case .enqueued = enqueueStatus else {
@@ -130,16 +127,15 @@ public extension Future {
         function: StaticString = #function,
         file: StaticString = #file,
         line: UInt = #line,
-        deinitBehavior: DeinitBehavior = .assert,
         stateTask: StateTask<PromiseState<Output>, PromiseState<Output>.Action>
     ) {
         self = .init { continuation, downstream in
             Cancellable<Cancellable<Void>>.join(.init {
                 var enqueueStatus: AsyncStream<PromiseState<Output>.Action>.Continuation.YieldResult!
                 let c: Cancellable<Void> = try await withResumption(
+                    function: function,
                     file: file,
-                    line: line,
-                    deinitBehavior: deinitBehavior
+                    line: line
                 ) { voidResumption in
                     enqueueStatus = stateTask.send(.subscribe(downstream, voidResumption))
                     guard case .enqueued = enqueueStatus else {

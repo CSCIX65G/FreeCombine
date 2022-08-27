@@ -90,7 +90,7 @@ extension Reducer {
         error: Swift.Error
     ) async throws -> Void {
         channel.finish()
-        for await action in channel {
+        for await action in channel.stream {
             switch error {
                 case Error.completed:
                     await self(action, .finished); continue

@@ -24,13 +24,12 @@ public extension StateTask {
         function: StaticString = #function,
         file: StaticString = #file,
         line: UInt = #line,
-        deinitBehavior: DeinitBehavior = .assert,
         _ value: Output
     ) async throws -> Void where State == PromiseState<Output>, Action == PromiseState<Output>.Action {
         try await send(
+            function: function,
             file: file,
             line: line,
-            deinitBehavior: deinitBehavior,
             .success(value)
         )
     }
@@ -40,11 +39,10 @@ public extension StateTask {
         function: StaticString = #function,
         file: StaticString = #file,
         line: UInt = #line,
-        deinitBehavior: DeinitBehavior = .assert,
         _ result: Result<Output, Swift.Error>
     ) async throws -> Int where State == PromiseState<Output>, Action == PromiseState<Output>.Action {
         var enqueueResult: AsyncStream<PromiseState<Output>.Action>.Continuation.YieldResult!
-        let subscribers: Int = try await withResumption(file: file, line: line, deinitBehavior: deinitBehavior) { resumption in
+        let subscribers: Int = try await withResumption(function: function, file: file, line: line) { resumption in
             enqueueResult = send(.receive(result, resumption))
             guard case .enqueued = enqueueResult else {
                 resumption.resume(throwing: PublisherError.enqueueError)

@@ -19,9 +19,9 @@
 //  limitations under the License.
 //
 public func PassthroughSubject<Output>(
+    function: StaticString = #function,
     file: StaticString = #file,
     line: UInt = #line,
-    deinitBehavior: DeinitBehavior = .assert,
     _ type: Output.Type = Output.self,
     buffering: AsyncStream<DistributorReceiveState<Output>.Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
     onStartup: Resumption<Void>
@@ -29,8 +29,11 @@ public func PassthroughSubject<Output>(
     try await .init(
         buffering: buffering,
         stateTask: Channel.init(buffering: .unbounded) .stateTask(
-            initialState: { channel in .init(currentValue: .none, nextKey: 0, downstreams: [:]) },
+            function: function,
+            file: file,
+            line: line,
             onStartup: onStartup,
+            initialState: { channel in .init(currentValue: .none, nextKey: 0, downstreams: [:]) },
             reducer: Reducer(
                 reducer: DistributorState<Output>.reduce,
                 disposer: DistributorState<Output>.dispose,
@@ -41,18 +44,18 @@ public func PassthroughSubject<Output>(
 }
 
 public func PassthroughSubject<Output>(
+    function: StaticString = #function,
     file: StaticString = #file,
     line: UInt = #line,
-    deinitBehavior: DeinitBehavior = .assert,
     _ type: Output.Type = Output.self,
     buffering: AsyncStream<DistributorReceiveState<Output>.Action>.Continuation.BufferingPolicy = .bufferingOldest(1)
 ) async throws -> Subject<Output> {
     try await .init(
         buffering: buffering,
         stateTask: try await Channel(buffering: .unbounded).stateTask(
+            function: function,
             file: file,
             line: line,
-            deinitBehavior: deinitBehavior,
             initialState: { channel in .init(currentValue: .none, nextKey: 0, downstreams: [:]) },
             reducer: Reducer(
                 reducer: DistributorState<Output>.reduce,

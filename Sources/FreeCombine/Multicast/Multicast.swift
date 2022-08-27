@@ -47,9 +47,9 @@ public extension Publisher {
                     case .completion(.failure(let error)):
                         try await subject.fail(error)
                     case .completion(.cancelled):
-                        try await subject.cancel()
+                        subject.cancel()
                     case .completion(.finished):
-                        try await subject.finish()
+                        subject.finish()
                     case .value(let value):
                         try await subject.send(value)
                 }

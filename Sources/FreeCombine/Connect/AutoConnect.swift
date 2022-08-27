@@ -23,7 +23,6 @@ public extension Publisher {
         function: StaticString = #function,
         file: StaticString = #file,
         line: UInt = #line,
-        deinitBehavior: DeinitBehavior = .assert,
         buffering: AsyncStream<ConnectableRepeaterState<Output>.Action>.Continuation.BufferingPolicy = .bufferingOldest(1)
     ) async throws -> Self {
         let connectable: Connectable<Output> = try await self.makeConnectable(buffering: buffering)

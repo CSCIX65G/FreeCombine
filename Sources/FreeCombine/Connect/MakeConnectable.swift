@@ -23,14 +23,13 @@ public extension Publisher {
         function: StaticString = #function,
         file: StaticString = #file,
         line: UInt = #line,
-        deinitBehavior: DeinitBehavior = .assert,
         buffering: AsyncStream<ConnectableRepeaterState<Output>.Action>.Continuation.BufferingPolicy = .bufferingOldest(1)
     ) async throws -> Connectable<Output> {
         let repeater: Channel<ConnectableRepeaterState<Output>.Action> = .init(buffering: buffering)
         return try await .init(
+            function: function,
             file: file,
             line: line,
-            deinitBehavior: deinitBehavior,
             repeater: repeater,
             stateTask: Channel(buffering: .unbounded).stateTask(
                 initialState: ConnectableState<Output>.create(upstream: self, repeater: repeater),

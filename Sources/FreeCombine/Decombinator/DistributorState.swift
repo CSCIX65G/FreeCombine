@@ -189,8 +189,8 @@ public struct DistributorState<Output: Sendable> {
         let repeaterState = DistributorRepeaterState(id: nextKey, downstream: downstream)
         let repeater: StateTask<DistributorRepeaterState<Int, Output>, DistributorRepeaterState<Int, Output>.Action> = .init(
             channel: .init(buffering: .bufferingOldest(1)),
-            initialState: { _ in repeaterState },
             onStartup: resumption,
+            initialState: { _ in repeaterState },
             reducer: Reducer(
                 reducer: DistributorRepeaterState.reduce,
                 finalizer: DistributorRepeaterState.complete

@@ -46,10 +46,6 @@ public struct ConnectableState<Output: Sendable> {
     var distributor: DistributorState<Output>
 
     public init(
-        function: StaticString = #function,
-        file: StaticString = #file,
-        line: UInt = #line,
-        deinitBehavior: DeinitBehavior = .assert,
         upstream: Publisher<Output>,
         repeater: Channel<ConnectableRepeaterState<Output>.Action>
     ) {
