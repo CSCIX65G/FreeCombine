@@ -23,15 +23,15 @@ public extension Publisher {
         _ initialValue: T,
         _ transform: @escaping (T, Output) async -> T
     ) -> Publisher<T> {
-        return .init { continuation, downstream in
+        return .init { resumption, downstream in
             let currentValue: ValueRef<T> = ValueRef(value: initialValue)
-            return self(onStartup: continuation) { r in
+            return self(onStartup: resumption) { r in
                 guard !Task.isCancelled else {
                     return try await handleCancellation(of: downstream)
                 }
                 switch r {
                     case .value(let a):
-                        try await currentValue.set(value: transform(currentValue.value, a))
+                        await currentValue.set(value: transform(currentValue.value, a))
                         return .more
                     case let .completion(value):
                         _ = try await downstream(.value(currentValue.value))

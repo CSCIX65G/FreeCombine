@@ -39,7 +39,7 @@ public extension Publisher {
         reducer: Reducer<State, Action>,
         extractor: @escaping (State) -> Demand
     ) {
-        self = .init { continuation, downstream in
+        self = .init { resumption, downstream in
             .init {
                 let stateTask = try await Channel(buffering: buffering).stateTask(
                     initialState: initialState(downstream),
@@ -48,7 +48,7 @@ public extension Publisher {
 
                 return try await withTaskCancellationHandler(
                     operation: {
-                        continuation.resume()
+                        resumption.resume()
                         guard !Task.isCancelled else { throw PublisherError.cancelled }
                         let finalState = try await stateTask.value
                         return extractor(finalState)

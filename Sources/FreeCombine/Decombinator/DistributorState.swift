@@ -67,22 +67,22 @@ public struct DistributorState<Output: Sendable> {
 
     static func dispose(action: Self.Action, completion: Reducer<Self, Self.Action>.Completion) async -> Void {
         switch action {
-            case let .receive(_, continuation):
-                continuation.resume(throwing: PublisherError.cancelled)
-            case let .subscribe(downstream, continuation):
+            case let .receive(_, resumption):
+                resumption.resume(throwing: PublisherError.cancelled)
+            case let .subscribe(downstream, resumption):
                 switch completion {
                     case .failure(PublisherError.completed):
                         let _ = try? await downstream(.completion(.finished))
-                        continuation.resume(throwing: PublisherError.completed)
+                        resumption.resume(throwing: PublisherError.completed)
                     case .failure(PublisherError.cancelled):
                         let _ = try? await downstream(.completion(.cancelled))
-                        continuation.resume(throwing: PublisherError.cancelled)
+                        resumption.resume(throwing: PublisherError.cancelled)
                     case let .failure(error):
                         let _ = try? await downstream(.completion(.failure(error)))
-                        continuation.resume(throwing: error)
+                        resumption.resume(throwing: error)
                     default:
                         let _ = try? await downstream(.completion(.finished))
-                        continuation.resume(returning: .init { return .done })
+                        resumption.resume(returning: .init { return .done })
                 }
             case .unsubscribe:
                 ()

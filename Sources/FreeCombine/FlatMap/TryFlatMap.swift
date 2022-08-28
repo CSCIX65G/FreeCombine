@@ -22,8 +22,8 @@ public extension Publisher {
     func tryFlatMap<B>(
         _ transform: @escaping (Output) async throws -> Publisher<B>
     ) -> Publisher<B> {
-        .init { continuation, downstream in
-            self(onStartup: continuation) { r in
+        .init { resumption, downstream in
+            self(onStartup: resumption) { r in
                 switch r {
                 case .value(let a):
                     var c: Publisher<B>!

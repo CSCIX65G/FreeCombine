@@ -20,8 +20,8 @@
 //
 public extension Publisher {
     func replaceError(_ replacing: @escaping (Swift.Error) -> Output) -> Publisher<Output> {
-        .init { continuation, downstream in
-            self(onStartup: continuation) { r in
+        .init { resumption, downstream in
+            self(onStartup: resumption) { r in
                 switch r {
                     case .value:
                         return try await downstream(r)
@@ -35,8 +35,8 @@ public extension Publisher {
     }
     
     func replaceError(with value: Output) -> Publisher<Output> {
-        .init { continuation, downstream in
-            self(onStartup: continuation) { r in
+        .init { resumption, downstream in
+            self(onStartup: resumption) { r in
                 switch r {
                     case .value:
                         return try await downstream(r)

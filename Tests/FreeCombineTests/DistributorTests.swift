@@ -139,7 +139,7 @@ class DistributorTests: XCTestCase {
                             var distributor = distributorValue.value
                             XCTAssert(distributor.repeaters.count == 0, "Incorrect number of repeaters = \(distributor.repeaters.count)")
                             _ = try await distributor.reduce(action: .subscribe(downstream1, taskC))
-                            try distributorValue.set(value: distributor)
+                            distributorValue.set(value: distributor)
                             _ = try await taskSync.complete()
                         } catch {
                             XCTFail("Caught: \(error)")
@@ -156,7 +156,7 @@ class DistributorTests: XCTestCase {
                             XCTAssert(distributor.repeaters.count == 2, "Incorrect number of repeaters = \(distributor.repeaters.count)")
                             let count1 = counter.count
                             XCTAssert(count1 == 2, "Incorrect number of sends: \(count1)")
-                            try distributorValue.set(value: distributor)
+                            distributorValue.set(value: distributor)
                             distributor = try await withResumption { distResumption in
                                 Task {
                                     let _: Int = try await withResumption({ resumption in
@@ -172,7 +172,7 @@ class DistributorTests: XCTestCase {
                             XCTAssert(count2 == 4, "Incorrect number of sends: \(count2)")
                             _ = try await distributor.reduce(action: .receive(.completion(.finished), c))
                             XCTAssert(distributor.repeaters.count == 0, "Incorrect number of repeaters = \(distributor.repeaters.count)")
-                            try distributorValue.set(value: distributor)
+                            distributorValue.set(value: distributor)
                         } catch {
                             XCTFail("Caught: \(error)")
                         }

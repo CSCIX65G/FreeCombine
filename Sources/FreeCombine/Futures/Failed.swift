@@ -24,8 +24,8 @@ public func Failed<Output>(_ type: Output.Type = Output.self, error: Swift.Error
 
 public extension Future {
     init(_ type: Output.Type = Output.self, error: Swift.Error) {
-        self = .init { continuation, downstream in .init {
-            continuation.resume()
+        self = .init { resumption, downstream in .init {
+            resumption.resume()
             return try await downstream(.failure(error))
         } }
     }
@@ -43,8 +43,8 @@ public extension Future {
          _ type: Output.Type = Output.self,
          generator: @escaping () async -> Swift.Error
     ) {
-        self = .init { continuation, downstream in  .init {
-            continuation.resume()
+        self = .init { resumption, downstream in  .init {
+            resumption.resume()
             return try await downstream(.failure(generator()))
         } }
     }

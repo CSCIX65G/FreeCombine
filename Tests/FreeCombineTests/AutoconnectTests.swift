@@ -49,7 +49,7 @@ class AutoconnectTests: XCTestCase {
             switch result {
                 case let .value(value):
                     counter1.increment()
-                    try value1.set(value: value)
+                    value1.set(value: value)
                     return .more
                 case let .completion(.failure(error)):
                     XCTFail("Got an error? \(error)")
@@ -75,7 +75,7 @@ class AutoconnectTests: XCTestCase {
             switch result {
                 case let .value(value):
                     counter2.increment()
-                    try value2.set(value: value)
+                    value2.set(value: value)
                     return .more
                 case let .completion(.failure(error)):
                     XCTFail("u2 completed with error: \(error)")
@@ -146,7 +146,7 @@ class AutoconnectTests: XCTestCase {
             switch result {
                 case let .value(value):
                     counter1.increment()
-                    try value1.set(value: value)
+                    value1.set(value: value)
                     return .more
                 case let .completion(.failure(error)):
                     XCTFail("Got an error? \(error)")
@@ -172,7 +172,7 @@ class AutoconnectTests: XCTestCase {
             switch result {
                 case let .value(value):
                     counter2.increment()
-                    try value2.set(value: value)
+                    value2.set(value: value)
                     return .more
                 case let .completion(.failure(error)):
                     XCTFail("u2 completed with error: \(error)")
@@ -236,7 +236,7 @@ class AutoconnectTests: XCTestCase {
             switch result {
                 case let .value(value):
                     counter1.increment()
-                    try value1.set(value: value)
+                    value1.set(value: value)
                     return .more
                 case let .completion(.failure(error)):
                     XCTFail("Got an error? \(error)")
@@ -262,7 +262,7 @@ class AutoconnectTests: XCTestCase {
             switch result {
                 case let .value(value):
                     counter2.increment()
-                    try value2.set(value: value)
+                    value2.set(value: value)
                     return .more
                 case let .completion(.failure(error)):
                     XCTFail("u2 completed with error: \(error)")

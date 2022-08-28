@@ -83,16 +83,16 @@ public struct PromiseState<Output: Sendable> {
 
     static func dispose(action: Self.Action, completion: Reducer<Self, Self.Action>.Completion) async -> Void {
         switch action {
-            case let .receive(_, continuation):
-                continuation.resume(throwing: PublisherError.cancelled)
-            case let .subscribe(downstream, continuation):
+            case let .receive(_, resumption):
+                resumption.resume(throwing: PublisherError.cancelled)
+            case let .subscribe(downstream, resumption):
                 switch completion {
                     case let .failure(error):
                         let _ = try? await downstream(.failure(error))
-                        continuation.resume(throwing: error)
+                        resumption.resume(throwing: error)
                     default:
                         let _ = try? await downstream(.failure(PublisherError.completed))
-                        continuation.resume(throwing: PublisherError.cancelled)
+                        resumption.resume(throwing: PublisherError.cancelled)
                 }
             case .unsubscribe:
                 ()

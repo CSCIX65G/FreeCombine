@@ -22,8 +22,8 @@ public extension Publisher {
     func flatMapError(
         _ transform: @escaping (Swift.Error) async -> Publisher<Output>
     ) -> Publisher<Output> {
-        .init { continuation, downstream in
-            self(onStartup: continuation) { r in switch r {
+        .init { resumption, downstream in
+            self(onStartup: resumption) { r in switch r {
                 case .value(let a):
                     return try await downstream(.value(a))
                 case .completion(.failure(let e)):

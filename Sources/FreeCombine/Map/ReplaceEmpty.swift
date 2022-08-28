@@ -22,11 +22,11 @@ public extension Publisher {
     func replaceEmpty(
         with value: Output
     ) -> Self {
-        .init { continuation, downstream in
+        .init { resumption, downstream in
             let isEmpty = ValueRef<Bool>(value: true)
-            return self(onStartup: continuation) { r in switch r {
+            return self(onStartup: resumption) { r in switch r {
                 case .value(let a):
-                    try isEmpty.set(value: false)
+                    isEmpty.set(value: false)
                     return try await downstream(.value(a))
                 case let .completion(completion):
                     if isEmpty.value {

@@ -52,9 +52,9 @@ extension Publisher {
     func removeDuplicates(
         by predicate: @escaping (Output, Output) async -> Bool
     ) -> Publisher<Output> {
-        .init { continuation, downstream in
+        .init { resumption, downstream in
             let deduplicator = Deduplicator<Output>(predicate)
-            return self(onStartup: continuation) { r in
+            return self(onStartup: resumption) { r in
                 guard !Task.isCancelled else {
                     return try await handleCancellation(of: downstream)
                 }

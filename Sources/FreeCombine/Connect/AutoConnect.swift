@@ -27,7 +27,7 @@ public extension Publisher {
     ) async throws -> Self {
         let connectable: Connectable<Output> = try await self.makeConnectable(buffering: buffering)
         let cancellableRef: ValueRef<Cancellable<Demand>?> = .init(value: .none)
-        return .init { continuation, downstream in
+        return .init { resumption, downstream in
             Cancellable<Cancellable<Demand>>.join(.init {
                 let cancellable = await connectable.publisher().sink(downstream)
                 let refValue: Cancellable<Demand>! = cancellableRef.value
@@ -36,17 +36,17 @@ public extension Publisher {
                         Task {
                             _ = await connectable.result
                             _ = await cancellable.result
-                            try cancellableRef.set(value: .none)
+                            cancellableRef.set(value: .none)
                         }
                         try await connectable.connect()
-                        try cancellableRef.set(value: cancellable)
+                        cancellableRef.set(value: cancellable)
                     } catch {
 //                        _ = try? await downstream(.completion(.finished))
-                        continuation.resume()
+                        resumption.resume()
                         _ = try await connectable.cancelAndAwaitResult()
                     }
                 }
-                continuation.resume()
+                resumption.resume()
                 return cancellable
             } )
         }

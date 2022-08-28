@@ -45,12 +45,12 @@ public struct ConnectableRepeaterState<Output: Sendable> {
 
     static func dispose(action: Self.Action, completion: Reducer<Self, Self.Action>.Completion) async -> Void {
         switch action {
-            case let .receive(_, continuation):
+            case let .receive(_, resumption):
                 switch completion {
                     case .failure(let error):
-                        continuation.resume(throwing: error)
+                        resumption.resume(throwing: error)
                     default:
-                        continuation.resume(throwing: PublisherError.completed)
+                        resumption.resume(throwing: PublisherError.completed)
                 }
         }
     }

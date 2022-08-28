@@ -24,9 +24,9 @@ public func Deferred<Element>(from flattable: Publisher<Element>) -> Publisher<E
 
 extension Publisher {
     init(from flattable: Publisher<Output>) {
-        self = .init { continuation, downstream in
+        self = .init { resumption, downstream in
             .init {
-                continuation.resume()
+                resumption.resume()
                 return try await flattable(downstream).value
             }
         }
@@ -41,9 +41,9 @@ public func Deferred<Element>(
 
 extension Publisher {
     init(from flattener: @escaping () async throws -> Publisher<Output>) {
-        self = .init { continuation, downstream in
+        self = .init { resumption, downstream in
             .init {
-                continuation.resume()
+                resumption.resume()
                 let p = try await flattener()
                 let c = await p(downstream)
                 return try await c.value

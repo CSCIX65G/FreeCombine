@@ -22,10 +22,10 @@ public extension Publisher {
     func delay(
         interval: Duration
     ) -> Self {
-        .init { continuation, downstream in
+        .init { resumption, downstream in
             let shouldDelay = ValueRef(value: true)
-            return self(onStartup: continuation) { r in
-                if try shouldDelay.set(value: false) {
+            return self(onStartup: resumption) { r in
+                if shouldDelay.set(value: false) {
                     try await Task.sleep(nanoseconds: interval.inNanoseconds)
                     guard !Task.isCancelled else { return try await handleCancellation(of: downstream) }
                 }

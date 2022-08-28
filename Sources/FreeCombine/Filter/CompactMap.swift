@@ -22,8 +22,8 @@ public extension Publisher {
     func compactMap<B>(
         _ transform: @escaping (Output) async -> B?
     ) -> Publisher<B> {
-        .init { continuation, downstream in
-            self(onStartup: continuation) { r in
+        .init { resumption, downstream in
+            self(onStartup: resumption) { r in
                 switch r {
                 case .value(let a):
                     guard let b = await transform(a) else { return .more }

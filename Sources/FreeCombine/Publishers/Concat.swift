@@ -34,10 +34,10 @@ public extension Publisher {
     init<S: Sequence>(
         concatenating publishers: S
     ) where S.Element == Publisher<Output> {
-        self = .init { continuation, downstream  in
+        self = .init { resumption, downstream  in
             let flattenedDownstream = flattener(downstream)
             return .init {
-                continuation.resume()
+                resumption.resume()
                 for p in publishers {
                     let t = await p(flattenedDownstream)
                     guard try await t.value == .more else { return .done }
@@ -72,10 +72,10 @@ public extension Publisher {
     init(
         flattening: @escaping () async -> Publisher<Output>?
     ) {
-        self = .init { continuation, downstream  in
+        self = .init { resumption, downstream  in
             let flattenedDownstream = flattener(downstream)
             return .init {
-                continuation.resume()
+                resumption.resume()
                 while let p = await flattening() {
                     let t = await p(flattenedDownstream)
                     guard try await t.value == .more else { return .done }

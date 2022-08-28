@@ -24,7 +24,7 @@ public extension Publisher {
     ) async throws -> Self {
         let subject: Subject<Output> = try await PassthroughSubject()
         let cancellableRef: ValueRef<Cancellable<Demand>?> = .init(value: .none)
-        return .init { continuation, downstream in
+        return .init { resumption, downstream in
             Cancellable<Cancellable<Demand>>.join(.init {
                 let cancellable = await subject.publisher().sink(downstream)
                 var i1: Cancellable<Demand>! = cancellableRef.value
@@ -53,11 +53,11 @@ public extension Publisher {
                         _ = await cancellable.result
                         _ = await subject.result;
                         _ = await i2.result;
-                        try cancellableRef.set(value: .none)
+                        cancellableRef.set(value: .none)
                     }
-                    try cancellableRef.set(value: i1)
+                    cancellableRef.set(value: i1)
                 }
-                continuation.resume()
+                resumption.resume()
                 return cancellable
             } )
         }

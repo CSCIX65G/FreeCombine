@@ -24,8 +24,8 @@ public func Succeeded<Output>(_ a: Output) -> Future<Output> {
 
 public extension Future {
     init(_ a: Output) {
-        self = .init { continuation, downstream in .init {
-            continuation.resume()
+        self = .init { resumption, downstream in .init {
+            resumption.resume()
             return try await downstream(.success(a))
         } }
     }
@@ -37,8 +37,8 @@ public func Succeeded<Output>(_ generator: @escaping () async -> Output) -> Futu
 
 public extension Future {
     init(_ generator: @escaping () async -> Output) {
-        self = .init { continuation, downstream in .init {
-            continuation.resume()
+        self = .init { resumption, downstream in .init {
+            resumption.resume()
             return try await downstream(.success(generator()))
         } }
     }

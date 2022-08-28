@@ -127,33 +127,33 @@ public extension Connectable {
     }
 
     func connect() async throws -> Void {
-        let _: Void = try await withResumption { continuation in
-            let queueStatus = stateTask.send(.connect(continuation))
+        let _: Void = try await withResumption { resumption in
+            let queueStatus = stateTask.send(.connect(resumption))
             switch queueStatus {
                 case .enqueued:
                     ()
                 case .terminated:
-                    continuation.resume(throwing: PublisherError.completed)
+                    resumption.resume(throwing: PublisherError.completed)
                 case .dropped:
-                    continuation.resume(throwing: PublisherError.enqueueError)
+                    resumption.resume(throwing: PublisherError.enqueueError)
                 @unknown default:
-                    continuation.resume(throwing: PublisherError.enqueueError)
+                    resumption.resume(throwing: PublisherError.enqueueError)
             }
         }
     }
 
     func disconnect() async throws -> Void {
-        let _: Void = try await withResumption({ continuation in
-            let queueStatus = stateTask.send(.disconnect(continuation))
+        let _: Void = try await withResumption({ resumption in
+            let queueStatus = stateTask.send(.disconnect(resumption))
             switch queueStatus {
                 case .enqueued:
                     ()
                 case .terminated:
-                    continuation.resume(throwing: PublisherError.completed)
+                    resumption.resume(throwing: PublisherError.completed)
                 case .dropped:
-                    continuation.resume(throwing: PublisherError.enqueueError)
+                    resumption.resume(throwing: PublisherError.enqueueError)
                 @unknown default:
-                    continuation.resume(throwing: PublisherError.enqueueError)
+                    resumption.resume(throwing: PublisherError.enqueueError)
             }
         })
         distributeStateTask.cancel()
@@ -161,33 +161,33 @@ public extension Connectable {
     }
 
     func pause() async throws -> Void {
-        return try await withResumption({ continuation in
-            let queueStatus = stateTask.send(.pause(continuation))
+        return try await withResumption({ resumption in
+            let queueStatus = stateTask.send(.pause(resumption))
             switch queueStatus {
                 case .enqueued:
                     ()
                 case .terminated:
-                    continuation.resume(throwing: PublisherError.completed)
+                    resumption.resume(throwing: PublisherError.completed)
                 case .dropped:
-                    continuation.resume(throwing: PublisherError.enqueueError)
+                    resumption.resume(throwing: PublisherError.enqueueError)
                 @unknown default:
-                    continuation.resume(throwing: PublisherError.enqueueError)
+                    resumption.resume(throwing: PublisherError.enqueueError)
             }
         })
     }
 
     func resume() async throws -> Void {
-        return try await withResumption({ continuation in
-            let queueStatus = stateTask.send(.resume(continuation))
+        return try await withResumption({ resumption in
+            let queueStatus = stateTask.send(.resume(resumption))
             switch queueStatus {
                 case .enqueued:
                     ()
                 case .terminated:
-                    continuation.resume(throwing: PublisherError.completed)
+                    resumption.resume(throwing: PublisherError.completed)
                 case .dropped:
-                    continuation.resume(throwing: PublisherError.enqueueError)
+                    resumption.resume(throwing: PublisherError.enqueueError)
                 @unknown default:
-                    continuation.resume(throwing: PublisherError.enqueueError)
+                    resumption.resume(throwing: PublisherError.enqueueError)
             }
         })
     }

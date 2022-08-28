@@ -43,7 +43,7 @@ public extension Publisher {
         line: UInt = #line,
         stateTask: StateTask<DistributorState<Output>, DistributorState<Output>.Action>
     ) {
-        self = .init { continuation, downstream in
+        self = .init { resumption, downstream in
             Cancellable<Cancellable<Demand>>.join(.init {
                 var enqueueStatus: AsyncStream<DistributorState<Output>.Action>.Continuation.YieldResult!
                 let c: Cancellable<Demand> = try await withResumption(
@@ -57,10 +57,10 @@ public extension Publisher {
                     }
                 }
                 guard case .enqueued = enqueueStatus else {
-                    continuation.resume(throwing: PublisherError.enqueueError)
+                    resumption.resume(throwing: PublisherError.enqueueError)
                     return .init { try await downstream(.completion(.finished)) }
                 }
-                continuation.resume()
+                resumption.resume()
                 return c
             } )
         }
@@ -80,7 +80,7 @@ public extension Publisher {
         line: UInt = #line,
         stateTask: StateTask<ConnectableState<Output>, ConnectableState<Output>.Action>
     ) {
-        self = .init { continuation, downstream in Cancellable<Cancellable<Demand>>.join(.init {
+        self = .init { resumption, downstream in Cancellable<Cancellable<Demand>>.join(.init {
             do {
                 let c: Cancellable<Demand> = try await withResumption(
                     function: function,
@@ -93,20 +93,20 @@ public extension Publisher {
                         return
                     }
                 }
-                continuation.resume()
+                resumption.resume()
                 return c
             } catch {
                 let c1 = Cancellable<Demand>.init {
                     switch error {
                         case PublisherError.enqueueError:
                             let returnValue = try await downstream(.completion(.finished))
-                            continuation.resume()
+                            resumption.resume()
                             return returnValue
                         case PublisherError.completed:
-                            continuation.resume()
+                            resumption.resume()
                             return .done
                         default:
-                            continuation.resume()
+                            resumption.resume()
                             throw error
                     }
                 }
@@ -129,7 +129,7 @@ public extension Future {
         line: UInt = #line,
         stateTask: StateTask<PromiseState<Output>, PromiseState<Output>.Action>
     ) {
-        self = .init { continuation, downstream in
+        self = .init { resumption, downstream in
             Cancellable<Cancellable<Void>>.join(.init {
                 var enqueueStatus: AsyncStream<PromiseState<Output>.Action>.Continuation.YieldResult!
                 let c: Cancellable<Void> = try await withResumption(
@@ -144,10 +144,10 @@ public extension Future {
                     }
                 }
                 guard case .enqueued = enqueueStatus else {
-                    continuation.resume(throwing: PublisherError.enqueueError)
+                    resumption.resume(throwing: PublisherError.enqueueError)
                     return .init { try await downstream(.failure(PublisherError.enqueueError)) }
                 }
-                continuation.resume()
+                resumption.resume()
                 return c
             } )
         }

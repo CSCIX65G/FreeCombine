@@ -110,10 +110,10 @@ struct MergeState<Output: Sendable> {
             return .completion(.cancel)
         }
         switch action {
-            case let .setValue(value, continuation):
-                return try await reduceValue(value, continuation)
-            case let .removeCancellable(index, continuation):
-                continuation.resume(returning: .done)
+            case let .setValue(value, resumption):
+                return try await reduceValue(value, resumption)
+            case let .removeCancellable(index, resumption):
+                resumption.resume(returning: .done)
                 if let c = cancellables.removeValue(forKey: index) {
                     let _ = await c.result
                 }
@@ -123,8 +123,8 @@ struct MergeState<Output: Sendable> {
                     return .completion(.exit)
                 }
                 return .none
-            case let .failure(_, error, continuation):
-                continuation.resume(returning: .done)
+            case let .failure(_, error, resumption):
+                resumption.resume(returning: .done)
                 cancellables.removeAll()
                 mostRecentDemand = try await downstream(.completion(.failure(error)))
                 return .completion(.failure(error))
