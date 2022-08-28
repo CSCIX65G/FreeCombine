@@ -22,8 +22,8 @@ public extension Publisher {
     func mapError<NewE: Swift.Error>(
         _ transform: @escaping (Swift.Error) -> NewE
     ) -> Self {
-        .init { continuation, downstream in
-            self(onStartup: continuation) { r in switch r {
+        .init { resumption, downstream in
+            self(onStartup: resumption) { r in switch r {
                 case .value:
                     return try await downstream(r)
                 case .completion(.failure(let e)):

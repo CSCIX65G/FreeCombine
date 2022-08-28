@@ -18,26 +18,16 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 //
-public struct Channel<Element: Sendable>: AsyncSequence {
+public struct Channel<Element: Sendable> {
     let stream: AsyncStream<Element>
     let continuation: AsyncStream<Element>.Continuation
-
-    init(
-        stream: AsyncStream<Element>,
-        continuation: AsyncStream<Element>.Continuation
-    ) {
-        self.stream = stream
-        self.continuation = continuation
-    }
 
     public init(
         _: Element.Type = Element.self,
         buffering: AsyncStream<Element>.Continuation.BufferingPolicy = .bufferingOldest(1)
     ) {
         var localContinuation: AsyncStream<Element>.Continuation!
-        stream = .init(bufferingPolicy: buffering) { streamContinuation in
-            localContinuation = streamContinuation
-        }
+        stream = .init(bufferingPolicy: buffering) { localContinuation = $0 }
         continuation = localContinuation
     }
 
@@ -47,10 +37,6 @@ public struct Channel<Element: Sendable>: AsyncSequence {
     }
     @Sendable public func finish() -> Void {
         continuation.finish()
-    }
-
-    public __consuming func makeAsyncIterator() -> AsyncStream<Element>.Iterator {
-        stream.makeAsyncIterator()
     }
 }
 

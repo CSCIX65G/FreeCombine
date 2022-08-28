@@ -22,8 +22,8 @@ public extension Publisher {
     func delayEach(
         interval: Duration
     ) -> Self {
-        .init { continuation, downstream in
-            self(onStartup: continuation) { r in switch r {
+        .init { resumption, downstream in
+            self(onStartup: resumption) { r in switch r {
                 case .value:
                     do {
                         try await Task.sleep(nanoseconds: interval.inNanoseconds)

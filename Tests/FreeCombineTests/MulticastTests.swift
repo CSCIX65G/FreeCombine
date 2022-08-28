@@ -93,7 +93,7 @@ class MulticastTests: XCTestCase {
                             XCTFail("Shared more than once")
                             return
                         }
-                        try upstreamShared.set(value: true)
+                        upstreamShared.set(value: true)
                     }
                 },
                 receiveOutput: { _ in

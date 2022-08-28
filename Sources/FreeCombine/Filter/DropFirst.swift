@@ -22,11 +22,11 @@ public extension Publisher {
     func dropFirst(
         _ count: Int = 1
     ) -> Self {
-        .init { continuation, downstream in
+        .init { resumption, downstream in
             let currentValue: ValueRef<Int> = ValueRef(value: count + 1)
-            return self(onStartup: continuation) { r in
+            return self(onStartup: resumption) { r in
                 let current = currentValue.value - 1
-                try currentValue.set(value: max(0, current))
+                currentValue.set(value: max(0, current))
                 switch r {
                 case .value:
                     guard current <= 0 else { return .more }

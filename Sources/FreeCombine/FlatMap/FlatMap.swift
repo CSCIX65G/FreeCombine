@@ -22,7 +22,7 @@ public extension Publisher {
     func flatMap<B>(
         _ transform: @escaping (Output) async -> Publisher<B>
     ) -> Publisher<B> {
-        .init { continuation, downstream in self(onStartup: continuation) { r in switch r {
+        .init { resumption, downstream in self(onStartup: resumption) { r in switch r {
             case .value(let a):
                 return try await transform(a)(flattener(downstream)).value
             case let .completion(value):
@@ -34,9 +34,9 @@ public extension Publisher {
 public extension Future {
     func flatMap<B>(
         _ transform: @escaping (Output) async -> Future<B>
-    ) -> Future<B> {
-        .init { continuation, downstream in
-            self(onStartup: continuation) { r in switch r {
+    ) -> FreeCombine.Future<B> {
+        .init { resumption, downstream in
+            self(onStartup: resumption) { r in switch r {
             case .success(let a):
                 return try await transform(a)(downstream).value
             case let .failure(error):

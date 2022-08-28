@@ -30,9 +30,9 @@ public func Unfolded<S: Sequence>(_ sequence: S) -> Publisher<S.Element> {
 
 public extension Publisher {
     init<S: Sequence>(_ sequence: S) where S.Element == Output {
-        self = .init { continuation, downstream in
+        self = .init { resumption, downstream in
             Cancellable<Demand> {
-                continuation.resume()
+                resumption.resume()
                 for a in sequence {
                     guard !Task.isCancelled else {
                         return try await handleCancellation(of: downstream)
@@ -57,9 +57,9 @@ public func Unfolded<Element>(
 
 public extension Publisher {
     init(_ generator: @escaping () async throws -> Output?) {
-        self = .init { continuation, downstream in
+        self = .init { resumption, downstream in
                 .init {
-                    continuation.resume()
+                    resumption.resume()
                     while let a = try await generator() {
                         guard !Task.isCancelled else {
                             return try await handleCancellation(of: downstream)

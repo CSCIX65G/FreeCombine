@@ -141,8 +141,8 @@ class JustTests: XCTestCase {
         }
 
         var t: Cancellable<Demand>! = .none
-        do { _ = try await withResumption { continuation in
-            t = just.sink(onStartup: continuation, { result in
+        do { _ = try await withResumption { resumption in
+            t = just.sink(onStartup: resumption, { result in
                 switch result {
                     case let .value(value):
                         XCTAssert(value == 7, "wrong value sent: \(value)")

@@ -24,9 +24,9 @@ public extension Publisher {
         receiveResult: @escaping (AsyncStream<Output>.Result) async -> Void = { _ in },
         receiveDemand: @escaping (Demand) async -> Void = { _ in }
     ) -> Self {
-        .init { continuation, downstream in
+        .init { resumption, downstream in
             receiveDownstream(downstream)
-            return self(onStartup: continuation) { r in
+            return self(onStartup: resumption) { r in
                 await receiveResult(r)
                 let demand = try await downstream(r)
                 await receiveDemand(demand)
@@ -43,9 +43,9 @@ public extension Publisher {
         receiveCancel: @escaping () async -> Void = { },
         receiveDemand: @escaping (Demand) async -> Void = { _ in }
     ) -> Self {
-        .init { continuation, downstream in
+        .init { resumption, downstream in
             receiveDownstream(downstream)
-            return self(onStartup: continuation) { r in
+            return self(onStartup: resumption) { r in
                 switch r {
                     case .value(let a):
                         await receiveOutput(a)

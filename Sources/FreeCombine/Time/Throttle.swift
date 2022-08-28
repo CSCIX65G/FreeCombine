@@ -65,9 +65,9 @@ extension Publisher {
         latest: Bool = false,
         bufferSize: Int = 1
     ) -> Self {
-        .init { continuation, downstream in
+        .init { resumption, downstream in
             let throttler: Throttler = .init()
-            return self(onStartup: continuation) { r in
+            return self(onStartup: resumption) { r in
                 try await throttler.activate(interval: interval, latest: latest, downstream: downstream)
 
                 // Check for cancellation

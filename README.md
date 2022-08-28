@@ -12,7 +12,7 @@ Other points of interest:
 
  1. FreeCombine takes a different stance on how Publishers are constructed - we don't use protocols, instead we use concrete types.  This also leads to code that looks and feels almost the same as Combine, but which is slightly different.  To facilitate the use of FreeCombine, several liberties have been taken with Swift syntax to make FreeCombine appear as much as possible like Combine.
  
- 1. FreeCombine operators are carefully constructed to make inadvertant introduction of data races and deadlock impossible.  If you base your design on on FreeCombine you can't express a data race.
+ 1. FreeCombine operators are carefully constructed to make inadvertant introduction of data races and deadlock impossible. FreeCombine uses the type system to prevent you from being able express a data race.
  
  1. In the manner of NIO (and _NOT_ in the manner of Combine or Structured Concurrency), FreeCombine requires that no Task or Continuation can leak.  Tasks or Continuations which are neither cancelled nor demonstrably completed when their last reference is lost are treated as programmer error.
  
@@ -24,24 +24,24 @@ In short, you will find none of the following used in this library:
 * `TaskGroup` 
 * `async let`
 * `actor`
-* `AsyncSequence`
-* `os_unfair_lock`
-* `Task.yield`, or 
+* `AsyncSequence` (NB, AsyncStream is the only AsyncSequence used and never purely as an AsyncSequence, only as concrete type)
+* `os_unfair_lock` (or equivalent in other platforms)
+* `Task.yield` 
 * `Task.sleep` (ok, Task.sleep is used to explicitly implement operators like `throttle` and `debounce`, but never as a synchronization primitive in types unrelated to temporality).  
 
-FreeCombine's approach to concurrency is purely functional and considers the following to be the appropriate concurrency primitives: 
+FreeCombine's approach to concurrency is to leverage the type system in a functional programming manner to provide all concurrency constructs. We consider the following to be the complete set of appropriate concurrency primitives: 
 
 * `Task`
 * `UnsafeContinuation`
 * `AsyncStream`
 * `AsyncStream.Continuation`
-* `ManagedAtomic`.  
+* `ManagedAtomic`
 
 Essentially FreeCombine, is a coroutine library built on types in common use by the functional programming community.  Everything in FreeCombine is a composition of those elements and no others.
 
 The above means that the semantics or syntax of each Combine operator cannot stay exactly the same in all cases.  Implementing a streaming or futures library using Swift Concurrency means that some things _must_ change semantically to prevent data races and task leaks.
 
-An example of the change in syntax is `map`.  Here's the Combine definition of `map` on a Publisher:
+An example of the change in syntax required by FreeCombine is `map`.  Here's the Combine definition of `map` on a Publisher:
 ```
 func map<T>(_ transform: @escaping (Self.Output) -> T) -> Publishers.Map<Self, T>
 ```

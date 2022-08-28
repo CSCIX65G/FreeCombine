@@ -25,25 +25,21 @@ public final class Connectable<Output: Sendable> {
     public let function: StaticString
     public let file: StaticString
     public let line: UInt
-    public let deinitBehavior: DeinitBehavior
 
     init(
         function: StaticString = #function,
         file: StaticString = #file,
         line: UInt = #line,
-        deinitBehavior: DeinitBehavior = .assert,
         repeater: Channel<ConnectableRepeaterState<Output>.Action>,
         stateTask: StateTask<ConnectableState<Output>, ConnectableState<Output>.Action>
     ) async throws {
         self.function = function
         self.file = file
         self.line = line
-        self.deinitBehavior = deinitBehavior
         self.stateTask = stateTask
         self.distributeStateTask = try await repeater.stateTask(
             file: file,
             line: line,
-            deinitBehavior: deinitBehavior,
             initialState: ConnectableRepeaterState<Output>.create(distributorChannel: stateTask.channel),
             reducer: .init(
                 reducer: ConnectableRepeaterState<Output>.reduce,
@@ -54,14 +50,7 @@ public final class Connectable<Output: Sendable> {
     }
     deinit {
         let shouldCancel = !(isCompleting || isCancelled)
-        switch deinitBehavior {
-            case .assert:
-                assert(!shouldCancel, "ABORTING DUE TO LEAKED \(type(of: Self.self))  CREATED in \(function) @ \(file): \(line)")
-            case .logAndCancel:
-                if shouldCancel { print("CANCELLING LEAKED \(type(of: Self.self))  CREATED in \(function) @ \(file): \(line)") }
-            case .silentCancel:
-                ()
-        }
+        assert(!shouldCancel, "ABORTING DUE TO LEAKED \(type(of: Self.self))  CREATED in \(function) @ \(file): \(line)")
         if shouldCancel {
             distributeStateTask.cancel()
             stateTask.cancel()
@@ -132,40 +121,39 @@ public extension Connectable {
     func publisher(
         function: StaticString = #function,
         file: StaticString = #file,
-        line: UInt = #line,
-        deinitBehavior: DeinitBehavior = .assert
+        line: UInt = #line
     ) -> Publisher<Output> {
-        .init(file: file, line: line, deinitBehavior: deinitBehavior, stateTask: stateTask)
+        .init(function: function, file: file, line: line, stateTask: stateTask)
     }
 
     func connect() async throws -> Void {
-        let _: Void = try await withResumption { continuation in
-            let queueStatus = stateTask.send(.connect(continuation))
+        let _: Void = try await withResumption { resumption in
+            let queueStatus = stateTask.send(.connect(resumption))
             switch queueStatus {
                 case .enqueued:
                     ()
                 case .terminated:
-                    continuation.resume(throwing: PublisherError.completed)
+                    resumption.resume(throwing: PublisherError.completed)
                 case .dropped:
-                    continuation.resume(throwing: PublisherError.enqueueError)
+                    resumption.resume(throwing: PublisherError.enqueueError)
                 @unknown default:
-                    continuation.resume(throwing: PublisherError.enqueueError)
+                    resumption.resume(throwing: PublisherError.enqueueError)
             }
         }
     }
 
     func disconnect() async throws -> Void {
-        let _: Void = try await withResumption({ continuation in
-            let queueStatus = stateTask.send(.disconnect(continuation))
+        let _: Void = try await withResumption({ resumption in
+            let queueStatus = stateTask.send(.disconnect(resumption))
             switch queueStatus {
                 case .enqueued:
                     ()
                 case .terminated:
-                    continuation.resume(throwing: PublisherError.completed)
+                    resumption.resume(throwing: PublisherError.completed)
                 case .dropped:
-                    continuation.resume(throwing: PublisherError.enqueueError)
+                    resumption.resume(throwing: PublisherError.enqueueError)
                 @unknown default:
-                    continuation.resume(throwing: PublisherError.enqueueError)
+                    resumption.resume(throwing: PublisherError.enqueueError)
             }
         })
         distributeStateTask.cancel()
@@ -173,33 +161,33 @@ public extension Connectable {
     }
 
     func pause() async throws -> Void {
-        return try await withResumption({ continuation in
-            let queueStatus = stateTask.send(.pause(continuation))
+        return try await withResumption({ resumption in
+            let queueStatus = stateTask.send(.pause(resumption))
             switch queueStatus {
                 case .enqueued:
                     ()
                 case .terminated:
-                    continuation.resume(throwing: PublisherError.completed)
+                    resumption.resume(throwing: PublisherError.completed)
                 case .dropped:
-                    continuation.resume(throwing: PublisherError.enqueueError)
+                    resumption.resume(throwing: PublisherError.enqueueError)
                 @unknown default:
-                    continuation.resume(throwing: PublisherError.enqueueError)
+                    resumption.resume(throwing: PublisherError.enqueueError)
             }
         })
     }
 
     func resume() async throws -> Void {
-        return try await withResumption({ continuation in
-            let queueStatus = stateTask.send(.resume(continuation))
+        return try await withResumption({ resumption in
+            let queueStatus = stateTask.send(.resume(resumption))
             switch queueStatus {
                 case .enqueued:
                     ()
                 case .terminated:
-                    continuation.resume(throwing: PublisherError.completed)
+                    resumption.resume(throwing: PublisherError.completed)
                 case .dropped:
-                    continuation.resume(throwing: PublisherError.enqueueError)
+                    resumption.resume(throwing: PublisherError.enqueueError)
                 @unknown default:
-                    continuation.resume(throwing: PublisherError.enqueueError)
+                    resumption.resume(throwing: PublisherError.enqueueError)
             }
         })
     }

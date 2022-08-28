@@ -30,7 +30,7 @@ public extension Publisher {
         _: Output.Type = Output.self,
         _ error: Swift.Error
     ) {
-        self = .init { continuation, downstream in
+        self = .init { resumption, downstream in
             .init {
                 try await downstream(.completion(.failure(error)))
             }

@@ -129,7 +129,7 @@ public extension Publisher {
     func map<B>(
         _ f: @escaping (Output) async -> B
     ) -> Publisher<B> {
-        .init { continuation, downstream in self(onStartup: continuation) { r in switch r {
+        .init { resumption, downstream in self(onStartup: resumption) { r in switch r {
             case .value(let a):
                 return try await downstream(.value(f(a)))
             case let .completion(value):
@@ -139,9 +139,9 @@ public extension Publisher {
     func flatMap<B>(
         _ f: @escaping (Output) async -> Publisher<B>
     ) -> Publisher<B> {
-        .init { continuation, downstream in self(onStartup: continuation) { r in switch r {
+        .init { resumption, downstream in self(onStartup: resumption) { r in switch r {
             case .value(let a):
-                return try await f(a)(onStartup: continuation, flattener(downstream)).value
+                return try await f(a)(onStartup: resumption, flattener(downstream)).value
             case let .completion(value):
                 return try await downstream(.completion(value))
         } } }

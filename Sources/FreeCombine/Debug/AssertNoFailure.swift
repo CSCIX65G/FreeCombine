@@ -25,8 +25,8 @@ public extension Publisher {
         line: UInt = #line,
         _ prefix: String = ""
     ) -> Self {
-        .init { continuation, downstream in
-            self(onStartup: continuation) { r in
+        .init { resumption, downstream in
+            self(onStartup: resumption) { r in
                 guard !Task.isCancelled else {
                     return try await handleCancellation(of: downstream)
                 }

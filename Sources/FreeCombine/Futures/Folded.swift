@@ -48,38 +48,74 @@
 //}
 import Atomics
 
+public enum FirstToFinish<Left: Sendable, Right: Sendable> {
+    case left(Result<Left, Swift.Error>, Cancellable<Void>)
+    case right(Result<Right, Swift.Error>, Cancellable<Void>)
+
+    public static func first<Left, Right>(
+        of left: Future<Left>,
+        _ right: Future<Right>
+    ) -> Future<FirstToFinish<Left, Right>> {
+        .init { resumption, downstream in .init {
+            let flag: ManagedAtomic<Bool> = .init(false)
+            var leftCancellable: Cancellable<Void>!
+            var rightCancellable: Cancellable<Void>!
+            let outcome: ValueRef<Either<Result<Left, Swift.Error>, Result<Right, Swift.Error>>?> = .init(value: .none)
+            resumption.resume()
+            let _: Void = try await withResumption { innerResumption in
+                leftCancellable = Cancellable<Cancellable<Void>> { await left { leftResult in
+                    let (success, _) = flag.compareExchange(expected: false, desired: true, ordering: .sequentiallyConsistent)
+                    guard success else { return }
+                    outcome.set(value: .left(leftResult))
+                    innerResumption.resume()
+                } }.join()
+                rightCancellable = Cancellable<Cancellable<Void>> { await right { rightResult in
+                    let (success, _) = flag.compareExchange(expected: false, desired: true, ordering: .sequentiallyConsistent)
+                    guard success else { return }
+                    outcome.set(value: .right(rightResult))
+                    innerResumption.resume()
+                } }.join()
+            }
+            switch outcome.value! {
+                case let .left(left):
+                    return try await downstream(.success(.left(left, rightCancellable)))
+                case let .right(right):
+                    return try await downstream(.success(.right(right, leftCancellable)))
+            }
+        } }
+    }
+}
+
+
 public func and<Left,Right>(
     _ left: Future<Left>,
     _ right: Future<Right>
 ) -> Future<(Left, Right)> {
-    .init { continuation, downstream in
+    .init { resumption, downstream in
         Cancellable<Void> {
             let first: ManagedAtomic<Int> = .init(0)
             let leftResultRef: ValueRef<Result<Left, Swift.Error>> = .init(value: .failure(FutureError.internalError))
             let rightResultRef: ValueRef<Result<Right, Swift.Error>> = .init(value: .failure(FutureError.internalError))
             var leftCancellable: Cancellable<Void>!
             var rightCancellable: Cancellable<Void>!
+            resumption.resume()
             do {
                 let _: Void = try await withResumption { resumption in
                     leftCancellable = Cancellable<Cancellable<Void>> { await left { leftResult in
-                        do {
-                            try leftResultRef.set(value: leftResult)
-                            let (success, _) = first.compareExchange(expected: 0, desired: 1, ordering: .sequentiallyConsistent)
-                            guard success else { return }
-                            resumption.resume()
-                        } catch { }
+                        leftResultRef.set(value: leftResult)
+                        let (success, _) = first.compareExchange(expected: 0, desired: 1, ordering: .sequentiallyConsistent)
+                        guard success else { return }
+                        resumption.resume()
                     } }.join()
                     rightCancellable = Cancellable<Cancellable<Void>> { await right { rightResult in
-                        do {
-                            try rightResultRef.set(value: rightResult)
+                            rightResultRef.set(value: rightResult)
                             let (success, _) = first.compareExchange(expected: 0, desired: 2, ordering: .sequentiallyConsistent)
                             guard success else { return }
                             resumption.resume()
-                        } catch { }
                     } }.join()
                 }
             } catch {
-
+                fatalError("Threw while and-ing")
             }
             switch first.load(ordering: .sequentiallyConsistent) {
                 case 1:
@@ -126,7 +162,7 @@ public func fold<Output, OtherValue>(
     initial.flatMap { outputValue in
         let otherResultRef: ValueRef<Result<OtherValue, Swift.Error>> = .init(value: .failure(FutureError.internalError))
         _ = await Cancellable<Cancellable<Void>> { await other { otherResult in
-            do { try otherResultRef.set(value: otherResult) } catch { }
+            otherResultRef.set(value: otherResult)
         } }.join().result
         guard case let .success(otherValue) = otherResultRef.value else {
             return Failed(Output.self, error: FutureError.internalError)

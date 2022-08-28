@@ -25,10 +25,10 @@ public func Heartbeat(interval: Duration) -> Publisher<UInt64> {
 
 public extension Publisher where Output == UInt64 {
     init(interval: Duration, maxTicks: Int = Int.max, tickAtStart: Bool = false) {
-        self = Publisher<UInt64> { continuation, downstream  in
+        self = Publisher<UInt64> { resumption, downstream  in
             .init {
                 var ticks: UInt64 = 0
-                continuation.resume()
+                resumption.resume()
                 var maxTicks = maxTicks
                 do {
                     let start = DispatchTime.now().uptimeNanoseconds
@@ -82,11 +82,11 @@ public extension Publisher {
         maxTicks: Int = Int.max,
         tickAtStart: Bool = false
     ) where Output == C.Instant {
-        self = Publisher<C.Instant> { continuation, downstream  in
+        self = Publisher<C.Instant> { resumption, downstream  in
                 .init {
                     let start = clock.now
                     var ticks: Int = .zero
-                    continuation.resume()
+                    resumption.resume()
                     var maxTicks = maxTicks
                     do {
                         var current = start

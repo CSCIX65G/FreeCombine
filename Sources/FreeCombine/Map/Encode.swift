@@ -32,8 +32,8 @@ public extension Publisher {
     func encode<Item: Decodable>(
         encoder: TopLevelEncoder<Item>
     ) -> Publisher<Item> {
-        .init { continuation, downstream in
-            self(onStartup: continuation) { r in
+        .init { resumption, downstream in
+            self(onStartup: resumption) { r in
                 switch r {
                     case .value(let data):
                         do { return try await downstream(.value(encoder.encode(data))) }

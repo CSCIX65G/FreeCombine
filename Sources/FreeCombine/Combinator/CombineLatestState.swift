@@ -19,7 +19,6 @@
 //  limitations under the License.
 //
 struct CombineLatestState<Left: Sendable, Right: Sendable> {
-    typealias CombinatorAction = Self.Action
     enum Action {
         case setLeft(AsyncStream<Left>.Result, Resumption<Demand>)
         case setRight(AsyncStream<Right>.Result, Resumption<Demand>)
@@ -103,12 +102,12 @@ struct CombineLatestState<Left: Sendable, Right: Sendable> {
         action: Self.Action
     ) async throws -> Reducer<Self, Action>.Effect {
         switch action {
-            case let .setLeft(leftResult, leftContinuation):
-                if mostRecentDemand == .done { leftContinuation.resume(returning: .done) }
-                else { return try await handleLeft(leftResult, leftContinuation) }
-            case let .setRight(rightResult, rightContinuation):
-                if mostRecentDemand == .done { rightContinuation.resume(returning: .done) }
-                else { return try await handleRight(rightResult, rightContinuation) }
+            case let .setLeft(leftResult, leftResumption):
+                if mostRecentDemand == .done { leftResumption.resume(returning: .done) }
+                else { return try await handleLeft(leftResult, leftResumption) }
+            case let .setRight(rightResult, rightResumption):
+                if mostRecentDemand == .done { rightResumption.resume(returning: .done) }
+                else { return try await handleRight(rightResult, rightResumption) }
         }
         return .none
     }

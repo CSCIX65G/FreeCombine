@@ -82,10 +82,9 @@ public extension Publisher {
         function: StaticString = #function,
         file: StaticString = #file,
         line: UInt = #line,
-        deinitBehavior: DeinitBehavior = .assert,
         _ downstream: @escaping Downstream
     ) async -> Cancellable<Demand> {
-        await self(file: file, line: line, deinitBehavior: deinitBehavior, downstream)
+        await self(function: function, file: file, line: line, downstream)
     }
 
     @discardableResult
@@ -93,12 +92,11 @@ public extension Publisher {
         function: StaticString = #function,
         file: StaticString = #file,
         line: UInt = #line,
-        deinitBehavior: DeinitBehavior = .assert,
         _ downstream: @escaping Downstream
     ) async -> Cancellable<Demand> {
         var cancellable: Cancellable<Demand>!
-        let _: Void = try! await withResumption(file: file, line: line, deinitBehavior: deinitBehavior) { continuation in
-            cancellable = self(onStartup: continuation, downstream)
+        let _: Void = try! await withResumption(function: function, file: file, line: line) { resumption in
+            cancellable = self(onStartup: resumption, downstream)
         }
         return cancellable
     }

@@ -20,9 +20,9 @@
 //
 public extension Publisher {
     func print(prefix: String = "") -> Self {
-        return .init { continuation, downstream in
+        return .init { resumption, downstream in
             _ = Swift.print("\(prefix) received subscriber: \(type(of: downstream))")
-            return self(onStartup: continuation) { r in
+            return self(onStartup: resumption) { r in
                 switch r {
                     case .value(let a):
                         _ = Swift.print("\(prefix) received value: \(a))")

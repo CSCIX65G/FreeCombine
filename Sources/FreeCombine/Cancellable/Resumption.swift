@@ -32,37 +32,25 @@ public final class Resumption<Output: Sendable>: Sendable {
     public let function: StaticString
     public let file: StaticString
     public let line: UInt
-    public let deinitBehavior: DeinitBehavior
 
     init(
         function: StaticString = #function,
         file: StaticString = #file,
         line: UInt = #line,
-        deinitBehavior: DeinitBehavior = .assert,
         continuation: UnsafeContinuation<Output, Swift.Error>
     ) {
         self.deallocGuard = ManagedAtomic<Bool>(false)
         self.function = function
         self.file = file
         self.line = line
-        self.deinitBehavior = deinitBehavior
         self.continuation = continuation
     }
 
     deinit {
-        switch deinitBehavior {
-            case .assert:
-                assert(
-                    deallocGuard.load(ordering: .sequentiallyConsistent),
-                    "ABORTING DUE TO LEAKED \(type(of: Self.self)):\(self)  CREATED in \(function) @ \(file): \(line)"
-                )
-            case .logAndCancel:
-                if !deallocGuard.load(ordering: .sequentiallyConsistent) {
-                    print("RESUMING LEAKED \(type(of: Self.self))  CREATED in \(function) @ \(file): \(line)")
-                }
-            case .silentCancel:
-                ()
-        }
+        assert(
+            deallocGuard.load(ordering: .sequentiallyConsistent),
+            "ABORTING DUE TO LEAKED \(type(of: Self.self)):\(self)  CREATED in \(function) @ \(file): \(line)"
+        )
         if !deallocGuard.load(ordering: .sequentiallyConsistent) {
             continuation.resume(throwing: Error.leaked)
         }
@@ -91,16 +79,16 @@ extension Resumption where Output == Void {
 }
 
 public func withResumption<Output>(
+    function: StaticString = #function,
     file: StaticString = #file,
     line: UInt = #line,
-    deinitBehavior: DeinitBehavior = .assert,
     _ resume: (Resumption<Output>) -> Void
 ) async throws -> Output {
     try await withUnsafeThrowingContinuation { (continuation: UnsafeContinuation<Output, Swift.Error>) -> Void in
         resume(.init(
+            function: function,
             file: file,
             line: line,
-            deinitBehavior: deinitBehavior,
             continuation: continuation
         ))
     }

@@ -1,8 +1,8 @@
 //
-//  Filter.swift
+//  Either.swift
 //  
 //
-//  Created by Van Simmons on 6/4/22.
+//  Created by Van Simmons on 8/27/22.
 //
 //  Copyright 2022, ComputeCycles, LLC
 //
@@ -18,19 +18,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 //
-public extension Publisher {
-    func filter(
-        _ isIncluded: @escaping (Output) async -> Bool
-    ) -> Self {
-        .init { resumption, downstream in
-            self(onStartup: resumption) { r in
-                switch r {
-                case .value(let a):
-                    guard await isIncluded(a) else { return .more }
-                    return try await downstream(r)
-                case let .completion(value):
-                    return try await downstream(.completion(value))
-            } }
-        }
-    }
+public enum Either<Left, Right> {
+    case left(Left)
+    case right(Right)
 }

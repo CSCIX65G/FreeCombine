@@ -46,10 +46,6 @@ public struct ConnectableState<Output: Sendable> {
     var distributor: DistributorState<Output>
 
     public init(
-        function: StaticString = #function,
-        file: StaticString = #file,
-        line: UInt = #line,
-        deinitBehavior: DeinitBehavior = .assert,
         upstream: Publisher<Output>,
         repeater: Channel<ConnectableRepeaterState<Output>.Action>
     ) {
@@ -96,14 +92,14 @@ public struct ConnectableState<Output: Sendable> {
 
     static func dispose(action: Self.Action, completion: Reducer<Self, Self.Action>.Completion) async -> Void {
         switch action {
-            case let .connect(continuation):
-                continuation.resume(throwing: Error.alreadyCompleted)
-            case let .pause(continuation):
-                continuation.resume(throwing: Error.alreadyCompleted)
-            case let .resume(continuation):
-                continuation.resume(throwing: Error.alreadyCompleted)
-            case let .disconnect(continuation):
-                continuation.resume(throwing: Error.alreadyCompleted)
+            case let .connect(resumption):
+                resumption.resume(throwing: Error.alreadyCompleted)
+            case let .pause(resumption):
+                resumption.resume(throwing: Error.alreadyCompleted)
+            case let .resume(resumption):
+                resumption.resume(throwing: Error.alreadyCompleted)
+            case let .disconnect(resumption):
+                resumption.resume(throwing: Error.alreadyCompleted)
             case let .distribute(distributorAction):
                 await DistributorState<Output>.dispose(action: distributorAction, completion: distributorCompletion(completion))
         }
@@ -112,14 +108,14 @@ public struct ConnectableState<Output: Sendable> {
     static func reduce(`self`: inout Self, action: Self.Action) async throws -> Reducer<Self, Action>.Effect {
         if Task.isCancelled {
             switch action {
-                case let .connect(continuation):
-                    continuation.resume(throwing: PublisherError.cancelled)
-                case let .pause(continuation):
-                    continuation.resume(throwing: PublisherError.cancelled)
-                case let .resume(continuation):
-                    continuation.resume(throwing: PublisherError.cancelled)
-                case let .disconnect(continuation):
-                    continuation.resume(throwing: PublisherError.cancelled)
+                case let .connect(resumption):
+                    resumption.resume(throwing: PublisherError.cancelled)
+                case let .pause(resumption):
+                    resumption.resume(throwing: PublisherError.cancelled)
+                case let .resume(resumption):
+                    resumption.resume(throwing: PublisherError.cancelled)
+                case let .disconnect(resumption):
+                    resumption.resume(throwing: PublisherError.cancelled)
                 case let .distribute(distributorAction):
                     await DistributorState<Output>.dispose(action: distributorAction, completion: .cancel)
             }
@@ -129,14 +125,14 @@ public struct ConnectableState<Output: Sendable> {
 
     mutating func reduce(action: Action) async throws -> Reducer<Self, Action>.Effect {
         switch action {
-            case let .connect(continuation):
-                return try await connect(continuation)
-            case let .pause(continuation):
-                return try await pause(continuation)
-            case let .resume(continuation):
-                return try await resume(continuation)
-            case let .disconnect(continuation):
-                return try await disconnect(continuation)
+            case let .connect(resumption):
+                return try await connect(resumption)
+            case let .pause(resumption):
+                return try await pause(resumption)
+            case let .resume(resumption):
+                return try await resume(resumption)
+            case let .disconnect(resumption):
+                return try await disconnect(resumption)
             case let .distribute(action):
                 return try await distribute(action)
         }

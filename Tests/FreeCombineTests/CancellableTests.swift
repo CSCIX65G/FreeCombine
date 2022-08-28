@@ -23,7 +23,9 @@ import XCTest
 
 final class CancellableTests: XCTestCase {
 
-    override func setUpWithError() throws { }
+    override func setUpWithError() throws {
+        Assertion.runningTests = true
+    }
 
     override func tearDownWithError() throws { }
 
@@ -38,15 +40,15 @@ final class CancellableTests: XCTestCase {
 
         var c: Cancellable<(Cancellable<Void>, Cancellable<Void>, Cancellable<Void>)>? = .none
         c = Cancellable {
-            let t1 = Cancellable(deinitBehavior: .silentCancel) {
+            let t1 = Cancellable() {
                 try await expectation1.value
                 try expectation1a.complete(Task.isCancelled)
             }
-            let t2 = Cancellable(deinitBehavior: .silentCancel) {
+            let t2 = Cancellable() {
                 try await expectation2.value
                 try expectation2a.complete(Task.isCancelled)
             }
-            let t3 = Cancellable(deinitBehavior: .silentCancel) {
+            let t3 = Cancellable() {
                 try await expectation3.value
                 try expectation3a.complete(Task.isCancelled)
             }
@@ -58,6 +60,7 @@ final class CancellableTests: XCTestCase {
         } else {
             XCTFail("should exist")
         }
+
         c = .none
 
         try await Task.sleep(nanoseconds: 10_000)

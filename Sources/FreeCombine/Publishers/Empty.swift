@@ -30,9 +30,9 @@ public extension Publisher {
     }
 
     init( _: Output.Type = Output.self) {
-        self = .init { continuation, downstream in
+        self = .init { resumption, downstream in
             .init {
-                continuation.resume()
+                resumption.resume()
                 return try await downstream(.completion(.finished))
             }
         }

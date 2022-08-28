@@ -25,25 +25,22 @@ public final class Subject<Output: Sendable> {
     public let function: StaticString
     public let file: StaticString
     public let line: UInt
-    public let deinitBehavior: DeinitBehavior
 
     init(
         function: StaticString = #function,
         file: StaticString = #file,
         line: UInt = #line,
-        deinitBehavior: DeinitBehavior = .assert,
         buffering: AsyncStream<DistributorReceiveState<Output>.Action>.Continuation.BufferingPolicy = .bufferingOldest(1),
         stateTask: StateTask<DistributorState<Output>, DistributorState<Output>.Action>
     ) async throws {
         self.function = function
         self.file = file
         self.line = line
-        self.deinitBehavior = deinitBehavior
         self.stateTask = stateTask
         self.receiveStateTask = try await Channel(buffering: buffering).stateTask(
+            function: function,
             file: file,
             line: line,
-            deinitBehavior: deinitBehavior,
             initialState: DistributorReceiveState<Output>.create(distributorChannel: stateTask.channel),
             reducer: .init(
                 reducer: DistributorReceiveState<Output>.reduce,
@@ -55,14 +52,7 @@ public final class Subject<Output: Sendable> {
 
     deinit {
         let shouldCancel = !(isCompleting || isCancelled)
-        switch deinitBehavior {
-            case .assert:
-                assert(!shouldCancel, "ABORTING DUE TO LEAKED \(type(of: Self.self))  CREATED in \(function) @ \(file): \(line)")
-            case .logAndCancel:
-                if shouldCancel { print("CANCELLING LEAKED \(type(of: Self.self))  CREATED in \(function) @ \(file): \(line)") }
-            case .silentCancel:
-                ()
-        }
+        assert(!shouldCancel, "ABORTING DUE TO LEAKED \(type(of: Self.self))  CREATED in \(function) @ \(file): \(line)")
         if shouldCancel {
             receiveStateTask.cancel()
             stateTask.cancel()
@@ -194,14 +184,13 @@ public extension Subject {
     func publisher(
         function: StaticString = #function,
         file: StaticString = #file,
-        line: UInt = #line,
-        deinitBehavior: DeinitBehavior = .assert
+        line: UInt = #line
     ) -> Publisher<Output> {
-        .init(file: file, line: line, deinitBehavior: deinitBehavior, stateTask: stateTask)
+        .init(function: function, file: file, line: line, stateTask: stateTask)
     }
 
     var asyncPublisher: Publisher<Output> {
-        get { .init(file: file, line: line, deinitBehavior: deinitBehavior, stateTask: stateTask) }
+        get { .init(stateTask: stateTask) }
     }
 
     @discardableResult

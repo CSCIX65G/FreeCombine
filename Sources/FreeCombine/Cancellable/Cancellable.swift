@@ -20,12 +20,6 @@
 //
 @preconcurrency import Atomics
 
-public enum DeinitBehavior: Sendable {
-    case assert
-    case logAndCancel
-    case silentCancel
-}
-
 // Can't be a protocol bc we have to implement deinit
 public final class Cancellable<Output: Sendable>: Sendable {
     private let task: Task<Output, Swift.Error>
@@ -34,7 +28,6 @@ public final class Cancellable<Output: Sendable>: Sendable {
     public let function: StaticString
     public let file: StaticString
     public let line: UInt
-    public let deinitBehavior: DeinitBehavior
 
     public var isCancelled: Bool { task.isCancelled }
     public var isCompleting: Bool { deallocGuard.load(ordering: .sequentiallyConsistent) }
@@ -58,7 +51,6 @@ public final class Cancellable<Output: Sendable>: Sendable {
         function: StaticString = #function,
         file: StaticString = #file,
         line: UInt = #line,
-        deinitBehavior: DeinitBehavior = .assert,
         operation: @escaping @Sendable () async throws -> Output
     ) {
         let atomic = ManagedAtomic<Bool>(false)
@@ -66,7 +58,6 @@ public final class Cancellable<Output: Sendable>: Sendable {
         self.function = function
         self.file = file
         self.line = line
-        self.deinitBehavior = deinitBehavior
         self.task = .init {
             do {
                 let retVal = try await operation()
@@ -81,16 +72,12 @@ public final class Cancellable<Output: Sendable>: Sendable {
     }
 
     deinit {
-        let shouldCancel = !(isCompleting || task.isCancelled)
-        switch deinitBehavior {
-            case .assert:
-                assert(!shouldCancel, "ABORTING DUE TO LEAKED \(type(of: Self.self))  CREATED in \(function) @ \(file): \(line)")
-            case .logAndCancel:
-                if shouldCancel { print("CANCELLING LEAKED \(type(of: Self.self))  CREATED in \(function) @ \(file): \(line)") }
-            case .silentCancel:
-                ()
+        if !(isCompleting || task.isCancelled) {
+            Assertion.assertionFailure(
+                "ABORTING DUE TO LEAKED \(type(of: Self.self))  CREATED in \(function) @ \(file): \(line)"
+            )
+            task.cancel()
         }
-        if shouldCancel { task.cancel() }
     }
 }
 
@@ -132,11 +119,10 @@ public extension Cancellable {
         function: StaticString = #function,
         file: StaticString = #file,
         line: UInt = #line,
-        deinitBehavior: DeinitBehavior = .assert,
         _ generator: @escaping () async throws -> Cancellable<Output>
     ) async throws -> Cancellable<Output> {
         var returnValue: Cancellable<Output>!
-        let _: Void = try await withResumption(file: file, line: line, deinitBehavior: deinitBehavior) { resumption in
+        let _: Void = try await withResumption(file: file, line: line) { resumption in
             returnValue = .init(file: file, line: line, operation: {
                 let outer = try await generator()
                 return try await withTaskCancellationHandler(

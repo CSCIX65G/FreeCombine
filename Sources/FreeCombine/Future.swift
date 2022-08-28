@@ -49,23 +49,23 @@ public extension Future {
                             switch result {
                                 case let .success(value):
                                     guard try await downstream(.value(value)) == .more else {
-                                        try demandRef.set(value: .success(.done))
+                                        demandRef.set(value: .success(.done))
                                         return
                                     }
                                     let demand = try await downstream(.completion(.finished))
-                                    try demandRef.set(value: .success(demand))
+                                    demandRef.set(value: .success(demand))
                                 case let .failure(error):
                                     switch error {
                                         case FutureError.cancelled:
                                             _ = try await downstream(.completion(.cancelled))
-                                            try demandRef.set(value: .failure(PublisherError.cancelled))
+                                            demandRef.set(value: .failure(PublisherError.cancelled))
                                         default:
                                             _ = try await downstream(.completion(.failure(error)))
-                                            try demandRef.set(value: .failure(error))
+                                            demandRef.set(value: .failure(error))
                                     }
                             }
                         } catch {
-                            try demandRef.set(value: .failure(error))
+                            demandRef.set(value: .failure(error))
                         }
                     }
                     resumption.resume()
@@ -103,10 +103,9 @@ public extension Future {
         function: StaticString = #function,
         file: StaticString = #file,
         line: UInt = #line,
-        deinitBehavior: DeinitBehavior = .assert,
         _ downstream: @escaping @Sendable (Result<Output, Swift.Error>) async throws -> Void
     ) async -> Cancellable<Void> {
-        await self(file: file, line: line, deinitBehavior: deinitBehavior, downstream)
+        await self(function: function, file: file, line: line, downstream)
     }
 
     @discardableResult
@@ -114,12 +113,11 @@ public extension Future {
         function: StaticString = #function,
         file: StaticString = #file,
         line: UInt = #line,
-        deinitBehavior: DeinitBehavior = .assert,
         _ downstream: @escaping @Sendable (Result<Output, Swift.Error>) async throws -> Void
     ) async -> Cancellable<Void> {
         var cancellable: Cancellable<Void>!
-        let _: Void = try! await withResumption(file: file, line: line, deinitBehavior: deinitBehavior) { continuation in
-            cancellable = self(onStartup: continuation, downstream)
+        let _: Void = try! await withResumption(function: function, file: file, line: line) { resumption in
+            cancellable = self(onStartup: resumption, downstream)
         }
         return cancellable
     }

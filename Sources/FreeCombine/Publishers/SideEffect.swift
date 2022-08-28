@@ -34,9 +34,9 @@ public extension Publisher {
         _: Output.Type = Output.self,
         operation: @escaping () async throws -> Void
     ) {
-        self = .init { continuation, downstream in
+        self = .init { resumption, downstream in
             .init {
-                continuation.resume()
+                resumption.resume()
                 do {
                     try await operation()
                     guard !Task.isCancelled else {

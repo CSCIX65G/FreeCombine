@@ -22,8 +22,8 @@ public extension Publisher {
     func tryCompactMap<B>(
         _ transform: @escaping (Output) async throws -> B?
     ) -> Publisher<B> {
-        .init { continuation, downstream in
-            self(onStartup: continuation) { r in switch r {
+        .init { resumption, downstream in
+            self(onStartup: resumption) { r in switch r {
                 case .value(let a):
                     var c: B? = .none
                     do { c = try await transform(a) }

@@ -55,34 +55,24 @@ public final class StateTask<State, Action: Sendable> {
     public let function: StaticString
     public let file: StaticString
     public let line: UInt
-    public let deinitBehavior: DeinitBehavior
 
     fileprivate init(
         function: StaticString = #function,
         file: StaticString = #file,
         line: UInt = #line,
-        deinitBehavior: DeinitBehavior = .assert,
         channel: Channel<Action>,
         cancellable: Cancellable<State>
     ) {
         self.function = function
         self.file = file
         self.line = line
-        self.deinitBehavior = deinitBehavior
         self.channel = channel
         self.cancellable = cancellable
     }
 
     deinit {
         let shouldCancel = !(cancellable.isCancelled || cancellable.isCompleting)
-        switch deinitBehavior {
-            case .assert:
-                assert(!shouldCancel, "ABORTING DUE TO LEAKED \(type(of: Self.self))  CREATED in \(function) @ \(file): \(line)")
-            case .logAndCancel:
-                if shouldCancel { print("CANCELLING LEAKED \(type(of: Self.self))  CREATED in \(function) @ \(file): \(line)") }
-            case .silentCancel:
-                ()
-        }
+        assert(!shouldCancel, "ABORTING DUE TO LEAKED \(type(of: Self.self))  CREATED in \(function) @ \(file): \(line)")
         if shouldCancel { cancellable.cancel() }
     }
 
@@ -129,25 +119,23 @@ extension StateTask {
         function: StaticString = #function,
         file: StaticString = #file,
         line: UInt = #line,
-        deinitBehavior: DeinitBehavior = .assert,
         channel: Channel<Action>,
-        initialState: @escaping (Channel<Action>) async -> State,
         onStartup: Resumption<Void>,
+        initialState: @escaping (Channel<Action>) async -> State,
         reducer: Reducer<State, Action>
     ) {
         self.init (
             file: file,
             line: line,
-            deinitBehavior: deinitBehavior,
             channel: channel,
-            cancellable: .init(file: file, line: line, deinitBehavior: deinitBehavior) {
+            cancellable: .init(file: file, line: line) {
                 // This is the runloop for the StateTask
                 var effects: Set<Cancellable<Demand>> = .init()
                 var state = await initialState(channel)
                 onStartup.resume()
                 do { try await withTaskCancellationHandler( operation: {
                     // Loop over the channel, reducing each action into state
-                    for await action in channel {
+                    for await action in channel.stream {
                         try await reducer.reduce(
                             state: &state,
                             action: action,
@@ -174,17 +162,16 @@ public extension StateTask {
         function: StaticString = #function,
         file: StaticString = #file,
         line: UInt = #line,
-        deinitBehavior: DeinitBehavior = .assert,
         channel: Channel<Action>,
         initialState: @escaping (Channel<Action>) async -> State,
         reducer: Reducer<State, Action>
     ) async -> Self {
         var stateTask: Self!
-        try! await withResumption(file: file, line: line, deinitBehavior: deinitBehavior) { stateTaskContinuation in
+        try! await withResumption(file: file, line: line) { stateTaskContinuation in
             stateTask = Self.init(
                 channel: channel,
-                initialState: initialState,
                 onStartup: stateTaskContinuation,
+                initialState: initialState,
                 reducer: reducer
             )
         }

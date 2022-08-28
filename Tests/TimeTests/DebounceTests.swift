@@ -38,7 +38,7 @@ class DebounceTests: XCTestCase {
                 switch value {
                     case .value(let value):
                         let vals = values.value
-                        try values.set(value: vals + [value])
+                        values.set(value: vals + [value])
                         counter.increment()
                         return .more
                     case let .completion(.failure(error)):
@@ -85,7 +85,7 @@ class DebounceTests: XCTestCase {
                 switch value {
                     case .value(let value):
                         let vals = values.value
-                        try values.set(value: vals + [value])
+                        values.set(value: vals + [value])
                         counter.increment()
                         return .more
                     case let .completion(.failure(error)):

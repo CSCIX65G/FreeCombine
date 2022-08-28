@@ -20,8 +20,8 @@
 //
 public extension Publisher {
     func tryMap<B>(_ transform: @escaping (Output) async throws -> B) -> Publisher<B> {
-        .init { continuation, downstream in
-            self(onStartup: continuation) { r in
+        .init { resumption, downstream in
+            self(onStartup: resumption) { r in
                 guard !Task.isCancelled else {
                     return try await handleCancellation(of: downstream)
                 }

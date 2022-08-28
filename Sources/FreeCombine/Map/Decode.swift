@@ -33,8 +33,8 @@ public extension Publisher {
         _ type: Item.Type,
         decoder: TopLevelDecoder<Item>
     ) -> Publisher<Item> {
-        .init { continuation, downstream in
-            self(onStartup: continuation) { r in
+        .init { resumption, downstream in
+            self(onStartup: resumption) { r in
                 switch r {
                     case .value(let data):
                         do { return try await downstream(.value(decoder.decode(type, from: data))) }

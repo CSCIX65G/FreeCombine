@@ -27,7 +27,7 @@ public class ValueRef<Value> {
     public init(value: Value) { self.value = value }
 
     @discardableResult
-    public func set(value: Value) throws -> Value {
+    public func set(value: Value) -> Value {
         let tmp = self.value
         self.value = value
         return tmp
