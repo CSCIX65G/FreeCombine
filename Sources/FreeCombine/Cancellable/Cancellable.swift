@@ -73,7 +73,7 @@ public final class Cancellable<Output: Sendable>: Sendable {
 
     deinit {
         if !(isCompleting || task.isCancelled) {
-            assertionFailure(
+            Assertion.assertionFailure(
                 "ABORTING DUE TO LEAKED \(type(of: Self.self))  CREATED in \(function) @ \(file): \(line)"
             )
             task.cancel()

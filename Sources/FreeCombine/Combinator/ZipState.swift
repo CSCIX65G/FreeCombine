@@ -19,7 +19,6 @@
 //  limitations under the License.
 //
 struct ZipState<Left: Sendable, Right: Sendable> {
-    typealias CombinatorAction = Self.Action
     enum Action {
         case setLeft(AsyncStream<Left>.Result, Resumption<Demand>)
         case setRight(AsyncStream<Right>.Result, Resumption<Demand>)

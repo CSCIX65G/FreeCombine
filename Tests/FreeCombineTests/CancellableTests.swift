@@ -23,11 +23,13 @@ import XCTest
 
 final class CancellableTests: XCTestCase {
 
-    override func setUpWithError() throws { }
+    override func setUpWithError() throws {
+        Assertion.runningTests = true
+    }
 
     override func tearDownWithError() throws { }
 
-    func xtestCancellable() async throws {
+    func testCancellable() async throws {
         let expectation1 = await Expectation<Void>()
         let expectation2 = await Expectation<Void>()
         let expectation3 = await Expectation<Void>()

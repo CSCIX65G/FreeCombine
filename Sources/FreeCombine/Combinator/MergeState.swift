@@ -19,7 +19,6 @@
 //  limitations under the License.
 //
 struct MergeState<Output: Sendable> {
-    typealias CombinatorAction = Self.Action
     enum Action {
         case setValue(AsyncStream<(Int, Output)>.Result, Resumption<Demand>)
         case removeCancellable(Int, Resumption<Demand>)
@@ -38,13 +37,13 @@ struct MergeState<Output: Sendable> {
     var cancellables: [Int: Cancellable<Demand>]
     var mostRecentDemand: Demand = .more
 
-    init(
+    init<S: Sequence>(
         channel: Channel<MergeState<Output>.Action>,
         downstream: @escaping (AsyncStream<(Output)>.Result) async throws -> Demand,
         upstreams upstream1: Publisher<Output>,
         _ upstream2: Publisher<Output>,
-        _ otherUpstreams: [Publisher<Output>]
-    ) async {
+        _ otherUpstreams: S
+    ) async where S.Element == Publisher<Output> {
         self.downstream = downstream
         var localCancellables = [Int: Cancellable<Demand>]()
         let upstreams = ([upstream1, upstream2] + otherUpstreams).enumerated()
@@ -65,11 +64,12 @@ struct MergeState<Output: Sendable> {
         cancellables = localCancellables
     }
 
-    static func create(
+    static func create<S: Sequence>(
         upstreams upstream1: Publisher<Output>,
         _ upstream2: Publisher<Output>,
-        _ otherUpstreams: [Publisher<Output>]
-    ) -> (@escaping (AsyncStream<Output>.Result) async throws -> Demand) -> (Channel<MergeState<Output>.Action>) async -> Self {
+        _ otherUpstreams: S
+    ) -> (@escaping (AsyncStream<Output>.Result) async throws -> Demand) -> (Channel<MergeState<Output>.Action>) async -> Self
+    where S.Element == Publisher<Output> {
         { downstream in { channel in
             await .init(channel: channel, downstream: downstream, upstreams: upstream1, upstream2, otherUpstreams)
         } }
