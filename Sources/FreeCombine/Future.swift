@@ -26,13 +26,13 @@ public enum FutureError: Swift.Error, Sendable, CaseIterable {
 public struct Future<Output: Sendable>: Sendable {
     private let call: @Sendable (
         Resumption<Void>,
-        @escaping @Sendable (Result<Output, Swift.Error>) async throws -> Void
+        @escaping @Sendable (Result<Output, Swift.Error>) async -> Void
     ) -> Cancellable<Void>
 
     internal init(
         _ call: @escaping @Sendable (
             Resumption<Void>,
-            @escaping @Sendable (Result<Output, Swift.Error>) async throws -> Void
+            @escaping @Sendable (Result<Output, Swift.Error>) async -> Void
         ) -> Cancellable<Void>
     ) {
         self.call = call
@@ -80,7 +80,7 @@ public extension Future {
     @discardableResult
     func sink(
         onStartup: Resumption<Void>,
-        _ downstream: @escaping @Sendable (Result<Output, Swift.Error>) async throws -> Void
+        _ downstream: @escaping @Sendable (Result<Output, Swift.Error>) async -> Void
     ) -> Cancellable<Void> {
         self(onStartup: onStartup, downstream)
     }
@@ -88,13 +88,13 @@ public extension Future {
     @discardableResult
     func callAsFunction(
         onStartup: Resumption<Void>,
-        _ downstream: @escaping @Sendable (Result<Output, Swift.Error>) async throws -> Void
+        _ downstream: @escaping @Sendable (Result<Output, Swift.Error>) async -> Void
     ) -> Cancellable<Void> {
         call(onStartup, { result in
             guard !Task.isCancelled else {
-                return try await handleFutureCancellation(of: downstream)
+                return await handleFutureCancellation(of: downstream)
             }
-            return try await downstream(result)
+            return await downstream(result)
         } )
     }
 
@@ -103,7 +103,7 @@ public extension Future {
         function: StaticString = #function,
         file: StaticString = #file,
         line: UInt = #line,
-        _ downstream: @escaping @Sendable (Result<Output, Swift.Error>) async throws -> Void
+        _ downstream: @escaping @Sendable (Result<Output, Swift.Error>) async -> Void
     ) async -> Cancellable<Void> {
         await self(function: function, file: file, line: line, downstream)
     }
@@ -113,7 +113,7 @@ public extension Future {
         function: StaticString = #function,
         file: StaticString = #file,
         line: UInt = #line,
-        _ downstream: @escaping @Sendable (Result<Output, Swift.Error>) async throws -> Void
+        _ downstream: @escaping @Sendable (Result<Output, Swift.Error>) async -> Void
     ) async -> Cancellable<Void> {
         var cancellable: Cancellable<Void>!
         let _: Void = try! await withResumption(function: function, file: file, line: line) { resumption in
@@ -124,7 +124,7 @@ public extension Future {
 }
 
 func handleFutureCancellation<Output>(
-    of downstream: @escaping @Sendable (Result<Output, Swift.Error>) async throws -> Void
-) async throws -> Void {
-    _ = try await downstream(.failure(FutureError.cancelled))
+    of downstream: @escaping @Sendable (Result<Output, Swift.Error>) async -> Void
+) async -> Void {
+    _ = await downstream(.failure(FutureError.cancelled))
 }

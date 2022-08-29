@@ -49,9 +49,39 @@ public extension Channel {
                     case .terminated:
                         resumption.resume(throwing: PublisherError.cancelled)
                     @unknown default:
-                        fatalError("Unhandled continuation value")
+                        fatalError("Unhandled resumption value")
                 }
             }
+        }
+    }
+
+    func consume<Upstream>(
+        function: StaticString = #function,
+        file: StaticString = #file,
+        line: UInt = #line,
+        future: Future<Upstream>,
+        using action: @escaping (Result<Upstream, Swift.Error>, Resumption<Void>) -> Element
+    ) async -> Cancellable<Void>  {
+        await future { upstreamValue in
+//            do {
+//                try await withResumption(function: function, file: file, line: line) { resumption in
+//                    guard !Task.isCancelled else {
+//                        resumption.resume(throwing: PublisherError.cancelled)
+//                        return
+//                    }
+//                    switch self.yield(action(upstreamValue, resumption)) {
+//                        case .enqueued:
+//                            ()
+//                        case .dropped:
+//                            resumption.resume(throwing: PublisherError.enqueueError)
+//                        case .terminated:
+//                            resumption.resume(throwing: PublisherError.cancelled)
+//                        @unknown default:
+//                            fatalError("Unhandled resumption value")
+//                    }
+//                }
+//            } catch { }
+            return
         }
     }
 }

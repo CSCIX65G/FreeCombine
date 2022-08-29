@@ -68,7 +68,9 @@ class MapTests: XCTestCase {
         let cancellation = await promise.future()
             .map { $0 * 2 }
             .sink { result in
-                try await expectation.complete()
+                do { try await expectation.complete() }
+                catch { XCTFail("Already used expectation") }
+                
                 switch result {
                     case let .success(value):
                         XCTAssert(value == 26, "wrong value sent: \(value)")

@@ -48,45 +48,6 @@
 //}
 import Atomics
 
-public enum FirstToFinish<Left: Sendable, Right: Sendable> {
-    case left(Result<Left, Swift.Error>, Cancellable<Void>)
-    case right(Result<Right, Swift.Error>, Cancellable<Void>)
-
-    public static func first<Left, Right>(
-        of left: Future<Left>,
-        _ right: Future<Right>
-    ) -> Future<FirstToFinish<Left, Right>> {
-        .init { resumption, downstream in .init {
-            let flag: ManagedAtomic<Bool> = .init(false)
-            var leftCancellable: Cancellable<Void>!
-            var rightCancellable: Cancellable<Void>!
-            let outcome: ValueRef<Either<Result<Left, Swift.Error>, Result<Right, Swift.Error>>?> = .init(value: .none)
-            resumption.resume()
-            let _: Void = try await withResumption { innerResumption in
-                leftCancellable = Cancellable<Cancellable<Void>> { await left { leftResult in
-                    let (success, _) = flag.compareExchange(expected: false, desired: true, ordering: .sequentiallyConsistent)
-                    guard success else { return }
-                    outcome.set(value: .left(leftResult))
-                    innerResumption.resume()
-                } }.join()
-                rightCancellable = Cancellable<Cancellable<Void>> { await right { rightResult in
-                    let (success, _) = flag.compareExchange(expected: false, desired: true, ordering: .sequentiallyConsistent)
-                    guard success else { return }
-                    outcome.set(value: .right(rightResult))
-                    innerResumption.resume()
-                } }.join()
-            }
-            switch outcome.value! {
-                case let .left(left):
-                    return try await downstream(.success(.left(left, rightCancellable)))
-                case let .right(right):
-                    return try await downstream(.success(.right(right, leftCancellable)))
-            }
-        } }
-    }
-}
-
-
 public func and<Left,Right>(
     _ left: Future<Left>,
     _ right: Future<Right>
@@ -124,13 +85,13 @@ public func and<Left,Right>(
                             _ = await rightCancellable.result
                             switch rightResultRef.value {
                                 case let .success(rightValue):
-                                    try await downstream(.success((leftValue, rightValue)))
+                                    await downstream(.success((leftValue, rightValue)))
                                 case let .failure(error):
-                                    try await downstream(.failure(error))
+                                    await downstream(.failure(error))
                             }
                         case let .failure(error):
                             rightCancellable.cancel()
-                            try await downstream(.failure(error))
+                            await downstream(.failure(error))
                     }
                 case 2:
                     switch rightResultRef.value {
@@ -138,13 +99,13 @@ public func and<Left,Right>(
                             _ = await leftCancellable.result
                             switch leftResultRef.value {
                                 case let .success(leftValue):
-                                    try await downstream(.success((leftValue, rightValue)))
+                                    await downstream(.success((leftValue, rightValue)))
                                 case let .failure(error):
-                                    try await downstream(.failure(error))
+                                    await downstream(.failure(error))
                             }
                         case let .failure(error):
                             rightCancellable.cancel()
-                            try await downstream(.failure(error))
+                            await downstream(.failure(error))
                     }
                 default:
                     fatalError("Inconsistent state and-ing futures")
