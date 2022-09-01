@@ -145,7 +145,7 @@ public extension Future {
                 }
                 guard case .enqueued = enqueueStatus else {
                     resumption.resume(throwing: PublisherError.enqueueError)
-                    return .init { try await downstream(.failure(PublisherError.enqueueError)) }
+                    return .init { await downstream(.failure(PublisherError.enqueueError)) }
                 }
                 resumption.resume()
                 return c

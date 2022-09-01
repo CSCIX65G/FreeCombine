@@ -26,7 +26,7 @@ public extension Future {
     init(_ type: Output.Type = Output.self, error: Swift.Error) {
         self = .init { resumption, downstream in .init {
             resumption.resume()
-            return try await downstream(.failure(error))
+            return await downstream(.failure(error))
         } }
     }
 }
@@ -45,7 +45,7 @@ public extension Future {
     ) {
         self = .init { resumption, downstream in  .init {
             resumption.resume()
-            return try await downstream(.failure(generator()))
+            return await downstream(.failure(generator()))
         } }
     }
 }

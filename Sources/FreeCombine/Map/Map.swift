@@ -40,9 +40,9 @@ public extension Future {
         .init { resumption, downstream in
             self(onStartup: resumption) { r in switch r {
                 case .success(let a):
-                    return try await downstream(.success(transform(a)))
+                    return await downstream(.success(transform(a)))
                 case let .failure(error):
-                    return try await downstream(.failure(error))
+                    return await downstream(.failure(error))
             } }
         }
     }

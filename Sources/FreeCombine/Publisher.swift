@@ -167,21 +167,6 @@ func flattener<B>(
     } }
 }
 
-func errorFlattener<B>(
-    _ downstream: @escaping Publisher<B>.Downstream
-) -> Publisher<B>.Downstream {
-    { b in switch b {
-        case .completion(.finished):
-            return .more
-        case .value:
-            return try await downstream(b)
-        case let .completion(.failure(error)):
-            throw error
-        case .completion(.cancelled):
-            return try await downstream(b)
-    } }
-}
-
 func handleCancellation<Output>(
     of downstream: @escaping Publisher<Output>.Downstream
 ) async throws -> Demand {

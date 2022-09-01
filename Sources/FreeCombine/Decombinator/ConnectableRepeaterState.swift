@@ -80,7 +80,7 @@ public struct ConnectableRepeaterState<Output: Sendable> {
                     case .terminated:
                         innerResumption.resume(throwing: PublisherError.cancelled)
                     @unknown default:
-                        fatalError("Unhandled continuation value")
+                        fatalError("Unhandled resumption value")
                 }
             }
             resumption.resume(returning: subscribers)

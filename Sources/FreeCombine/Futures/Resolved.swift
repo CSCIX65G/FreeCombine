@@ -26,7 +26,7 @@ public extension Future {
     init(_ result: Result<Output, Swift.Error>) {
         self = .init { resumption, downstream in .init {
             resumption.resume()
-            return try await downstream(result)
+            return await downstream(result)
         } }
     }
 }
@@ -39,7 +39,7 @@ public extension Future {
     init(_ generator: @escaping () async -> Result<Output, Swift.Error>) {
         self = .init { resumption, downstream in  .init {
             resumption.resume()
-            return try await downstream(generator())
+            return await downstream(generator())
         } }
     }
 }
