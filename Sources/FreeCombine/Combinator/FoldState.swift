@@ -101,6 +101,7 @@ struct FoldState<Input: Sendable, Output: Sendable> {
         }
         switch action {
             case let .fold(newValue, resumption):
+                resumption.resume()
                 return await fold(&currentValue, newValue)
             case let .removeCancellable(index, resumption):
                 resumption.resume()
