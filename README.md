@@ -12,7 +12,7 @@ Other points of interest:
 
  1. FreeCombine takes a different stance on how Publishers are constructed - we don't use protocols, instead we use concrete types.  This also leads to code that looks and feels almost the same as Combine, but which is slightly different.  To facilitate the use of FreeCombine, several liberties have been taken with Swift syntax to make FreeCombine appear as much as possible like Combine.
  
- 1. FreeCombine operators are carefully constructed to make inadvertant introduction of data races and deadlock impossible. FreeCombine uses the type system to prevent you from being able express a data race.
+ 1. FreeCombine operators are carefully constructed to make inadvertant introduction of data races and deadlock very difficult if not impossible. FreeCombine uses the type system to prevent you from being able express a data race.
  
  1. In the manner of NIO (and _NOT_ in the manner of Combine or Structured Concurrency), FreeCombine requires that no Task or Continuation can leak.  Tasks or Continuations which are neither cancelled nor demonstrably completed when their last reference is lost are treated as programmer error.
  

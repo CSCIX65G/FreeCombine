@@ -1,8 +1,8 @@
 //
-//  Channel+Publisher.swift
+//  Channel+Future.swift
 //  
 //
-//  Created by Van Simmons on 7/1/22.
+//  Created by Van Simmons on 9/2/22.
 //
 //  Copyright 2022, ComputeCycles, LLC
 //
@@ -23,21 +23,12 @@ public extension Channel {
         function: StaticString = #function,
         file: StaticString = #file,
         line: UInt = #line,
-        publisher: Publisher<Upstream>
-    ) async -> Cancellable<Demand> where Element == (AsyncStream<Upstream>.Result, Resumption<Demand>) {
-        await consume(file: file, line: line, publisher: publisher, using: { ($0, $1) })
-    }
-
-    func consume<Upstream>(
-        function: StaticString = #function,
-        file: StaticString = #file,
-        line: UInt = #line,
-        publisher: Publisher<Upstream>,
-        using action: @escaping (AsyncStream<Upstream>.Result, Resumption<Demand>) -> Element
-    ) async -> Cancellable<Demand>  {
-        await publisher { upstreamValue in
-            try await withResumption(file: file, line: line) { resumption in
-                if Task.isCancelled {
+        future: Future<Upstream>,
+        using action: @escaping (Result<Upstream, Swift.Error>, Resumption<Void>) -> Element
+    ) async -> Cancellable<Void>  {
+        await future { upstreamValue in
+            let _: Void = (try? await withResumption(function: function, file: file, line: line) { resumption in
+                guard !Task.isCancelled else {
                     resumption.resume(throwing: PublisherError.cancelled)
                     return
                 }
@@ -51,7 +42,8 @@ public extension Channel {
                     @unknown default:
                         fatalError("Unhandled resumption value")
                 }
-            }
+            }) ?? ()
+            return
         }
     }
 }

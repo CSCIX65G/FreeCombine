@@ -48,70 +48,68 @@
 //}
 import Atomics
 
-public func and<Left,Right>(
+public enum AndInput<Left: Sendable, Right: Sendable> {
+    enum Error: Swift.Error {
+        case neither
+        case left(Left)
+        case right(Right)
+    }
+    case left(Left)
+    case right(Right)
+}
+
+func andFold<Left, Right>(
+    state: inout Result<(Left, Right), Swift.Error>,
+    action: Result<(Int, AndInput<Left, Right>), Swift.Error>
+) async -> Reducer<
+    FoldState<AndInput<Left, Right>, (Left, Right)>,
+    FoldState<AndInput<Left, Right>, (Left, Right)>.Action
+>.Effect {
+    switch action {
+        case let .success((_, .left(left))):
+            switch state {
+                case .failure(AndInput<Left, Right>.Error.neither):
+                    state = .failure(AndInput<Left, Right>.Error.left(left))
+                    return .none
+                case .failure(AndInput<Left, Right>.Error.right(let right)):
+                    state = .success((left, right))
+                    return .completion(.exit)
+                default:
+                    fatalError("already sent")
+            }
+        case let .success((_, .right(right))):
+            switch state {
+                case .failure(AndInput<Left, Right>.Error.neither):
+                    state = .failure(AndInput<Left, Right>.Error.right(right))
+                    return .none
+                case .failure(AndInput<Left, Right>.Error.left(let left)):
+                    state = .success((left, right))
+                    return .completion(.exit)
+                default:
+                    fatalError("already sent")
+            }
+        case let .failure(error):
+            return .completion(.failure(error))
+    }
+}
+
+public func and<Left, Right>(
     _ left: Future<Left>,
     _ right: Future<Right>
 ) -> Future<(Left, Right)> {
-    .init { resumption, downstream in
-        Cancellable<Void> {
-            let first: ManagedAtomic<Int> = .init(0)
-            let leftResultRef: ValueRef<Result<Left, Swift.Error>> = .init(value: .failure(FutureError.internalError))
-            let rightResultRef: ValueRef<Result<Right, Swift.Error>> = .init(value: .failure(FutureError.internalError))
-            var leftCancellable: Cancellable<Void>!
-            var rightCancellable: Cancellable<Void>!
-            resumption.resume()
-            do {
-                let _: Void = try await withResumption { resumption in
-                    leftCancellable = Cancellable<Cancellable<Void>> { await left { leftResult in
-                        leftResultRef.set(value: leftResult)
-                        let (success, _) = first.compareExchange(expected: 0, desired: 1, ordering: .sequentiallyConsistent)
-                        guard success else { return }
-                        resumption.resume()
-                    } }.join()
-                    rightCancellable = Cancellable<Cancellable<Void>> { await right { rightResult in
-                            rightResultRef.set(value: rightResult)
-                            let (success, _) = first.compareExchange(expected: 0, desired: 2, ordering: .sequentiallyConsistent)
-                            guard success else { return }
-                            resumption.resume()
-                    } }.join()
-                }
-            } catch {
-                fatalError("Threw while and-ing")
-            }
-            switch first.load(ordering: .sequentiallyConsistent) {
-                case 1:
-                    switch leftResultRef.value {
-                        case let .success(leftValue):
-                            _ = await rightCancellable.result
-                            switch rightResultRef.value {
-                                case let .success(rightValue):
-                                    await downstream(.success((leftValue, rightValue)))
-                                case let .failure(error):
-                                    await downstream(.failure(error))
-                            }
-                        case let .failure(error):
-                            rightCancellable.cancel()
-                            await downstream(.failure(error))
-                    }
-                case 2:
-                    switch rightResultRef.value {
-                        case let .success(rightValue):
-                            _ = await leftCancellable.result
-                            switch leftResultRef.value {
-                                case let .success(leftValue):
-                                    await downstream(.success((leftValue, rightValue)))
-                                case let .failure(error):
-                                    await downstream(.failure(error))
-                            }
-                        case let .failure(error):
-                            rightCancellable.cancel()
-                            await downstream(.failure(error))
-                    }
-                default:
-                    fatalError("Inconsistent state and-ing futures")
-            }
-        }
-    }
+    .init(
+        initialState: FoldState<AndInput<Left, Right>, (Left, Right)>.create(
+            initialValue: Result<(Left, Right), Swift.Error>.failure(AndInput<Left, Right>.Error.neither),
+            fold: andFold,
+            futures: [left.map(AndInput.left), right.map(AndInput.right)]
+        ),
+        buffering: .bufferingOldest(2),
+        reducer: Reducer(
+            reducer: FoldState<AndInput<Left, Right>, (Left, Right)>.reduce,
+            disposer: FoldState<AndInput<Left, Right>, (Left, Right)>.dispose,
+            finalizer: FoldState<AndInput<Left, Right>, (Left, Right)>.complete
+        )
+    )
 }
 
 
