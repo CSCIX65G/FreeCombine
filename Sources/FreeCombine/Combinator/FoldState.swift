@@ -76,8 +76,9 @@ struct FoldState<Input: Sendable, Output: Sendable> {
     }
 
     static func complete(state: inout Self, completion: Reducer<Self, Self.Action>.Completion) async -> Void {
-        for can in state.cancellables.values { can.cancel(); _ = await can.result }
         await state.downstream(state.currentValue)
+        for can in state.cancellables.values { can.cancel(); }
+        for can in state.cancellables.values { _ = await can.result }
         state.cancellables.removeAll()
     }
 
