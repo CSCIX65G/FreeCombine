@@ -102,10 +102,7 @@ class RepeaterTests: XCTestCase {
                 _ = await repeater.cancellable.cancelAndAwaitResult()
             }
         }
-        do {
-            try await FreeCombine.wait(for: expectation, timeout: 10_000_000)
-        } catch {
-            XCTFail("Timed out")
-        }
+        do { _ = try await expectation.value }
+        catch { XCTFail("Timed out") }
     }
 }

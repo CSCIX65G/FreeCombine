@@ -123,16 +123,13 @@ final class ShareTests: XCTestCase {
             }
         })
 
-        do {
-            try await FreeCombine.wait(for: expectation1, timeout: 200_000_000)
-        } catch {
+        do { _ = try await expectation1.value }
+        catch {
             let last = value1.value
             XCTFail("u1 Timed out count = \(counter1.count), last = \(last)")
         }
 
-        do {
-            try await FreeCombine.wait(for: expectation2, timeout: 10_000_000)
-        } catch {
+        do { _ = try await expectation2.value } catch {
             let count = counter2.count
             let last = value2.value
             XCTFail("u2 Timed out count = \(count), last = \(last)")
@@ -141,7 +138,7 @@ final class ShareTests: XCTestCase {
         let d1 = try await u1.value
         XCTAssert(d1 == .done, "First chain has wrong value")
 
-        let d2 = await u2.cancelAndAwaitResult()
+        let d2 = await u2.result
         guard case .success = d2 else {
             XCTFail("Did not get successful result, got: \(d2)")
             return

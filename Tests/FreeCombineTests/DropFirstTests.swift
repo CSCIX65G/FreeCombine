@@ -48,9 +48,7 @@ class DropFirstTests: XCTestCase {
                         XCTFail("Incorrect count: \(count) in subscription 1")
                         return .done
                     }
-                    do {
-                        try await expectation1.complete()
-                    }
+                    do { try await expectation1.complete() }
                     catch { XCTFail("Failed to complete with error: \(error)") }
                     return .done
                 case .completion(.cancelled):
@@ -58,11 +56,9 @@ class DropFirstTests: XCTestCase {
                     return .done
             }
         }
-        do {
-            try await FreeCombine.wait(for: expectation1, timeout: 10_000_000)
-        } catch {
-            XCTFail("Timed out")
-        }
+        do {  _ = try await expectation1.value }
+        catch { XCTFail("Timed out") }
+
         do {
             let finalValue = try await u1.value
             XCTAssert(finalValue == .done, "Did not complete")

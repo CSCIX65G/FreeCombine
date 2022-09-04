@@ -98,22 +98,6 @@ class AutoconnectTests: XCTestCase {
             }
         })
 
-        do {
-            try await FreeCombine.wait(for: expectation1, timeout: 10_000_000)
-        } catch {
-            let count = counter2.count
-            let last = value2.value
-            XCTFail("u1 Timed out count = \(count), last = \(last)")
-        }
-
-        do {
-            try await FreeCombine.wait(for: expectation2, timeout: 10_000_000)
-        } catch {
-            let count = counter2.count
-            let last = value2.value
-            XCTFail("u2 Timed out count = \(count), last = \(last)")
-        }
-
         let d1 = try await u1.value
         XCTAssert(d1 == .done, "First chain has wrong value")
 
@@ -192,26 +176,10 @@ class AutoconnectTests: XCTestCase {
             }
         })
 
-        do {
-            try await FreeCombine.wait(for: expectation1, timeout: 10_000_000)
-        } catch {
-            let count = counter2.count
-            let last = value2.value
-            XCTFail("u1 Timed out count = \(count), last = \(last)")
-        }
-
-        do {
-            try await FreeCombine.wait(for: expectation2, timeout: 10_000_000)
-        } catch {
-            let count = counter2.count
-            let last = value2.value
-            XCTFail("u2 Timed out count = \(count), last = \(last)")
-        }
-
         let d1 = try await u1.value
         XCTAssert(d1 == .done, "First chain has wrong value")
 
-        _ = await u2.cancelAndAwaitResult()
+        _ = await u2.result
     }
 
     func testSimpleEmptyAutoconnect() async throws {
@@ -281,22 +249,6 @@ class AutoconnectTests: XCTestCase {
                     return .done
             }
         })
-
-        do {
-            try await FreeCombine.wait(for: expectation1, timeout: 10_000_000)
-        } catch {
-            let count = counter2.count
-            let last = value2.value
-            XCTFail("u1 Timed out count = \(count), last = \(last)")
-        }
-
-        do {
-            try await FreeCombine.wait(for: expectation2, timeout: 10_000_000)
-        } catch {
-            let count = counter2.count
-            let last = value2.value
-            XCTFail("u2 Timed out count = \(count), last = \(last)")
-        }
 
         let d1 = try await u1.value
         XCTAssert(d1 == .done, "First chain has wrong value")

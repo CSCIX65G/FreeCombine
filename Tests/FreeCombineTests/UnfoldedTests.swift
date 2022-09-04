@@ -82,13 +82,13 @@ class UnfoldedTests: XCTestCase {
         }
 
         do {
-            try await FreeCombine.wait(for: expectation1, timeout: 10_000_000)
-            try await FreeCombine.wait(for: expectation2, timeout: 10_000_000)
+            _ = try await expectation1.value
+            _ = try await expectation2.value
         } catch {
             XCTFail("Timed out")
         }
-        u1.cancel()
-        u2.cancel()
+        _ = await u1.result
+        _ = await u2.result
     }
 
     func testVariableUnfolded() async throws {
@@ -146,8 +146,8 @@ class UnfoldedTests: XCTestCase {
         }
 
         do {
-            try await FreeCombine.wait(for: expectation1, timeout: 1_000_000)
-            try await FreeCombine.wait(for: expectation2, timeout: 1_000_000)
+            _ = try await expectation1.value
+            _ = try await expectation2.value
         } catch {
             XCTFail("Timed out")
         }

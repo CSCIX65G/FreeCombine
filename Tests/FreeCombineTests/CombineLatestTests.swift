@@ -55,11 +55,6 @@ class CombineLatestTests: XCTestCase {
                 return .more
             }
 
-        do { try await FreeCombine.wait(for: expectation, timeout: 10_000_000) }
-        catch {
-            let count = counter.count
-            XCTFail("Timed out, count = \(count)")
-        }
         let _ = await c1.result
     }
 
@@ -91,11 +86,6 @@ class CombineLatestTests: XCTestCase {
                 return .more
             }
 
-        do { try await FreeCombine.wait(for: expectation, timeout: 10_000_000) }
-        catch {
-            let count = counter.count
-            XCTFail("Timed out, count = \(count)")
-        }
         let _ = await z1.result
     }
 
@@ -127,12 +117,7 @@ class CombineLatestTests: XCTestCase {
                 }
             }
 
-        do { try await FreeCombine.wait(for: expectation, timeout: 10_000_000) }
-        catch {
-            let count = counter.count
-            XCTFail("Timed out, count = \(count)")
-        }
-        z1.cancel()
+        _ = await z1.result
     }
 
     func testSimpleCombineLatest() async throws {
@@ -165,8 +150,6 @@ class CombineLatestTests: XCTestCase {
                 }
             })
 
-        do { try await FreeCombine.wait(for: expectation, timeout: 10_000_000) }
-        catch { XCTFail("Timed out, count = \(counter.count)") }
         _ = await z1.result
     }
 
@@ -203,8 +186,6 @@ class CombineLatestTests: XCTestCase {
                 }
             })
 
-        do { try await FreeCombine.wait(for: expectation, timeout: 10_000_000) }
-        catch { XCTFail("Timed out, count = \(counter.count)") }
         _ = await z1.result
     }
 
@@ -267,13 +248,7 @@ class CombineLatestTests: XCTestCase {
                 }
             })
 
-        do {
-            try await FreeCombine.wait(for: expectation1, timeout: 50_000_000)
-            try await FreeCombine.wait(for: expectation2, timeout: 50_000_000)
-        } catch {
-            XCTFail("Timed out")
-        }
-        z1.cancel()
-        z2.cancel()
+        _ = await z1.result
+        _ = await z2.result
     }
 }

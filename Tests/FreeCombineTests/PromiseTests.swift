@@ -44,11 +44,8 @@ final class PromiseTests: XCTestCase {
 
         try await promise.succeed(13)
 
-        do {
-            try await FreeCombine.wait(for: expectation, timeout: 1_000_000)
-        } catch {
-            XCTFail("Timed out")
-        }
+        do { _ = try await expectation.value }
+        catch { XCTFail("Timed out") }
 
         _ = await cancellation.result
     }
@@ -76,11 +73,8 @@ final class PromiseTests: XCTestCase {
 
         try await promise.fail(PromiseError.iFailed)
 
-        do {
-            try await FreeCombine.wait(for: expectation, timeout: 1_000_000)
-        } catch {
-            XCTFail("Timed out")
-        }
+        do {  _ = try await expectation.value }
+        catch { XCTFail("Timed out") }
 
         _ = await cancellation.result
     }
@@ -111,14 +105,12 @@ final class PromiseTests: XCTestCase {
 
         do {
             for pair in pairs {
-                try await FreeCombine.wait(for: pair.0, timeout: 10_000_000)
+                _ = try await pair.0.value
                 _ = await pair.1.result
             }
         } catch {
             XCTFail("Timed out")
         }
-
-        _ = await promise.result
     }
 
     func testMultipleSends() async throws {
@@ -168,15 +160,11 @@ final class PromiseTests: XCTestCase {
 
         do {
             for pair in pairs {
-                try await FreeCombine.wait(for: pair.0, timeout: 10_000_000)
+                _ = try await pair.0.value
                 _ = await pair.1.result
             }
         } catch {
             XCTFail("Timed out")
         }
-
-        _ = await promise.result
     }
-
-
 }

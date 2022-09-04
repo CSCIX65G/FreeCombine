@@ -34,15 +34,7 @@ final class OrTests: XCTestCase {
         try await promise1.succeed(13)
         try await promise2.succeed(14)
 
-        do {
-            try await FreeCombine.wait(for: expectation, timeout: 1_000_000)
-        } catch {
-            XCTFail("Timed out")
-        }
-
         _ = await cancellation.result
-        _ = await promise1.result
-        _ = await promise2.result
     }
 
     func testSimpleOrFailure() async throws {
@@ -69,15 +61,7 @@ final class OrTests: XCTestCase {
         try await promise2.fail(Error.iFailed)
         try await promise1.cancel()
 
-        do {
-            try await FreeCombine.wait(for: expectation, timeout: 1_000_000)
-        } catch {
-            XCTFail("Timed out")
-        }
-
         _ = await cancellation.result
-        _ = await promise1.result
-        _ = await promise2.result
     }
 
     func testComplexOr() async throws {
@@ -118,12 +102,6 @@ final class OrTests: XCTestCase {
         try await promise6.succeed(18)
         try await promise7.succeed(19)
         try await promise8.succeed(20)
-
-        do {
-            try await FreeCombine.wait(for: expectation, timeout: 1_000_000)
-        } catch {
-            XCTFail("Timed out")
-        }
 
         _ = await cancellation.result
     }

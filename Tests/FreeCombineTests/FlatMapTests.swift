@@ -55,9 +55,6 @@ class FlatMapTests: XCTestCase {
                 }
             })
 
-        do {
-            try await FreeCombine.wait(for: expectation, timeout: 10_000_000)
-        }
         let _ = await c1.result
     }
 }
