@@ -58,11 +58,9 @@ class FilterTests: XCTestCase {
                     return .done
             }
         }
-        do {
-            try await FreeCombine.wait(for: expectation1, timeout: 10_000_000)
-        } catch {
-            XCTFail("Timed out")
-        }
+        do { _ = try await expectation1.value }
+        catch { XCTFail("Timed out") }
+
         do {
             let finalValue = try await u1.value
             XCTAssert(finalValue == .done, "Did not complete")

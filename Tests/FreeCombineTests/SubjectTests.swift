@@ -73,16 +73,13 @@ class SubjectTests: XCTestCase {
             XCTAssert(demand == .done, "Did not finish correctly")
         }
         catch { XCTFail("Should not have thrown") }
-        do {
-            try await FreeCombine.wait(for: expectation, timeout: 10_000_000)
-        }
+        do { _ = try await expectation.value }
         catch {
             let count = counter.count
             XCTFail("Timed out, count = \(count)")
         }
 
         _ = await c1.result
-        _ = await subject.result
     }
 
     func testMultisubscriptionSubject() async throws {
@@ -152,16 +149,16 @@ class SubjectTests: XCTestCase {
             XCTAssert(demand2 == .done, "Did not finish c2 correctly")
         }
         catch { XCTFail("Should not have thrown") }
+
         do {
-            try await FreeCombine.wait(for: expectation1, timeout: 10_000_000)
-            try await FreeCombine.wait(for: expectation2, timeout: 10_000_000)
+            _ = try await expectation1.value
+            _ = try await expectation2.value
         }
         catch {
             XCTFail("Timed out, count1 = \(counter1.count), count2 = \(counter2.count)")
         }
         _ = await c1.result
         _ = await c2.result
-        _ = await subject.result
     }
 
     func testSimpleCancellation() async throws {
@@ -220,17 +217,14 @@ class SubjectTests: XCTestCase {
         do { try await subject.blockingSend(8) }
         catch { XCTFail("Failed to enqueue") }
 
-        do { try await FreeCombine.wait(for: expectation, timeout: 10_000_000) }
+        do { _ = try await expectation.value }
         catch { XCTFail("Failed waiting for expectation") }
 
         let _ = can.cancel()
 
         try await release.complete()
-        do {
-            try await FreeCombine.wait(for: expectation3, timeout: 10_000_000)
-        } catch {
-            XCTFail("Failed waiting for expectation3")
-        }
+        do { _ = try await expectation3.value }
+        catch { XCTFail("Failed waiting for expectation3") }
 
         do {
             try await subject.blockingSend(9)
@@ -276,9 +270,8 @@ class SubjectTests: XCTestCase {
         }
         try await subject.finish()
 
-        do {
-            try await FreeCombine.wait(for: expectation, timeout: 50_000_000)
-        } catch {
+        do { _ = try await expectation.value }
+        catch {
             let count = counter.count
             XCTFail("Timed out waiting for expectation.  processed: \(count)")
         }
@@ -320,9 +313,8 @@ class SubjectTests: XCTestCase {
         }
         try await subject.finish()
 
-        do {
-            try await FreeCombine.wait(for: expectation, timeout: 10_000_000)
-        } catch {
+        do { _ = try await expectation.value }
+        catch {
             let count = counter.count
             XCTFail("Timed out waiting for expectation.  processed: \(count)")
         }
@@ -373,7 +365,7 @@ class SubjectTests: XCTestCase {
         try await fsubject1.finish()
         try await fsubject2.finish()
 
-        do { try await FreeCombine.wait(for: expectation, timeout: 200_000_000) }
+        do { _ = try await expectation.value }
         catch {
             XCTFail("timed out")
         }

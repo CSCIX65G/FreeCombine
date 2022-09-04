@@ -88,8 +88,12 @@ public final class StateTask<State, Action: Sendable> {
 
     var result: Result<State, Swift.Error> {
         get async {
-            do { return .success(try await value) }
-            catch { return .failure(error) }
+            do {
+                return .success(try await value)
+            }
+            catch {
+                return .failure(error)
+            }
         }
     }
 

@@ -59,11 +59,6 @@ class ConcatTests: XCTestCase {
                 }
             })
 
-        do {
-            try await FreeCombine.wait(for: expectation, timeout: 10_000_000)
-        } catch {
-            XCTFail("Timed out")
-        }
         do {  _ = try await c1.value }
         catch { XCTFail("Should have completed") }
     }
@@ -128,12 +123,6 @@ class ConcatTests: XCTestCase {
                 }
             })
 
-        do {
-            try await FreeCombine.wait(for: expectation1, timeout: 10_000_000)
-            try await FreeCombine.wait(for: expectation2, timeout: 10_000_000)
-        } catch {
-            XCTFail("Timed out")
-        }
         do {
             _ = try await c1.value
             _ = try await c2.value

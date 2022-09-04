@@ -96,13 +96,6 @@ class MakeConnectableTests: XCTestCase {
         let d2 = try await u2.value
         XCTAssert(d2 == .done, "Second chain has wrong value")
 
-        do {
-            try await FreeCombine.wait(for: expectation1, timeout: 10_000_000)
-            try await FreeCombine.wait(for: expectation2, timeout: 10_000_000)
-        } catch {
-            XCTFail("Timed out")
-        }
-
         let _ = await connectable.result
     }
 

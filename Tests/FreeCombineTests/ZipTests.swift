@@ -57,7 +57,7 @@ class ZipTests: XCTestCase {
                 return .more
             }
 
-        do { try await FreeCombine.wait(for: expectation, timeout: 10_000_000) }
+        do { _ = try await expectation.value }
         catch {
             XCTFail("Timed out, count = \(counter.count)")
         }
@@ -93,7 +93,7 @@ class ZipTests: XCTestCase {
                 return .more
             }
 
-        do { try await FreeCombine.wait(for: expectation, timeout: 10_000_000) }
+        do { _ = try await expectation.value }
         catch {
             let count = counter.count
             XCTFail("Timed out, count = \(count)")
@@ -129,7 +129,7 @@ class ZipTests: XCTestCase {
                 }
             }
 
-        do { try await FreeCombine.wait(for: expectation, timeout: 10_000_000) }
+        do { _ = try await expectation.value }
         catch { XCTFail("Timed out, count = \(counter.count)") }
         _ = await z1.result
     }
@@ -164,9 +164,9 @@ class ZipTests: XCTestCase {
                 }
             })
 
-        do { try await FreeCombine.wait(for: expectation, timeout: 10_000_000) }
+        do { _ = try await expectation.value }
         catch { XCTFail("Timed out, count = \(counter.count)") }
-        z1.cancel()
+        _ = await z1.result
     }
 
     func testComplexZip() async throws {
@@ -206,7 +206,7 @@ class ZipTests: XCTestCase {
                 }
             })
 
-        do { try await FreeCombine.wait(for: expectation, timeout: 10_000_000) }
+        do { _ = try await expectation.value }
         catch { XCTFail("Timed out, count = \(counter.count)") }
         let _ = await z1.result
     }
@@ -275,8 +275,8 @@ class ZipTests: XCTestCase {
             })
 
         do {
-            try await FreeCombine.wait(for: expectation1, timeout: 10_000_000)
-            try await FreeCombine.wait(for: expectation2, timeout: 10_000_000)
+            _ = try await expectation1.value
+            _ = try await expectation2.value
         } catch {
             XCTFail("Timed out")
         }

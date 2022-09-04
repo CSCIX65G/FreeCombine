@@ -75,7 +75,7 @@ public final class Promise<Output: Sendable> {
     }
 
     deinit {
-        let shouldCancel = !(isCompleting || isCancelled)
+        let shouldCancel = !(isCompleting || isCancelled || isResolved)
         assert(!shouldCancel, "ABORTING DUE TO LEAKED \(type(of: Self.self))  CREATED in \(function) @ \(file): \(line)")
         if shouldCancel {
             receiveStateTask.cancel()
@@ -83,6 +83,11 @@ public final class Promise<Output: Sendable> {
         }
     }
 
+    public var isResolved: Bool {
+        @Sendable get {
+            resolution.get() != nil
+        }
+    }
     public var isCancelled: Bool {
         @Sendable get {
             stateTask.isCancelled && receiveStateTask.isCancelled
@@ -165,7 +170,8 @@ public extension Promise {
         let queueStatus = receiveStateTask.send(.nonBlockingReceive(result))
         switch queueStatus {
             case .enqueued:
-                receiveStateTask.finish()
+                _ = await stateTask.result
+                _ = await receiveStateTask.result
             case .terminated:
                 try resolution.set(value: .failure(PublisherError.completed))
                 throw PublisherError.completed
@@ -186,9 +192,5 @@ public extension Promise {
 
     @Sendable func fail(_ error: Swift.Error) async throws -> Void {
         try await send(.failure(error))
-    }
-
-    @Sendable func finish() -> Void {
-        stateTask.finish()
     }
 }

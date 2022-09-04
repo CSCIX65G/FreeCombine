@@ -52,11 +52,9 @@ class MapTests: XCTestCase {
                 }
             }
         
-        do {
-            try await FreeCombine.wait(for: expectation1, timeout: 1_000_000)
-        } catch {
-            XCTFail("Timed out")
-        }
+        do { _ = try await expectation1.value }
+        catch { XCTFail("Timed out") }
+        
         _ = await m1.result
     }
 
@@ -80,15 +78,6 @@ class MapTests: XCTestCase {
             }
 
         try await promise.succeed(13)
-
-        do {
-            try await FreeCombine.wait(for: expectation, timeout: 1_000_000)
-        } catch {
-            XCTFail("Timed out")
-        }
-
         _ = await cancellation.result
-        promise.finish()
-        _ = await promise.result
     }
 }

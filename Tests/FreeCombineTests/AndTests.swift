@@ -51,17 +51,7 @@ final class AndTests: XCTestCase {
         try await promise1.succeed(13)
         try await promise2.succeed("m")
 
-        do {
-            try await FreeCombine.wait(for: expectation, timeout: 1_000_000)
-        } catch {
-            XCTFail("Timed out")
-        }
-
         _ = await cancellation.result
-        promise1.finish()
-        _ = await promise1.result
-        promise2.finish()
-        _ = await promise2.result
     }
 
     func testSimpleAndFailure() async throws {
@@ -88,17 +78,7 @@ final class AndTests: XCTestCase {
         try await promise1.succeed(13)
         try await promise2.fail(Error.iFailed)
 
-        do {
-            try await FreeCombine.wait(for: expectation, timeout: 1_000_000)
-        } catch {
-            XCTFail("Timed out")
-        }
-
         _ = await cancellation.result
-        promise1.finish()
-        _ = await promise1.result
-        promise2.finish()
-        _ = await promise2.result
     }
 
     func testComplexAnd() async throws {
@@ -148,16 +128,6 @@ final class AndTests: XCTestCase {
         try await promise7.succeed(16)
         try await promise8.succeed("p")
 
-        do {
-            try await FreeCombine.wait(for: expectation, timeout: 1_000_000)
-        } catch {
-            XCTFail("Timed out")
-        }
-
         _ = await cancellation.result
-        promise1.finish()
-        _ = await promise1.result
-        promise2.finish()
-        _ = await promise2.result
     }
 }

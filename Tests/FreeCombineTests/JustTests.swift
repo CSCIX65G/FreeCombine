@@ -70,10 +70,10 @@ class JustTests: XCTestCase {
         }
 
         do {
-            try await FreeCombine.wait(for: expectation1, timeout: 1_000_000)
-            try await FreeCombine.wait(for: expectation2, timeout: 1_000_000)
+            _ = try await expectation1.value
+            _ = try await expectation2.value
         } catch {
-            XCTFail("Timed out")
+            XCTFail("Expectations threw")
         }
         let _ = await c1.result
         let _ = await c2.result
@@ -107,11 +107,8 @@ class JustTests: XCTestCase {
         } catch {
             XCTFail("Errored out")
         }
-        do {
-            try await FreeCombine.wait(for: expectation1, timeout: 10_000_000)
-        } catch {
-            XCTFail("Timed out")
-        }
+        do { _ = try await expectation1.value }
+        catch { XCTFail("Timed out") }
     }
 
     func testSimpleAsyncJust() async throws {
@@ -172,8 +169,8 @@ class JustTests: XCTestCase {
             XCTFail("Errored out")
         }
         do {
-            try await FreeCombine.wait(for: expectation1, timeout: 10_000_000)
-            try await FreeCombine.wait(for: expectation2, timeout: 10_000_000)
+            _ = try await expectation1.value
+            _ = try await expectation2.value
         } catch {
             XCTFail("Timed out")
         }

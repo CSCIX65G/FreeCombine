@@ -40,15 +40,6 @@ final class FutureTests: XCTestCase {
             })
 
         try await promise.succeed(13)
-
-        do {
-            try await FreeCombine.wait(for: expectation, timeout: 1_000_000)
-        } catch {
-            XCTFail("Timed out")
-        }
-
         _ = await cancellation.result
-        promise.finish()
-        _ = await promise.result
     }
 }

@@ -57,7 +57,7 @@ class ScanTests: XCTestCase {
                         return .done
                 }
             })
-        do { try await FreeCombine.wait(for: expectation, timeout: 1_000_000) }
+        do { _ = try await expectation.value }
         catch {
             let count = counter.count
             XCTFail("Timed out, count = \(count)")
