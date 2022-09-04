@@ -65,7 +65,7 @@ public struct PromiseState<Output: Sendable> {
             case .finished, .exit:
                 assert(
                     state.repeaters.count == 0,
-                    "ABORTING DUE TO LEAKED \(type(of: state)) CREATED in \(state.function) @ \(state.file): \(state.line)"
+                    "ABORTING DUE TO NON-EMPTY REPEATERS \(state.repeaters.count)) STILL PRESENT"
                 )
             case let .failure(error):
                 try! await state.process(currentRepeaters: state.repeaters, with: .failure(error))
@@ -127,7 +127,7 @@ public struct PromiseState<Output: Sendable> {
                     resumption.resume(throwing: error)
                     throw error
                 }
-                return isComplete ? .completion(.exit)  : .none
+                return .completion(.exit)
             case let .subscribe(downstream, resumption):
                 var repeater: Cancellable<Void>!
                 if let currentValue = currentValue {
@@ -184,7 +184,9 @@ public struct PromiseState<Output: Sendable> {
                 }
             }
         }
-        .forEach { repeaters.removeValue(forKey: $0) }
+        .forEach {
+            repeaters.removeValue(forKey: $0)
+        }
     }
 
     mutating func process(

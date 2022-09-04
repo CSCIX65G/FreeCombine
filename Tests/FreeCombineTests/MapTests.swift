@@ -88,7 +88,6 @@ class MapTests: XCTestCase {
         }
 
         _ = await cancellation.result
-        promise.finish()
         _ = await promise.result
     }
 }

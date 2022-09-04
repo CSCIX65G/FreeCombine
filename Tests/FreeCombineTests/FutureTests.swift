@@ -48,7 +48,6 @@ final class FutureTests: XCTestCase {
         }
 
         _ = await cancellation.result
-        promise.finish()
         _ = await promise.result
     }
 }

@@ -51,8 +51,6 @@ final class PromiseTests: XCTestCase {
         }
 
         _ = await cancellation.result
-        promise.finish()
-        _ = await promise.result
     }
 
     func testSimpleFailedPromise() async throws {
@@ -85,8 +83,6 @@ final class PromiseTests: XCTestCase {
         }
 
         _ = await cancellation.result
-        promise.finish()
-        _ = await promise.result
     }
 
     func testMultipleSubscribers() async throws {
@@ -122,7 +118,6 @@ final class PromiseTests: XCTestCase {
             XCTFail("Timed out")
         }
 
-        promise.finish()
         _ = await promise.result
     }
 
@@ -180,7 +175,6 @@ final class PromiseTests: XCTestCase {
             XCTFail("Timed out")
         }
 
-        promise.finish()
         _ = await promise.result
     }
 

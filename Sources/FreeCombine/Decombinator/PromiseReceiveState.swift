@@ -98,7 +98,7 @@ public struct PromiseReceiveState<Output: Sendable> {
                 }
             }
             resumption?.resume(returning: subscribers)
-            return .none
+            return .completion(.exit)
         } catch {
             resumption?.resume(throwing: error)
             return .completion(.failure(error))

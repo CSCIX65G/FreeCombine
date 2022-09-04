@@ -41,9 +41,7 @@ final class OrTests: XCTestCase {
         }
 
         _ = await cancellation.result
-        promise1.finish()
         _ = await promise1.result
-        promise2.finish()
         _ = await promise2.result
     }
 
@@ -78,9 +76,7 @@ final class OrTests: XCTestCase {
         }
 
         _ = await cancellation.result
-        promise1.finish()
         _ = await promise1.result
-        promise2.finish()
         _ = await promise2.result
     }
 

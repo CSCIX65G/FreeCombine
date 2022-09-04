@@ -58,10 +58,6 @@ final class AndTests: XCTestCase {
         }
 
         _ = await cancellation.result
-        promise1.finish()
-        _ = await promise1.result
-        promise2.finish()
-        _ = await promise2.result
     }
 
     func testSimpleAndFailure() async throws {
@@ -95,10 +91,6 @@ final class AndTests: XCTestCase {
         }
 
         _ = await cancellation.result
-        promise1.finish()
-        _ = await promise1.result
-        promise2.finish()
-        _ = await promise2.result
     }
 
     func testComplexAnd() async throws {
@@ -155,9 +147,5 @@ final class AndTests: XCTestCase {
         }
 
         _ = await cancellation.result
-        promise1.finish()
-        _ = await promise1.result
-        promise2.finish()
-        _ = await promise2.result
     }
 }
